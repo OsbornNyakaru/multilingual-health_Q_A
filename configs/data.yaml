@@ -1,0 +1,43 @@
+# Data loading, splitting, augmentation.
+
+split:
+  # Stratified by language. 85/10/5 — train / val (for tuning) / held-out (final selection only).
+  ratios:
+    train: 0.85
+    val: 0.10
+    heldout: 0.05
+  stratify_by: Language
+  shuffle: true
+  seed: 42
+
+augmentation:
+  enabled: false      # flip to true once sources land
+  sources:
+    sunbird_salt:
+      enabled: false
+      languages: [lug]
+      max_rows: 2000
+    ghananlp_khaya:
+      enabled: false
+      languages: [aka]
+      max_rows: 2000
+    medmcqa_translated:
+      enabled: false
+      languages: [swa, lug, aka, amh]
+      max_rows: 5000
+      nllb_model: facebook/nllb-200-3.3B
+    who_factsheets:
+      enabled: false
+      languages: [swa, lug, aka, amh]
+    synthetic_qa:
+      enabled: false
+      open_models_only: true
+      generator_model: CohereForAI/aya-expanse-8b
+      max_rows: 3000
+
+preprocessing:
+  lower_question: false   # Amharic case semantics — leave as-is.
+  strip_whitespace: true
+  drop_empty_response: true
+  min_question_chars: 5
+  max_question_chars: 1000

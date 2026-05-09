@@ -1,0 +1,53 @@
+# Shared configuration. All other configs compose on top of this.
+
+project: afro-health-qa
+seed: 42
+
+# Four target languages (ISO-639-3).
+languages:
+  - lug  # Luganda
+  - swa  # Kiswahili
+  - aka  # Akan / Twi
+  - amh  # Amharic
+
+# Paths are relative to repo root.
+paths:
+  data_raw: data/raw
+  data_processed: data/processed
+  data_augmented: data/augmented
+  data_external: data/external
+  models: models
+  submissions: submissions
+  experiments: experiments
+  hf_cache: .cache/huggingface
+
+# Expected Zindi file names — adjust once files drop.
+files:
+  train: data/raw/Train.csv
+  test: data/raw/Test.csv
+  sample_submission: data/raw/SampleSubmission.csv
+
+# Expected columns (per Zindi boilerplate; adapt on data drop).
+columns:
+  id: ID
+  question: Question
+  language: Language
+  response: Response
+  submission_targets:
+    - TargetBert
+    - TargetRLF1
+    - TargetR1F1
+    - TargetLLM
+
+# Weighted scoring (must match Zindi's scoring function).
+scoring_weights:
+  rouge1: 0.25
+  rouge_l: 0.25
+  afrolm_bertscore: 0.30
+  llm_judge: 0.20
+
+# W&B defaults — override via env.
+wandb:
+  project: afro-health-qa
+  entity: chiromo-forge
+  mode: online   # offline if no network

@@ -1,0 +1,50 @@
+# Data and models
+data/raw/
+data/processed/
+data/augmented/
+data/external/
+models/
+!data/.gitkeep
+!models/.gitkeep
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Experiment tracking
+wandb/
+mlruns/
+lightning_logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_meta/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# HF cache
+.cache/
+hf_cache/
+
+# Keep submissions tracked, but ignore backup copies
+submissions/*.bak
+submissions/*.tmp

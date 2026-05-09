@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "afro-health-qa"
+version = "0.1.0"
+description = "Zindi Multilingual Health QA in Low-Resource African Languages — Chiromo Forge competition repo."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Osborn Nyakaru", email = "osbornnyakaru44@gmail.com" },
+]
+keywords = ["nlp", "multilingual", "african-languages", "health-qa", "zindi"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "torch==2.4.1",
+    "transformers==4.46.2",
+    "accelerate==1.1.1",
+    "peft==0.13.2",
+    "bitsandbytes==0.44.1",
+    "datasets==3.1.0",
+    "trl==0.12.1",
+    "sentencepiece==0.2.0",
+    "protobuf==5.28.3",
+    "rouge-score==0.1.2",
+    "sacrebleu==2.4.3",
+    "fasttext==0.9.3",
+    "pandas==2.2.3",
+    "numpy==1.26.4",
+    "scikit-learn==1.5.2",
+    "wandb==0.18.7",
+    "pyyaml==6.0.2",
+    "tqdm==4.67.0",
+    "hydra-core==1.3.2",
+    "tokenizers==0.20.3",
+    "safetensors==0.4.5",
+    "huggingface-hub==0.26.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "ruff==0.7.4",
+]
+
+[project.urls]
+"Zindi Challenge" = "https://zindi.africa/competitions/multilingual-health-question-answering-in-low-resource-african-languages-challenge"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -q --strict-markers"
+markers = [
+    "slow: tests requiring GPU or heavy model loads",
+    "integration: tests spanning multiple modules",
+]

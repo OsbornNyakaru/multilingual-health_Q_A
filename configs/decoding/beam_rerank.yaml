@@ -1,0 +1,21 @@
+# Diverse beams + AfroLM-BertScore reranker. Highest quality, slowest.
+
+strategy: beam_rerank
+do_sample: false
+num_beams: 8
+num_beam_groups: 4
+diversity_penalty: 0.5
+num_return_sequences: 4   # top-4 beams handed to the reranker
+length_policy: per_language_quantiles
+length_quantile_low: 0.25
+length_quantile_high: 0.95
+length_penalty: 1.0
+early_stopping: true
+repetition_penalty: 1.1
+no_repeat_ngram_size: 3
+
+rerank:
+  enabled: true
+  scorer: afrolm_bertscore
+  reference_pool_size: 32    # top-k retrieved training answers in same language
+  reference_pool_strategy: bm25   # cheaper than embedding retrieval; doc in DECISIONS.md

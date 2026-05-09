@@ -1,0 +1,21 @@
+# Minimal deps for the final Zindi reviewer notebook (99_final_submission.ipynb).
+# Goal: smallest set that will run end-to-end inference and produce the submission CSV.
+# No training-only deps (trl, bitsandbytes kept for QLoRA inference, wandb removed).
+
+torch==2.4.1
+transformers==4.46.2
+accelerate==1.1.1
+peft==0.13.2
+bitsandbytes==0.44.1
+sentencepiece==0.2.0
+protobuf==5.28.3
+pandas==2.2.3
+numpy==1.26.4
+pyyaml==6.0.2
+tqdm==4.67.0
+huggingface-hub==0.26.2
+tokenizers==0.20.3
+safetensors==0.4.5
+
+# Reranker needs AfroLM
+# (loaded via transformers, no extra package)
