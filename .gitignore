@@ -3,7 +3,7 @@ data/raw/
 data/processed/
 data/augmented/
 data/external/
-models/
+/models/
 !data/.gitkeep
 !models/.gitkeep
 
@@ -48,3 +48,19 @@ hf_cache/
 # Keep submissions tracked, but ignore backup copies
 submissions/*.bak
 submissions/*.tmp
+
+# Zindi zip drop-zone (raw copies; canonical copies live in data/raw/)
+resources/
+
+# Local marimo dev environment
+.venv-marimo/
+
+# Obsidian per-machine UI state (keep the notes, ignore the workspace cache)
+vault/.obsidian/workspace*.json
+vault/.obsidian/cache/
+vault/.trash/
+
+# Zindi competition data must not be redistributed (repo is public)
+data/multilingual_data/
+autoresearch_nlp/data/
+docs/competition_report/data/bge_retrieval_heldout.csv

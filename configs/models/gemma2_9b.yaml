@@ -1,0 +1,32 @@
+name: gemma2_9b_it
+hf_id: google/gemma-2-9b-it
+license: gemma-terms
+family: gemma
+architecture: decoder
+context_length: 8192
+dtype: bfloat16
+
+tokenizer:
+  use_fast: true
+  padding_side: left
+
+load_in_4bit: true
+bnb_config:
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_compute_dtype: bfloat16
+
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+notes: |
+  Secondary backbone. English-fluency helps LLM-judge sub-metric.
+  Different failure modes than Aya — good diversity for ensemble candidate pool.
+  Gemma terms of use apply; verify before Zindi submission packaging.

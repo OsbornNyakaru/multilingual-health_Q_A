@@ -1,3 +1,5 @@
+> Migrated to vault/, see [[00_INDEX]]
+
 # Experiment Log
 
 Append-only. Every submission gets a row. **No exceptions.** Never submit to Zindi without first appending here.

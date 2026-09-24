@@ -1,0 +1,17 @@
+{
+  "run_id": "20260624_095953_e5-small_retrieval",
+  "hypothesis": "Track1: full-pool BGE-M3 within-subset nearest-neighbour retrieval on the test set.",
+  "model_hf_id": "intfloat/multilingual-e5-small",
+  "adapter_path": null,
+  "decoding_config": "retrieval-top1 (no generation)",
+  "n_rows": 2618,
+  "created_utc": "20260624_095953",
+  "git_hash": "",
+  "local_rouge1": null,
+  "local_rougeL": null,
+  "local_afrolm_bs": null,
+  "local_judge": null,
+  "local_combined": null,
+  "public_lb": null,
+  "notes": "pool=28319 (train_core+held_out+Val); mean retrieval cos=0.9231. Held-out R1=0.560/RL=0.491 measured on the same retriever."
+}

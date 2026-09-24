@@ -277,7 +277,10 @@ def llm_judge(
 
 
 def combined_score(r1: float, rl: float, afrolm_bs: float, judge: float) -> float:
-    return 0.25 * r1 + 0.25 * rl + 0.30 * afrolm_bs + 0.20 * judge
+    # Leaderboard weights (0.37/0.37/0.26, AfroLM 0) — single source in combined.py.
+    from afro_health_qa.evaluation.combined import combined_score as _lb_combined
+
+    return _lb_combined(r1, rl, afrolm_bs, judge)
 
 
 def combined_score_proxy(r1: float, rl: float, afrolm_bs: float) -> float:

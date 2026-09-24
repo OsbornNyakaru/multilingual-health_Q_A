@@ -1,3 +1,5 @@
+> Migrated to vault/, see [[00_INDEX]]
+
 # Ablations
 
 Systematic "what happens if we remove / change this one knob?" tables. Update after any experiment that changes a single variable relative to a prior run.

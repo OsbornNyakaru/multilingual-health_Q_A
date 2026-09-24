@@ -1,0 +1,78 @@
+{
+  "model_key": "bge-m3",
+  "model_hf_id": "BAAI/bge-m3",
+  "is_fallback_proxy": false,
+  "pool": "data/processed/train_core.csv",
+  "queries": "data/processed/held_out.csv",
+  "retrieval": "nearest train question within same subset, cosine on normalized embeddings",
+  "note": "ROUGE is MEASURED (frozen LB-matching tokenizer). The 0.26 LLM-judge term is NOT computed here; the report labels any judge figure as estimated.",
+  "weights": {
+    "rouge1": 0.37,
+    "rougeL": 0.37
+  },
+  "overall": {
+    "n": 1491,
+    "rouge1": 0.5604,
+    "rougeL": 0.4914,
+    "rouge_only_combined": 0.3892,
+    "mean_sim": 0.8802
+  },
+  "per_subset": {
+    "Aka_Gha": {
+      "n": 223,
+      "rouge1": 0.3952,
+      "rougeL": 0.2212,
+      "rouge_only_combined": 0.2281,
+      "mean_sim": 0.8244
+    },
+    "Amh_Eth": {
+      "n": 92,
+      "rouge1": 0.0163,
+      "rougeL": 0.0163,
+      "rouge_only_combined": 0.0121,
+      "mean_sim": 0.8145
+    },
+    "Eng_Eth": {
+      "n": 196,
+      "rouge1": 0.6356,
+      "rougeL": 0.6073,
+      "rouge_only_combined": 0.4599,
+      "mean_sim": 0.9293
+    },
+    "Eng_Gha": {
+      "n": 222,
+      "rouge1": 0.372,
+      "rougeL": 0.2319,
+      "rouge_only_combined": 0.2234,
+      "mean_sim": 0.8551
+    },
+    "Eng_Ken": {
+      "n": 104,
+      "rouge1": 0.8116,
+      "rougeL": 0.7864,
+      "rouge_only_combined": 0.5912,
+      "mean_sim": 0.9034
+    },
+    "Eng_Uga": {
+      "n": 381,
+      "rouge1": 0.7777,
+      "rougeL": 0.7419,
+      "rouge_only_combined": 0.5622,
+      "mean_sim": 0.9225
+    },
+    "Lug_Uga": {
+      "n": 169,
+      "rouge1": 0.4332,
+      "rougeL": 0.3827,
+      "rouge_only_combined": 0.3019,
+      "mean_sim": 0.8462
+    },
+    "Swa_Ken": {
+      "n": 104,
+      "rouge1": 0.8162,
+      "rougeL": 0.7899,
+      "rouge_only_combined": 0.5942,
+      "mean_sim": 0.896
+    }
+  }
+}

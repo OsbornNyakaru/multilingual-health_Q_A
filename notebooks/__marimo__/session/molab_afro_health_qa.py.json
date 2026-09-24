@@ -1,0 +1,425 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.24.2",
+    "script_metadata_hash": "45d5d85d1aa2e6948798196ef5b6320e"
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "495f98f011532b5532697349a8fa2ad0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "8e64f37f3090a881eeba81ad10df2960",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"afro-health-qa-autoresearch-loop-on-molab\">Afro Health QA \u2014 autoresearch loop on molab</h1>\n<span class=\"paragraph\">Zindi <em>Multilingual Health QA in Low-Resource African Languages</em>, re-run as practice on a\n96 GB GPU. One experiment = one change in <strong>Config</strong> below, then run top to bottom.</span>\n<span class=\"paragraph\">Order of operations: <strong>Config \u2192 Environment \u2192 Data \u2192 Splits \u2192 Held-out eval \u2192 Test submission</strong>.\nThe LoRA cell is optional and gated behind a button. Everything writes next to this file, so\non molab the folder layout is <code>data/raw/</code>, <code>data/processed/</code>, <code>submissions/</code>, <code>models/</code>, <code>results.tsv</code>.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "d719c828f62cf7132483a36810ea1c69",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"1-config-change-one-lever-per-experiment\">1 \u00b7 Config \u2014 change ONE lever per experiment</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "7dcec18c91d5f0c71e14dd83f922e274",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: wrap;gap: 0.5rem'><marimo-ui-element object-id='bkHC-0' random-id='71f43fc6-6a20-dc94-924f-63bdb1f47359'><marimo-text data-initial-value='&quot;exp010_afriquellama_bf16_fewshot&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRun name&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='bkHC-1' random-id='e54277a1-5667-994c-6490-da5acbe996fc'><marimo-dropdown data-initial-value='[&quot;dry_run&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eMode&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;dry_run&quot;,&quot;zero_shot&quot;,&quot;few_shot&quot;]' data-allow-select-none='false' data-searchable='false' data-full-width='false' data-disabled='false'></marimo-dropdown></marimo-ui-element><marimo-ui-element object-id='bkHC-5' random-id='3c6f00a2-27ba-c4fd-621a-dca3bfb5bbf3'><marimo-dropdown data-initial-value='[&quot;auto&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003ePrecision (auto = bf16 if VRAM \u2265 40 GB)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;auto&quot;,&quot;bf16&quot;,&quot;4bit&quot;]' data-allow-select-none='false' data-searchable='false' data-full-width='false' data-disabled='false'></marimo-dropdown></marimo-ui-element></div><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: wrap;gap: 0.5rem'><marimo-ui-element object-id='bkHC-2' random-id='cda12df0-4a81-3c5e-8a5c-69e3c4657eca'><marimo-dropdown data-initial-value='[&quot;McGill-NLP/AfriqueLlama-8B&quot;]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eBase model (HF id)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-options='[&quot;McGill-NLP/AfriqueLlama-8B&quot;,&quot;meta-llama/Llama-3.1-8B-Instruct&quot;,&quot;google/gemma-2-9b-it&quot;,&quot;Qwen/Qwen2.5-7B-Instruct&quot;,&quot;CohereLabs/aya-expanse-8b&quot;]' data-allow-select-none='false' data-searchable='false' data-full-width='false' data-disabled='false'></marimo-dropdown></marimo-ui-element><marimo-ui-element object-id='bkHC-3' random-id='495bd015-b69e-9522-6bd0-eddaf6803ba5'><marimo-text data-initial-value='&quot;&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003e\u2026or type any HF id (overrides dropdown)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element></div><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: wrap;gap: 0.5rem'><marimo-ui-element object-id='bkHC-4' random-id='8a410f9b-8798-b9e3-b123-ecf48e1eba89'><marimo-text data-initial-value='&quot;&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLoRA adapter dir (blank = none)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='bkHC-6' random-id='53e91d4a-0559-95bd-3e0c-465aa07c6b65'><marimo-number data-initial-value='1' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003enum_beams&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='8' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='bkHC-7' random-id='96bc256a-685d-6106-e4ab-4b21e4034567'><marimo-number data-initial-value='32' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eInference batch size&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='128' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element></div><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: wrap;gap: 0.5rem'><marimo-ui-element object-id='bkHC-8' random-id='4251eaa3-d99c-92c1-7849-e4f69c6c8b43'><marimo-number data-initial-value='2' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eFew-shot examples per subset&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='0' data-stop='4' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='bkHC-9' random-id='462897c5-f74c-71a4-63ee-25b8387e7742'><marimo-number data-initial-value='150' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eFew-shot answer cap (chars)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='40' data-stop='600' data-step='10' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='bkHC-10' random-id='d60ab6d0-dcb2-2c77-4fd0-be3b77018204'><marimo-number data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eHeld-out rows to score (0 = all 2,088)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='0' data-stop='2088' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='bkHC-11' random-id='4b5273d7-04a0-40cd-d941-f2395ebece13'><marimo-number data-initial-value='10' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eCheckpoint every N batches&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='200' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element></div><marimo-ui-element object-id='bkHC-12' random-id='08246486-a3dd-d8f2-7d81-a4f4c76eaa4a'><marimo-switch data-initial-value='false' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003ePush submission + adapter to HF Hub (needs HF_TOKEN, HF_RUNS_REPO)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-switch></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "300b7888542380c24ef3ab37974833d7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "7120760600a1ecc72650c24110e8fde3",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"2-environment-where-am-i-what-hardware-do-i-have\">2 \u00b7 Environment \u2014 where am I, what hardware do I have</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "48cda6b73aa22ff223e2ae6936fdcef8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><table>\n<thead>\n<tr>\n<th></th>\n<th></th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Python</td>\n<td><code>3.12.14</code> on <code>Darwin x86_64</code></td>\n</tr>\n<tr>\n<td>Interpreter</td>\n<td><code>/Users/mac/Documents/Osborn_Mode/OSBORN/ai-engineering/AGENTIC-AI-DVPT/ZINDI-PROJECTS/afro-health-qa/.venv-marimo/bin/python</code></td>\n</tr>\n<tr>\n<td>Notebook dir</td>\n<td><code>/Users/mac/Documents/Osborn_Mode/OSBORN/ai-engineering/AGENTIC-AI-DVPT/ZINDI-PROJECTS/afro-health-qa/notebooks</code></td>\n</tr>\n<tr>\n<td>Project root</td>\n<td><code>/Users/mac/Documents/Osborn_Mode/OSBORN/ai-engineering/AGENTIC-AI-DVPT/ZINDI-PROJECTS/afro-health-qa</code> (repo detected)</td>\n</tr>\n<tr>\n<td>Work dir</td>\n<td><code>/Users/mac/Documents/Osborn_Mode/OSBORN/ai-engineering/AGENTIC-AI-DVPT/ZINDI-PROJECTS/afro-health-qa</code></td>\n</tr>\n<tr>\n<td>torch</td>\n<td><code>not installed</code></td>\n</tr>\n<tr>\n<td>GPU</td>\n<td>none \u2014 only <code>dry_run</code> will work here</td>\n</tr>\n<tr>\n<td>Guess</td>\n<td>local machine</td>\n</tr>\n</tbody>\n</table></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "14f040c5f0d4a33177e3de514a2a6ad7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"3-data-find-the-four-zindi-csvs-or-fetch-them-from-a-private-hf-dataset\">3 \u00b7 Data \u2014 find the four Zindi CSVs (or fetch them from a private HF dataset)</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "d532e32fe3ba109ee585c23a1205ac3a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-callout-output data-html='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eData dir: &#92;u003ccode&#92;u003e/Users/mac/Documents/Osborn_Mode/OSBORN/ai-engineering/AGENTIC-AI-DVPT/ZINDI-PROJECTS/afro-health-qa/data/raw&#92;u003c/code&#92;u003e (found on disk)&#92;u003cbr /&#92;u003e&#92;nAll four CSVs present.&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;success&quot;'></marimo-callout-output>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "ef27b226c44173eb1e0038d5c5fa1d5a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Loaded: train <strong>29,815</strong>, val <strong>6,686</strong>, test <strong>2,618</strong> rows. Columns: <code>['ID', 'input', 'output', 'subset']</code></span></span><marimo-ui-element object-id='RGSE-0' random-id='e2a285e3-d6e0-d8cd-dbec-52a5c7e240ac'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Uga&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:7624,&#92;&quot;test_rows&#92;&quot;:744,&#92;&quot;val_rows&#92;&quot;:1688},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Aka_Gha&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:4455,&#92;&quot;test_rows&#92;&quot;:492,&#92;&quot;val_rows&#92;&quot;:1114},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Gha&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:4443,&#92;&quot;test_rows&#92;&quot;:491,&#92;&quot;val_rows&#92;&quot;:1104},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Eth&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:3915,&#92;&quot;test_rows&#92;&quot;:60,&#92;&quot;val_rows&#92;&quot;:564},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Lug_Uga&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:3383,&#92;&quot;test_rows&#92;&quot;:374,&#92;&quot;val_rows&#92;&quot;:846},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Ken&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:2080,&#92;&quot;test_rows&#92;&quot;:167,&#92;&quot;val_rows&#92;&quot;:390},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Swa_Ken&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:2070,&#92;&quot;test_rows&#92;&quot;:229,&#92;&quot;val_rows&#92;&quot;:518},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Amh_Eth&#92;&quot;,&#92;&quot;train_rows&#92;&quot;:1845,&#92;&quot;test_rows&#92;&quot;:61,&#92;&quot;val_rows&#92;&quot;:462}]&quot;' data-total-rows='8' data-total-columns='4' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;subset&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;train_rows&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;test_rows&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;val_rows&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "490dc81e183260662b6def345cb89165",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"4-harness-frozen-scoring-split-and-submission-rules\">4 \u00b7 Harness \u2014 frozen scoring, split and submission rules</h2>\n<span class=\"paragraph\">Mirror of <code>autoresearch_nlp/prepare.py</code>. Do <strong>not</strong> tune anything here; it is what makes runs comparable.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "265277ab083a31570763370080fd292a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "a8d8e2249abce31613806871dd13690f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Splits written to <code>/Users/mac/Documents/Osborn_Mode/OSBORN/ai-engineering/AGENTIC-AI-DVPT/ZINDI-PROJECTS/afro-health-qa/data/processed</code>: work_train <strong>27,727</strong>, held_out <strong>2,088</strong> (7 % stratified by <code>subset</code>, seed 1234). Never train or draw few-shot from held_out.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "09db28cecff15707457daca5e75246de",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-callout-output data-html='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eHarness parity with &#92;u003ccode&#92;u003eautoresearch_nlp/prepare.py&#92;u003c/code&#92;u003e: &#92;u003cstrong&#92;u003eOK&#92;u003c/strong&#92;u003e (fingerprint &#92;u003ccode&#92;u003ea8026f24ea3d&#92;u003c/code&#92;u003e vs &#92;u003ccode&#92;u003ea8026f24ea3d&#92;u003c/code&#92;u003e)&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;success&quot;'></marimo-callout-output>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "2d2ccfe656b9996b9f1fb8a2d073b795",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"5-prompting-per-language-instructions-few-shot-bank-per-subset-length-bounds\">5 \u00b7 Prompting \u2014 per-language instructions, few-shot bank, per-subset length bounds</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "93a2031f5bbd7dc992da34112bb84798",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "885105bb04eeeb965393e6f9f0847968",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ROlb-0' random-id='dfa10ab1-0730-dc7b-fe8d-95fdf4aec698'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;subset&#92;&quot;:&#92;&quot;Aka_Gha&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;M\u025by\u025b d\u025bn atumi akasa ama me ho ne m\u2019ankasa SOGI ahiade ahorow w\u0254 mmeae ahorow (s\u2026&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;wo sukuu \u0254yarehw\u025bfo anaa akwahosan ho dwumay\u025bni ne wo b\u025bb\u0254 nna ho ns\u025bm ho nk\u0254mm\u0254\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Aka_Gha&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;\u025bkwan b\u025bn na mmabun b\u025bfa so ak\u0254 ayaresabea w\u0254 w\u0254n mp\u0254tam?&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;Amansan hy\u025bn (trotro/bus). Sukuu hy\u025bn. Amansan hy\u025bn (Uber/Bolt) . Nante/sakre. B\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Amh_Eth&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;\u12c8\u1295\u12f6\u127d \u12a5\u1293 \u1234\u1276\u127d \u12a8\u130b\u1265\u127b \u1260\u134a\u1275 \u121d\u122d\u1218\u122b \u121b\u12f5\u1228\u130d \u12a0\u1208\u1263\u1278\u12cd?&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;\u12a0\u12ce\u1362 \u12a8\u130b\u1265\u127b \u1260\u134a\u1275 \u121d\u122d\u1218\u122b \u121b\u12f5\u1228\u130d \u1201\u1208\u1271\u1295\u121d \u12a0\u130b\u122e\u127d \u1208\u1218\u1320\u1260\u1245 \u12a5\u1293 \u1324\u1293\u121b \u1264\u1270\u1230\u1265 \u12a5\u1295\u12f2\u1296\u122d \u1208\u121b\u1228\u130b\u1308\u1325 \u12ed\u1228\u12f3\u120d\u1362&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Amh_Eth&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;\u12a8\u1313\u12f0\u129b\u12ec \u130b\u122d \u12a0\u120d\u130b \u1265\u130b\u122b \u12a4\u127d \u12a0\u12ed \u126a \u1218\u12eb\u12dd \u12a5\u127d\u120b\u1208\u1201?&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;\u12a0\u12ed \u12a4\u127d \u12a0\u12ed \u126a \u12a0\u120d\u130b\u1295 \u1260\u1218\u130b\u122b\u1275\u1363 \u1260\u1218\u1270\u1243\u1240\u134d \u12c8\u12ed\u121d \u1260\u130b\u122b \u1260\u1218\u1240\u1218\u1325 \u12a0\u12ed\u1270\u120b\u1208\u134d\u121d\u1362 \u1260\u12f0\u121d\u1363 \u1260\u12c8\u1232\u1263\u12ca \u1348\u1233\u123e\u127d \u12a5\u1293 \u1260\u1321\u1275 \u12c8\u1270\u1275 \u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Eth&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;How can I encourage a couple to get tested for STIs when they are planning to ma\u2026&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;Frame it as a &#92;&#92;&#92;&quot;loving, responsible act&#92;&#92;&#92;&quot; and a gift of security. Say: &#92;&#92;&#92;&quot;Testing is\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Eth&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;Does does trichomoniasis make it easier to get other infections? stop girls from\u2026&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;This is a question about, Trichomoniasis. Yes. If untreated, it can increase the\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Gha&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;How does the crisis intervention program measure the satisfaction levels of adol\u2026&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;It measures satisfaction by: Administering satisfaction surveys after interactio\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Gha&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;What are the benefits of open and non-judgmental discussions about sexuality and\u2026&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;Open and non-judgmental discussions about sexuality and reproductive health prom\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Ken&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;Are there different strategies for intervening in HIV?&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;After approximately two decades of research on interventions to prevent HIV infe\u2026&#92;&quot;},{&#92;&quot;subset&#92;&quot;:&#92;&quot;Eng_Ken&#92;&quot;,&#92;&quot;example_q&#92;&quot;:&#92;&quot;What measures can I take to safeguard both myself and those around me from HIV?&#92;&quot;,&#92;&quot;example_a&#92;&quot;:&#92;&quot;Both people with and without HIV have things they can do to stop HIV being passe\u2026&#92;&quot;}]&quot;' data-total-rows='16' data-total-columns='3' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-show-filters='false' data-show-download='true' data-show-search='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "ee1d928e054f8646440d9bacd38a359a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"6-model-loaded-once-per-session-bf16-on-molab-4-bit-only-if-vram-is-tight\">6 \u00b7 Model \u2014 loaded once per session, bf16 on molab, 4-bit only if VRAM is tight</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "492e55e3ccd66a9c75ed5437c912d8c5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-callout-output data-html='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eNo CUDA GPU here. Switch mode to &#92;u003ccode&#92;u003edry_run&#92;u003c/code&#92;u003e or run this on molab.&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;danger&quot;'></marimo-callout-output>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "136d85a596f96327cd97163e12e45dd8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"7-generation-engine-batched-by-subset-sorted-by-length-checkpointed\">7 \u00b7 Generation engine \u2014 batched by subset, sorted by length, checkpointed</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "f51cbcd27688ad403caed46939580a58",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "322bea7fa2ef0158ff1e49e855fbdb68",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"8-held-out-evaluation-the-number-you-optimise-per-subset-block-is-the-real-signal\">8 \u00b7 Held-out evaluation \u2014 the number you optimise (per-subset block is the real signal)</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "8232f9ea5f20f9767b026de8ec9ab3b4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ecfG-0' random-id='ed466f9c-3477-0022-e8d5-0a69784928bc'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eEvaluate held-out&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "907087d9578c146b0210f93d2a9178c0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><em>Click <strong>Evaluate held-out</strong> to start an experiment.</em></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZBYS",
+      "code_hash": "19949c5ed133d039044d0fdaa95a37c8",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "aLJB",
+      "code_hash": "18897827c83e01d9f042161cd13f2bd8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"9-test-inference-validated-zindi-submission-json-sidecar-optional-hf-push\">9 \u00b7 Test inference \u2192 validated Zindi submission (+ JSON sidecar, optional HF push)</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nHfw",
+      "code_hash": "ad459a643379b3b8de97312f11bed235",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='nHfw-0' random-id='d79284d1-bcd9-7147-7498-8feb5b7b8bea'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eGenerate test submission&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "xXTn",
+      "code_hash": "bc2bf3f56c2dfa731f429240da2329ce",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "AjVT",
+      "code_hash": "aa481163ce25af8d8fd78ce078f37eab",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"10-optional-lora-supervised-fine-tune-96-gb-gpu-bf16-base-no-quantisation\">10 \u00b7 Optional \u2014 LoRA supervised fine-tune (96 GB GPU: bf16 base, no quantisation)</h2>\n<span class=\"paragraph\">Trains on <code>work_train</code> (+ Val). Saves the adapter to <code>models/&lt;run_name&gt;/</code>. Then set <strong>LoRA adapter dir</strong>\nin Config to that path and re-run held-out eval. Gated behind the button; it takes ~1\u20133 h for 1 epoch on 8B.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "pHFh",
+      "code_hash": "9c439fe1a773010a14c2e4e266de6dea",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: wrap;gap: 0.5rem'><marimo-ui-element object-id='pHFh-0' random-id='6664be56-8e05-6f55-cfb3-fd73383f2e9c'><marimo-number data-initial-value='1.0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eepochs&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='0.1' data-stop='5' data-step='0.1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='pHFh-1' random-id='d1b6cde8-d807-c699-291d-08a106979fac'><marimo-number data-initial-value='16' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eLoRA rank&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='4' data-stop='128' data-step='4' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='pHFh-2' random-id='b85557e7-7a4b-75cd-f242-ef9a0ef73c13'><marimo-text data-initial-value='&quot;2e-4&quot;' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003elearning rate&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-placeholder='&quot;&quot;' data-kind='&quot;text&quot;' data-full-width='false' data-disabled='false' data-debounce='true'></marimo-text></marimo-ui-element><marimo-ui-element object-id='pHFh-3' random-id='dbce80ca-24ad-c636-2e8e-2f858823c4b7'><marimo-number data-initial-value='8' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eper-device batch&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='64' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='pHFh-4' random-id='155c5e18-310b-33ce-713d-2da297755fa9'><marimo-number data-initial-value='4' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003egrad accumulation&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='1' data-stop='64' data-step='1' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element><marimo-ui-element object-id='pHFh-5' random-id='d71310b6-be40-9c24-29a3-536bbc744bb8'><marimo-number data-initial-value='1024' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003emax seq len&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-start='256' data-stop='4096' data-step='64' data-debounce='false' data-full-width='false' data-disabled='false'></marimo-number></marimo-ui-element></div><marimo-ui-element object-id='pHFh-6' random-id='1ff617db-6d7a-7bff-2dd4-12014c174098'><marimo-switch data-initial-value='true' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003ealso train on Val.csv&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-disabled='false'></marimo-switch></marimo-ui-element><marimo-ui-element object-id='pHFh-7' random-id='5b532dee-05c2-7cce-af21-a2697876e355'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eTrain LoRA adapter&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "NCOB",
+      "code_hash": "ec35bc3945b00d7d29c6a808231958a9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><em>Press <strong>Train LoRA adapter</strong> to start (GPU only).</em></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "aqbW",
+      "code_hash": "1bc161381af527e147d75ff407b84c75",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"notes-for-the-next-session\">Notes for the next session</h2>\n<ul>\n<li>Molab kills idle sessions after 90 min and every session at 12 h. Checkpoints live in\n  <code>submissions/checkpoints/</code> and resume automatically; set <code>HF_RUNS_REPO</code> + <code>HF_TOKEN</code> and flip the\n  HF push switch so nothing is lost.</li>\n<li>Noise band on held-out is about \u00b10.005 combined. Only keep a lever if it wins by \u2265 0.003.</li>\n<li>The knowledge graph for this project is in <code>vault/</code> (Obsidian). Log every run in <code>vault/Experiment History.md</code>.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

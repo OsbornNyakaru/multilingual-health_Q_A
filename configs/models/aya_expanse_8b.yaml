@@ -1,0 +1,32 @@
+name: aya_expanse_8b
+hf_id: CohereForAI/aya-expanse-8b
+license: cc-by-nc-4.0   # Non-commercial — fine for Zindi competition entry.
+family: aya
+architecture: decoder
+context_length: 8192
+dtype: bfloat16
+
+tokenizer:
+  use_fast: true
+  padding_side: left
+
+load_in_4bit: true
+bnb_config:
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_compute_dtype: bfloat16
+
+lora_target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+notes: |
+  Primary backbone. Best public AfroBench scores for multilingual low-resource.
+  Strong on all four target languages. Apache licence check: Aya-Expanse is cc-by-nc-4.0
+  — acceptable for Zindi prize/publication; verify for any downstream commercial use.

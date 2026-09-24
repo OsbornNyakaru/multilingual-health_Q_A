@@ -1,3 +1,5 @@
+> Migrated to vault/, see [[00_INDEX]]
+
 # Hypothesis Backlog
 
 Anything we want to test. Each item is a short, falsifiable statement. Move items into `LOG.md` when they run; remove them when superseded.
