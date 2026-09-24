@@ -1139,6 +1139,16 @@ def _(
     _model.print_trainable_parameters()
 
     ADAPTER_OUT = WORK_DIR / "models" / CFG["run_name"]
+    # transformers 5.x dropped warmup_ratio (warmup_steps < 1 is now a ratio) and group_by_length
+    # (now train_sampling_strategy); pick whichever this installed version accepts.
+    import dataclasses as _dc
+
+    _ta_fields = {_f.name for _f in _dc.fields(TrainingArguments)}
+    _compat = {"warmup_ratio": 0.03} if "warmup_ratio" in _ta_fields else {"warmup_steps": 0.03}
+    if "group_by_length" in _ta_fields:
+        _compat["group_by_length"] = True
+    else:
+        _compat["train_sampling_strategy"] = "group_by_length"
     _args = TrainingArguments(
         output_dir=str(ADAPTER_OUT / "trainer"),
         num_train_epochs=float(lora_epochs.value),
@@ -1146,7 +1156,6 @@ def _(
         gradient_accumulation_steps=int(lora_grad_acc.value),
         learning_rate=float(lora_lr.value),
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
         bf16=True,
         logging_steps=20,
         save_strategy="steps",
@@ -1154,7 +1163,7 @@ def _(
         save_total_limit=2,
         report_to=[],
         seed=42,
-        group_by_length=True,
+        **_compat,
     )
     _trainer = Trainer(
         model=_model, args=_args, train_dataset=_ds,
