@@ -18,6 +18,8 @@ links: ["[[F-002-data-shape]]", "[[D-001-metric-weights-and-tokenizer]]", "[[00_
 
 Source: legacy [[Scoring Metric]], [[Autoresearch Harness]], `autoresearch_nlp/program.md`, `docs/SPRINT_PLAN.md`.
 
+- 2026-09-24: held-out fingerprint pinned as `HELD_OUT_FINGERPRINT = "a8026f24ea3d"` in `notebooks/molab_afro_health_qa.py`, so the parity check also runs on molab, where the repo's `held_out.csv` is absent. It was verified with a repo-less dry_run that produced 2,088 rows with a matching fingerprint. Re-pin only if Train.csv or this protocol changes.
+
 ## Links
 - [[00_INDEX]]
 - [[F-002-data-shape]]

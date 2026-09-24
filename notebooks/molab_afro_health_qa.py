@@ -488,23 +488,29 @@ def _(SUBSET_COL, WORK_DIR, make_splits, mo, train_df):
 
 @app.cell
 def _(IN_REPO, PROJECT_ROOT, fingerprint, held_out, mo):
-    # Harness parity: when the repo is present, the held-out slice must be byte-identical to
-    # what autoresearch_nlp/prepare.py produced. If this ever fails, one of the two drifted.
+    # Harness parity: the held-out slice must be byte-identical to what autoresearch_nlp/prepare.py
+    # produced. In the repo we compare against that file; on molab (file absent, and gitignored
+    # because it holds competition answers) we compare against its pinned fingerprint.
+    # Re-pin only if Train.csv or the split protocol (D-005) deliberately changes.
+    HELD_OUT_FINGERPRINT = "a8026f24ea3d"  # autoresearch_nlp/data/processed/held_out.csv, 2,088 rows
     _ref = PROJECT_ROOT / "autoresearch_nlp" / "data" / "processed" / "held_out.csv"
+    _ours = fingerprint(held_out.astype(str))
     if IN_REPO and _ref.exists():
         import pandas as _pd
 
-        _ref_df = _pd.read_csv(_ref, dtype=str).fillna("")
-        _ok = fingerprint(_ref_df) == fingerprint(held_out.astype(str))
-        parity_msg = mo.callout(
-            mo.md(
-                f"Harness parity with `autoresearch_nlp/prepare.py`: **{'OK' if _ok else 'MISMATCH'}** "
-                f"(fingerprint `{fingerprint(held_out.astype(str))}` vs `{fingerprint(_ref_df)}`)"
-            ),
-            kind="success" if _ok else "danger",
-        )
+        _expected = fingerprint(_pd.read_csv(_ref, dtype=str).fillna(""))
+        _source = "`autoresearch_nlp/prepare.py` output"
     else:
-        parity_msg = mo.md("_Harness parity check skipped (repo not present — expected on molab)._")
+        _expected = HELD_OUT_FINGERPRINT
+        _source = "pinned fingerprint"
+    _ok = _ours == _expected
+    parity_msg = mo.callout(
+        mo.md(
+            f"Harness parity with {_source}: **{'OK' if _ok else 'MISMATCH'}** "
+            f"(fingerprint `{_ours}` vs `{_expected}`)"
+        ),
+        kind="success" if _ok else "danger",
+    )
     parity_msg
     return
 
