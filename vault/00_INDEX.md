@@ -76,6 +76,7 @@ On the current 2,088-row split, measured numbers are the crude token-overlap ret
 - [[D-003-retrieval-first-baseline]] — retrieval is the per-subset floor; aim for a router
 - [[D-004-base-model-for-molab]] — OPEN: which licence-clean base model
 - [[D-005-held-out-protocol]] — 7% stratified split, seed 1234, ≥ +0.003 keep threshold
+- [[D-006-data-hosting-private-hf]] — Zindi data only in a private HF dataset (repo is public); molab pulls via HF_DATA_REPO (open until first upload)
 
 ## Findings
 - [[FND-001-retrieval-strength-by-subset]] — closed-pool vs generative subsets
