@@ -59,12 +59,6 @@ Zindi audits the top-10 finishers' code. This repo enforces:
 - `tests/test_reproducibility.py` — end-to-end CPU-only path on a tiny model must produce bit-identical submissions across two runs.
 - `requirements-submission.txt` — the minimal set that the final notebook installs at the top of `99_final_submission.ipynb` (no custom local packages).
 
-## Team
-
-- **Osborn Nyakaru** — lead (Chiromo Forge founder, CS@Chuka).
-- **Vera Nyagaka** — CTO (TBC: joining from week _?_).
-- **Grace Ngari** — ML Engineer (TBC: joining from week _?_).
-
 Fill in roles by day 3.
 
 ## Licence
