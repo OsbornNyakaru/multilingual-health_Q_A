@@ -61,6 +61,10 @@ Updated by hand after each experiment closes.
 
 On the current 2,088-row split, measured numbers are the crude token-overlap retrieval, ROUGE-only 0.279 ([[EXP-003-token-overlap-retrieval]]; scorer at the time unverified), and a CPU TF-IDF within-subset retrieval sanity check, ROUGE-only 0.3068 with the whitespace scorer ([[metric-replica]]). First task for the loop: re-measure BGE-M3 retrieval on the current split with the metric replica, including a judge stand-in.
 
+## How we run experiments on molab
+- `docs/molab_runbook.md`: step-by-step runbook for `notebooks/molab_afro_health_qa.py` (settings, run naming, model list, staged run plan exp007–exp026, keep rule ≥ +0.003 on all rows). **Always use a new run name per run**: checkpoints are keyed by run name, and reusing one silently resumes the old answers.
+- `docs/notion_tracker_prompt.md`: Notion AI prompt that builds the shared "runs" database (the team's live log). Copy each finished run into an `experiments/EXP-xxx` note here.
+
 ## Experiments
 - [[EXP-000-scaffold]] — repo bootstrap (the only row in `experiments/LOG.md`)
 - [[EXP-001-aya-expanse-oom]] — Aya-Expanse-8B on T4, OOM, no score
