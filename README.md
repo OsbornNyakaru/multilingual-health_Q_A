@@ -1,6 +1,6 @@
 # afro-health-qa
 
-Chiromo Forge's entry for the [Zindi Multilingual Health Question Answering in Low-Resource African Languages Challenge](https://zindi.africa/competitions/multilingual-health-question-answering-in-low-resource-african-languages-challenge). Build a seq2seq model that answers maternal, sexual, and reproductive health questions in Luganda, Kiswahili, Akan/Twi, and Amharic.
+entry for the [Zindi Multilingual Health Question Answering in Low-Resource African Languages Challenge](https://zindi.africa/competitions/multilingual-health-question-answering-in-low-resource-african-languages-challenge). Build a seq2seq model that answers maternal, sexual, and reproductive health questions in Luganda, Kiswahili, Akan/Twi, and Amharic.
 
 **Window:** 2026-04-24 → 2026-07-14. **Goal:** top 3 on private leaderboard.
 
