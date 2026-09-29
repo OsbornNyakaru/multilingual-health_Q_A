@@ -60,7 +60,8 @@ one change per run. write down every result.
 
 - open the notebook from github in molab (saved copy in your workspace, not the temporary preview).
 - turn on the gpu (rtx pro 6000).
-- set the environment variables: `HF_DATA_REPO=nyakaruosborn/afro-health-qa-data` and `HF_TOKEN=<read-only token>`. without the token, gemma and aya won't download.
+- in section 3, paste your hugging face **read** token into the password box. the data repo box is already filled in. the token is kept for this session only, so paste it again each session. without it the data and gemma/aya won't download.
+- don't use molab's "add secret" dialog: it needs a project file this notebook doesn't have, and shows "no dotenv locations configured".
 - check these cells as they run:
   - **section 2 (environment):** gpu shows **rtx pro 6000, ~96 gb**. "none" means the gpu is off.
   - **section 3 (data):** "downloaded from hf dataset" and no missing files.
@@ -147,8 +148,8 @@ one change per run. write down every result.
 ## 10. when things go wrong
 
 - "no cuda gpu" → turn the gpu on, restart.
-- "waiting for data" → env vars not set, or upload the 4 csvs in the sidebar.
-- gated repo / 401 / 403 → `HF_TOKEN` missing, or no licence access for that model.
+- "waiting for data" or "hf token: not set" → paste the token in section 3, or upload the 4 csvs in the sidebar.
+- gated repo / 401 / 403 → token not pasted in section 3, or no licence access for that model.
 - out of memory → batch size 16 (then 8). for beams, lower the batch first.
 - red parity mismatch → stop and tell osborn; scores can't be compared.
 - anything else → copy the full error into notion and ask.

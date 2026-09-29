@@ -230,7 +230,38 @@ def _(mo):
 
 
 @app.cell
-def _(Path, WORK_DIR, mo, os):
+def _(mo, os):
+    # molab opens this file without a pyproject.toml, so its "Add Secret" dialog has no dotenv
+    # location to write to. Paste the token here instead: it lives only in this session's
+    # environment and is never written to the notebook file.
+    hf_token_input = mo.ui.text(
+        kind="password", value="", label="Hugging Face read token (session only, not saved)", full_width=True
+    )
+    hf_data_repo_input = mo.ui.text(
+        value=os.environ.get("HF_DATA_REPO", "nyakaruosborn/afro-health-qa-data"),
+        label="HF data repo", full_width=True,
+    )
+    mo.vstack([hf_token_input, hf_data_repo_input])
+    return hf_data_repo_input, hf_token_input
+
+
+@app.cell
+def _(hf_data_repo_input, hf_token_input, mo, os):
+    if hf_token_input.value.strip():
+        os.environ["HF_TOKEN"] = hf_token_input.value.strip()
+    if hf_data_repo_input.value.strip():
+        os.environ["HF_DATA_REPO"] = hf_data_repo_input.value.strip()
+    hf_env_ready = True
+    mo.md(
+        "HF token: **set**" if os.environ.get("HF_TOKEN") else
+        "HF token: **not set** (needed for the private data repo and gated models such as Gemma)"
+    )
+    return (hf_env_ready,)
+
+
+@app.cell
+def _(Path, WORK_DIR, hf_env_ready, mo, os):
+    assert hf_env_ready  # run after the token cell so HF_TOKEN / HF_DATA_REPO are in place
     REQUIRED_FILES = ("Train.csv", "Val.csv", "Test.csv", "SampleSubmission.csv")
 
     def _locate_data_dir() -> Path | None:
@@ -279,8 +310,7 @@ def _(Path, WORK_DIR, mo, os):
 
                 1. molab sidebar → upload `Train.csv`, `Val.csv`, `Test.csv`, `SampleSubmission.csv`
                    into a `data/raw/` folder next to this notebook (a flat upload also works), then re-run this cell.
-                2. Set the environment variables `HF_DATA_REPO=<user>/afro-health-qa-data` and `HF_TOKEN`
-                   (molab secrets panel) and re-run this cell.
+                2. Paste a Hugging Face read token in the box above (the data repo is pre-filled).
                 """
             ),
             kind="danger",
