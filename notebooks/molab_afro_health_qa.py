@@ -878,11 +878,13 @@ def _(
     eval_df = held_out.copy()
     if _lim and _lim < len(eval_df):
         # Stratified subsample so the per-subset block stays meaningful on quick loops.
-        eval_df = (
-            eval_df.groupby(SUBSET_COL, group_keys=False)
-            .apply(lambda g: g.sample(max(1, int(round(len(g) * _lim / len(held_out)))), random_state=7))
-            .reset_index(drop=True)
-        )
+        # Not groupby().apply(): pandas 3 drops the grouping column (subset) from its output.
+        eval_df = pd.concat(
+            [
+                _g.sample(max(1, int(round(len(_g) * _lim / len(held_out)))), random_state=7)
+                for _, _g in eval_df.groupby(SUBSET_COL)
+            ]
+        ).reset_index(drop=True)
     eval_df = eval_df.reset_index(drop=True)
 
     _t0 = time.time()
