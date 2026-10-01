@@ -1,0 +1,74 @@
+{
+  "Aka_Gha": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.1801,
+      "val": 0.1694
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Amh_Eth": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.0832,
+      "val": 0.1091
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Eng_Eth": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.4265,
+      "val": 0.3771
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Eng_Gha": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.1546,
+      "val": 0.1591
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Eng_Ken": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.4116,
+      "val": 0.4306
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Eng_Uga": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.3899,
+      "val": 0.4025
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Lug_Uga": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.3508,
+      "val": 0.37
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  },
+  "Swa_Ken": {
+    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+    "exp": "EXP-007",
+    "scores": {
+      "held_out": 0.4194,
+      "val": 0.4254
+    },
+    "since": "2026-10-01T11:17:36+00:00"
+  }
+}

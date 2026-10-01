@@ -42,3 +42,4 @@ Each entry gives what the item was, why it was archived, and what replaced it. M
 ## experiments/
 - `experiments/LOG.md`, `HYPOTHESES.md`, `ABLATIONS.md`: the first repo-side trackers, which hold only one exp000 row. Archived because they were migrated into the vault (EXP-000, H-001 to H-010). Replaced by the vault and `experiments/RESULTS.md`.
 - `experiments/data/length_calibration_full_report.csv`, `length_optimization_results.csv`, `length_optimization_summary.csv`: EXP-005 length-truncation results. They hold only aggregate per-subset scores and lengths, no competition text. Archived because they were cluttering the repo root. Summarised in `vault/experiments/EXP-005-length-truncation-ablation.md`.
+- `docs/molab_runbook_manual_v1.md`: click-by-click guide for the interactive notebook and the old staged model screen. replaced by the runner-based `docs/molab_runbook.md` and `autoresearch_nlp/program.md` (2026-10-01).

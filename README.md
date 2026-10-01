@@ -4,14 +4,14 @@ This is a post-close practice run of the Zindi [Multilingual Health Question Ans
 
 ## Current state
 
-- **Best measured score:** BGE-M3 within-subset retrieval with no generation, scored ROUGE-only (judge = 0). It gets **0.3700** on the older 1,491-row held-out split, not the current one. See `vault/experiments/EXP-004-bge-m3-retrieval-heldout.md`.
+- **Current best:** see `experiments/RESULTS.md` (per-subset best, test-mix weighted, on held-out and Val). As of 2026-10-01 the CPU tf-idf retrieval baseline (EXP-007) scores 0.2984 held-out / 0.3048 Val, ROUGE-only. Dense retrieval runs are queued next.
 - No generative run has been scored yet, and no public leaderboard score is recorded.
 - Goal: beat the 11th-place reference approach (BGE-M3 retrieval, then a RAG-enriched LoRA fine-tune, plus a closed-pool vs generative router) on our own held-out set, measured per subset.
 
 ## How work happens
 
 1. Edit code locally and push it to GitHub. Then run on **molab** (GPU), which pulls the repo.
-2. Experiments follow one loop: hypothesis, one change, run, score per subset, log, then keep or revert. The keep threshold is +0.003. Each experiment is a spec that `notebooks/molab_runner.py` runs. Results go to the ledger `experiments/RESULTS.md`. *(The loop is being built.)*
+2. Experiments follow one loop: hypothesis, one change, run, score per subset, log, then keep or revert. The keep threshold is +0.003. Each experiment is a spec that `notebooks/molab_runner.py` runs. Results go to the ledger `experiments/RESULTS.md`. Run `python scripts/exp.py --help`; the procedure is in `autoresearch_nlp/program.md`.
 3. The local metric replica is `src/afro_health_qa/evaluation/scorer.py`. Run `make evaluate RUN=<preds.csv>`, `make test` or `make sanity`.
 
 ## Reading order

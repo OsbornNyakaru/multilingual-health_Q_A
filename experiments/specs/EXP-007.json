@@ -1,0 +1,45 @@
+{
+  "exp": "EXP-007",
+  "hypothesis": "H-011",
+  "description": "CPU baseline: char 3-5-gram tfidf retrieval, top-1, within subset",
+  "parent": null,
+  "changed": [
+    "embedder"
+  ],
+  "config": {
+    "mode": "retrieval",
+    "embedder": "tfidf-char",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "retrieve_on": "input",
+    "embed_batch": 64,
+    "select": "top1",
+    "vote_k": 50,
+    "vote_power": 4.0,
+    "model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "precision": "auto",
+    "adapter": null,
+    "num_beams": 1,
+    "infer_batch": 32,
+    "max_input_tokens": 1024,
+    "no_repeat_ngram": 3,
+    "length_penalty": 1.0,
+    "few_shot_k": 2,
+    "few_shot_max_chars": 150,
+    "rag_max_chars": 400,
+    "router_threshold": 0.85,
+    "router_generate_mode": "rag_few_shot",
+    "length_mode": "pool_p95",
+    "checkpoint_every": 10
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": null,
+  "max_minutes": 60.0,
+  "drafted": "2026-10-01T11:09:28+00:00",
+  "git_sha": "6c0b8e1609c150b36994c2743adec615e257a367",
+  "created": "2026-10-01T11:09:32+00:00",
+  "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b"
+}

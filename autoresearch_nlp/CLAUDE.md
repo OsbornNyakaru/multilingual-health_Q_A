@@ -9,25 +9,22 @@ there is no feature matrix, no out-of-fold probability, no threshold, and no
 
 ## First read these in order
 
-1. **README.md** — what this track is and the three files that matter.
-2. **PREFLIGHT.md** — day-1 hard-stop checklist. Do not write generation code
-   until every HARD STOP is ticked.
-3. **program.md** — the experiment loop (autoresearch pattern, ROUGE-scored).
-4. **AGENT_PLAYBOOK.md** — ready-to-run sub-agent prompts for NLP tasks.
-5. **LESSONS.md** — hard-won lessons. The afro-health-qa case at the top is the
-   most important; read it twice.
+1. **`../vault/00_INDEX.md`**: project memory (facts, decisions, current best). House rule:
+   read it first, and record every result in the vault.
+2. **`program.md`**: the experiment loop (spec → push → molab runner → pull → keep/revert),
+   how runs are judged, and the prioritised queue.
+3. **`../experiments/RESULTS.md`**: the ledger and the current per-subset best.
+4. **`LESSONS.md`** and **`COMPETITION_INTEL.md`**: hard-won lessons and host intel.
+5. **`AGENT_PLAYBOOK.md`**: ready-to-run sub-agent prompts.
 
-Then look at `data/raw/`, read the competition rules, and confirm the EXACT
-metric and weights on the competition page before touching `prepare.py`'s CONFIG.
+## The files that matter (mirrors karpathy/autoresearch)
 
-## The three files that matter (mirrors karpathy/autoresearch)
-
-- **`prepare.py`** — FROZEN harness: data prep, the held-out split, and the
-  exact scoring metric. You never edit it after the day-1 CONFIG is filled.
-- **`train.py`** — the SINGLE file you edit. Prompts, model, decoding, length
-  bounds, post-processing, optional fine-tuning. One change per experiment.
-- **`program.md`** — the loop you execute. The human edits this over time; you
-  follow it.
+- **`prepare.py`**: FROZEN harness: split, metric, submission schema. The molab runner
+  refuses to run if its hash changes.
+- **`experiment.py`**: the SINGLE file you edit. Retrieval, prompts, generation, routing.
+  One change per experiment, expressed as a spec via `scripts/exp.py new`.
+- **`program.md`**: the loop you execute.
+- `../notebooks/molab_runner.py` and `../scripts/exp.py` are infrastructure: change them rarely.
 
 ## Operating principles (do not deviate)
 
@@ -40,7 +37,7 @@ your taste.
 
 ### P2 — Frozen harness, single editable file
 `prepare.py` defines the metric and the split and is never modified mid-run.
-You edit `train.py` only. This guarantees comparable results across experiments.
+You edit `experiment.py` only. This guarantees comparable results across experiments.
 
 ### P3 — One change per experiment
 Each commit changes exactly ONE lever: prompt, OR decoding, OR length bounds, OR
@@ -52,8 +49,8 @@ signal. Do not fine-tune on it, do not draw few-shot examples from it. Folding
 your validation set into training is how you go blind (see LESSONS.md).
 
 ### P5 — Local truth = ROUGE on held-out, per subset
-Always compute ROUGE-1/ROUGE-L F1 on the held-out slice with the frozen harness,
-broken down per subset. It is replicable offline and is the bulk of the score.
+Always compute ROUGE-1/ROUGE-L F1 on held-out AND val with the frozen harness
+(`scripts/exp.py pull` does this), broken down per subset and weighted by the test mix. It is replicable offline and is the bulk of the score.
 Never print an estimated score where a measured one belongs.
 
 ### P6 — Length is a free lever

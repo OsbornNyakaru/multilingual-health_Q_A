@@ -20,7 +20,10 @@ Source: legacy [[Scoring Metric]], [[Autoresearch Harness]], `autoresearch_nlp/p
 
 - 2026-09-24: held-out fingerprint pinned as `HELD_OUT_FINGERPRINT = "a8026f24ea3d"` in `notebooks/molab_afro_health_qa.py`, so the parity check also runs on molab, where the repo's `held_out.csv` is absent. It was verified with a repo-less dry_run that produced 2,088 rows with a matching fingerprint. Re-pin only if Train.csv or this protocol changes.
 
+- 2026-10-01: extended by [[D-007-autoresearch-loop-on-molab]]: every run is also scored on Val (pool = Train), summarised as a test-mix weighted average, and adopted per subset (≥ +0.003 on both sets).
+
 ## Links
+- [[D-007-autoresearch-loop-on-molab]]
 - [[00_INDEX]]
 - [[F-002-data-shape]]
 - [[D-001-metric-weights-and-tokenizer]]
