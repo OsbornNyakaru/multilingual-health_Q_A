@@ -1,0 +1,45 @@
+{
+  "exp": "EXP-008",
+  "hypothesis": "H-011",
+  "description": "answer vote over top-50 neighbours (sim^4) instead of top-1",
+  "parent": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+  "changed": [
+    "select"
+  ],
+  "config": {
+    "mode": "retrieval",
+    "embedder": "tfidf-char",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "retrieve_on": "input",
+    "embed_batch": 64,
+    "select": "vote",
+    "vote_k": 50,
+    "vote_power": 4.0,
+    "model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "precision": "auto",
+    "adapter": null,
+    "num_beams": 1,
+    "infer_batch": 32,
+    "max_input_tokens": 1024,
+    "no_repeat_ngram": 3,
+    "length_penalty": 1.0,
+    "few_shot_k": 2,
+    "few_shot_max_chars": 150,
+    "rag_max_chars": 400,
+    "router_threshold": 0.85,
+    "router_generate_mode": "rag_few_shot",
+    "length_mode": "pool_p95",
+    "checkpoint_every": 10
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": null,
+  "max_minutes": 30.0,
+  "drafted": "2026-10-01T11:22:10+00:00",
+  "git_sha": "134aa900c5171bef0886296acb6c42c8395cc32a",
+  "created": "2026-10-01T11:22:16+00:00",
+  "run_id": "exp008_ret_tfidfchar_nhall-vall_402044"
+}

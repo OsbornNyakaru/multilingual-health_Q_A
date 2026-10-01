@@ -1,0 +1,47 @@
+{
+  "exp": "EXP-010",
+  "hypothesis": "H-011",
+  "description": "dense retrieval with multilingual-e5-large (query:/passage: prefixes are part of the model)",
+  "parent": "exp007_ret_tfidfchar_nhall-vall_6d656b",
+  "changed": [
+    "embedder",
+    "passage_prefix",
+    "query_prefix"
+  ],
+  "config": {
+    "mode": "retrieval",
+    "embedder": "intfloat/multilingual-e5-large",
+    "query_prefix": "query: ",
+    "passage_prefix": "passage: ",
+    "retrieve_on": "input",
+    "embed_batch": 64,
+    "select": "top1",
+    "vote_k": 50,
+    "vote_power": 4.0,
+    "model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "precision": "auto",
+    "adapter": null,
+    "num_beams": 1,
+    "infer_batch": 32,
+    "max_input_tokens": 1024,
+    "no_repeat_ngram": 3,
+    "length_penalty": 1.0,
+    "few_shot_k": 2,
+    "few_shot_max_chars": 150,
+    "rag_max_chars": 400,
+    "router_threshold": 0.85,
+    "router_generate_mode": "rag_few_shot",
+    "length_mode": "pool_p95",
+    "checkpoint_every": 10
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": null,
+  "max_minutes": 60.0,
+  "drafted": "2026-10-01T11:22:13+00:00",
+  "git_sha": "134aa900c5171bef0886296acb6c42c8395cc32a",
+  "created": "2026-10-01T11:22:18+00:00",
+  "run_id": "exp010_ret_multilingu_nhall-vall_7bc6f6"
+}
