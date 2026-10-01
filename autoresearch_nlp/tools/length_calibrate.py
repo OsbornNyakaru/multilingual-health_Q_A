@@ -3,7 +3,7 @@
 ROUGE is F1, so generated length materially affects the score. This prints
 per-subset reference-answer length quantiles (in WORDS) and a suggested
 LENGTH_BOUNDS dict (in subword tokens, using a words->tokens fudge factor) that
-you can paste into train.py. Calibrate to the median; bracket with p10/p90.
+you can paste into LENGTH_BOUNDS (notebooks/molab_afro_health_qa.py). Calibrate to the median; bracket with p10/p90.
 
     python tools/length_calibrate.py            # uses work_train.csv
     python tools/length_calibrate.py --tokens-per-word 1.4
@@ -45,7 +45,7 @@ def main() -> None:
                 "max_new_tokens": int(p90 * tpw) + 16,
             }
 
-    print("\n# paste into train.py (subword tokens):")
+    print("\n# paste into LENGTH_BOUNDS, notebooks/molab_afro_health_qa.py (subword tokens):")
     print("LENGTH_BOUNDS = {")
     for k, v in bounds.items():
         print(f'    "{k}": {{"min_new_tokens": {v["min_new_tokens"]}, "max_new_tokens": {v["max_new_tokens"]}}},')

@@ -12,7 +12,7 @@ links: ["[[D-004-base-model-for-molab]]", "[[F-003-reference-approach]]", "[[H-0
 ## Notes
 Originally framed on Aya-Expanse-8B; now model-agnostic (base model pending, [[D-004-base-model-for-molab]]). Related planned ablation 'LoRA rank' r ∈ {16,32,64}, alpha=2r. The reference approach used r=64/alpha=64 on a 32B model ([[F-003-reference-approach]]).
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[D-004-base-model-for-molab]]

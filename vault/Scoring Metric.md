@@ -7,7 +7,7 @@ tags: [metric]
 
 Zindi scored ROUGE-1 F1, ROUGE-L F1 and an LLM judge (the three target columns in [[Submission Format]]). The exact host weights were never pinned down in the repo:
 
-- `configs/base.yaml` says 0.25 / 0.25 / 0.30 (AfroLM BERTScore) / 0.20 (judge) — this is the pre-drop guess.
+- `archive/configs/base.yaml` says 0.25 / 0.25 / 0.30 (AfroLM BERTScore) / 0.20 (judge) — this is the pre-drop guess.
 - `autoresearch_nlp/prepare.py` (frozen harness) says **rouge1 0.37, rougeL 0.37, judge 0.26** — this is the later, deliberate choice. Use this one.
 
 ## Local scoring rules (from prepare.py)

@@ -66,7 +66,8 @@ def load_competition_data(
     raw_dir = Path(raw_dir)
     if not raw_dir.exists():
         raise FileNotFoundError(
-            f"raw_dir does not exist: {raw_dir}. Did you run scripts/download_data.sh?"
+            f"raw_dir does not exist: {raw_dir}. Fetch the data from the private HF "
+            "dataset (HF_DATA_REPO); see vault/decisions/D-006-data-hosting-private-hf.md."
         )
 
     train_path = raw_dir / train_file

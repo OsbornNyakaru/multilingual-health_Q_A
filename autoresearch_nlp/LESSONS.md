@@ -17,7 +17,7 @@ ROUGE-L 0.37 / Judge 0.26, with AfroLM-BertScore **not on the board at all**
 (host-side secondary check only). Every model-selection decision was made against
 a metric that scored zero on the leaderboard.
 **Fix codified:** `prepare.py` METRIC_WEIGHTS must be copied verbatim from the
-rules page on day 1 (PREFLIGHT A). Unscored metrics get weight 0.
+rules page on day 1 (PREFLIGHT A, `archive/autoresearch_nlp/PREFLIGHT.md`). Unscored metrics get weight 0.
 
 ### 2. We misread which language was the majority
 We framed the task as "Luganda, Kiswahili, Akan, Amharic" — the exotic languages.
@@ -31,7 +31,7 @@ test and explicitly naming the majority subset before modelling.
 Reference answers ranged from ~20 words (Amharic) to ~106 (Akan). A single output
 length tanks ROUGE F1 at both ends. We left this on the table.
 **Fix codified:** `tools/length_calibrate.py` + per-subset LENGTH_BOUNDS in
-train.py; Principle 3.
+train.py (archived; now in `notebooks/molab_afro_health_qa.py`); Principle 3.
 
 ### 4. A notebook folded Val into training and then printed fake scores
 An exp004 notebook concatenated all of Val.csv into the training set "because the
@@ -49,7 +49,7 @@ centroid — a metric worth 0 on the board — while ignoring ROUGE (74%).
 
 ### 6. Engineering bugs that quietly cost score
 - Batches sorted only by prompt length mixed languages, so per-subset length caps
-  applied to the wrong rows. Fix: batch by subset (done in train.py `generate`).
+  applied to the wrong rows. Fix: batch by subset (done in train.py `generate`, now archived; the molab notebook does the same).
 - `max_seq_length=256` truncated the longest reference answers during fine-tune.
   Fix: set it from the per-subset length distribution.
 - One English fallback string ("Information not available.") was inserted into

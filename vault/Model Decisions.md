@@ -9,9 +9,9 @@ What was tried or considered, and the verdicts recorded in the repo.
 
 | Model | Where | Verdict |
 |-------|-------|---------|
-| CohereLabs/aya-expanse-8b | `train.py` default, configs | Exists on HF but CC-BY-NC licence (risk for prize comps) and language list does not cover swa/lug/aka/amh. English-only baseline at best. exp004 OOM'd loading it 4-bit on a 15.6 GB T4. |
+| CohereLabs/aya-expanse-8b | `train.py` default, configs (both archived) | Exists on HF but CC-BY-NC licence (risk for prize comps) and language list does not cover swa/lug/aka/amh. English-only baseline at best. exp004 OOM'd loading it 4-bit on a 15.6 GB T4. |
 | McGill-NLP/AfriqueLlama-8B | [[Latest Colab Notebook]] | Actually run. Llama-3 chat template. 4-bit NF4 on T4 was very slow (130 s/batch before the "turbo" prompt trimming, ~8–12 s after). Produced `submissions/final_checkpoint.csv`. |
-| Gemma-2-9B | `configs/models/gemma2_9b.yaml` | Config only. |
+| Gemma-2-9B | `archive/configs/models/gemma2_9b.yaml` | Config only. |
 | e5-small retrieval | `scripts/retrieval_test_submission.py` | Retrieval-as-answer baseline, `submissions/20260624_*_e5-small_retrieval_test.csv`. |
 | BGE retrieval | `scripts/retrieval_baseline_bge.py`, report data | Retrieval scores on held-out in `docs/competition_report/data/`. |
 | AfroLM | evaluation only | Encoder for BERTScore, not a generator. |

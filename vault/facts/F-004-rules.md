@@ -7,7 +7,7 @@ links: ["[[F-001-competition-metric]]", "[[D-002-reject-aya-expanse]]", "[[00_IN
 ---
 # F-004 Rules we still follow
 
-The challenge is **closed** (deadline 2026-06-21 per `docs/ROADMAP_TOP5.md`; README window 2026-04-24 → 2026-07-14). We are in **post-close practice mode**: Zindi still scores late submissions (ROUGE-1 / ROUGE-L / judge breakdown) but does not rank them. **Unlimited practice submissions, no daily cap.** (The original rules were 50 total, 5/day, final two picked manually via `scripts/select_final.py`.)
+The challenge is **closed** (deadline 2026-06-21 per `archive/docs/ROADMAP_TOP5.md`; README window 2026-04-24 → 2026-07-14). We are in **post-close practice mode**: Zindi still scores late submissions (ROUGE-1 / ROUGE-L / judge breakdown) but does not rank them. **Unlimited practice submissions, no daily cap.** (The original rules were 50 total, 5/day, final two picked manually via `archive/scripts/select_final.py`.)
 
 Rules that still bind us:
 1. **Open-source / open-weight tools and pretrained models only.** Check licences (e.g. CC-BY-NC models were a prize-eligibility risk; see [[D-002-reject-aya-expanse]]).
@@ -18,7 +18,7 @@ Rules that still bind us:
 
 Where things run: code is written locally and pushed to GitHub (`OsbornNyakaru/multilingual-health_Q_A`, `main`); GPU work runs on molab (RTX Pro 6000 Blackwell, 96 GB). No local GPU jobs. See [[Molab Platform]].
 
-Sources migrated: `vault/Competition Overview.md`, `prompts/00_orchestrator.md`, `autoresearch_nlp/LESSONS.md`.
+Sources migrated: `vault/Competition Overview.md`, `archive/prompts/00_orchestrator.md`, `autoresearch_nlp/LESSONS.md`.
 
 ## Links
 - [[00_INDEX]]

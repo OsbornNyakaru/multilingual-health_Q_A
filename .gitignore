@@ -64,3 +64,13 @@ vault/.trash/
 data/multilingual_data/
 autoresearch_nlp/data/
 docs/competition_report/data/bge_retrieval_heldout.csv
+
+# Autoresearch loop: downloaded predictions and composite submissions contain competition text
+experiments/runs/
+# Submission files hold answer text derived from Zindi data (repo is public)
+submissions/*.csv
+submissions/*.xlsx
+# marimo session state, macOS noise
+notebooks/__marimo__/
+__marimo__/
+.DS_Store

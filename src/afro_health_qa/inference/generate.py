@@ -6,7 +6,7 @@ The core function returns either:
       each containing num_return_sequences candidates.
 
 Per-language min/max length are drawn at runtime from the training-answer
-distribution (see configs/decoding/*.yaml ``length_policy``).
+distribution (see archive/configs/decoding/*.yaml ``length_policy``).
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ def generate_batch(
         model: HF causal LM (base or adapter-loaded).
         tokenizer: associated tokenizer.
         questions / languages: parallel lists.
-        decoding_cfg: one of the configs/decoding/*.yaml dicts.
+        decoding_cfg: one of the archive/configs/decoding/*.yaml dicts.
         length_policy: LengthPolicy instance — per-language min/max.
         batch_size: generation batch size.
 

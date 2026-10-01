@@ -12,7 +12,7 @@ links: ["[[F-001-competition-metric]]", "[[00_INDEX]]"]
 ## Notes
 Planned ablation 'Data mix'. Needs a local judge stand-in to test (pending `facts/metric-replica.md`).
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[F-001-competition-metric]]

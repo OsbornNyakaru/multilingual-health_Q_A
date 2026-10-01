@@ -23,7 +23,7 @@ rouge_only = 0.37·ROUGE-1 F1 + 0.37·ROUGE-L F1                 (judge counted 
 | `scorer.py` | Loads predictions and references, joins them, scores per row, builds a per-`subset` table with an `ALL` row, compares tokenizers, and has a CLI. |
 | `tests/test_metric_replica.py` | 26 CPU tests that run in about 1 second. |
 
-Other fixes: `configs/base.yaml` `scoring_weights` changed to 0.37/0.37/0.0/0.26, with a new `rouge_tokenizer: whitespace` key. No code reads these keys; I checked with grep. `local_eval.combined_score` (called by `scripts/run_exp001.py`) now delegates to `combined.py`. `scripts/retrieval_baseline_bge.py` picks up the new defaults (whitespace, 0.37) without any change.
+Other fixes: `configs/base.yaml` (now `archive/configs/base.yaml`) `scoring_weights` changed to 0.37/0.37/0.0/0.26, with a new `rouge_tokenizer: whitespace` key. No code reads these keys; I checked with grep. `local_eval.combined_score` (called by `scripts/run_exp001.py`, now archived) now delegates to `combined.py`. `scripts/retrieval_baseline_bge.py` picks up the new defaults (whitespace, 0.37) without any change.
 
 ## API usage
 ```bash

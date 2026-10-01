@@ -14,7 +14,7 @@ links: ["[[F-004-rules]]", "[[repo-state]]", "[[00_INDEX]]"]
 
 **Status:** confirmed 2026-09-24. Uploaded to private `nyakaruosborn/afro-health-qa-data`; a round-trip `snapshot_download` matched all 4 SHA-256 hashes. On molab: `HF_DATA_REPO=nyakaruosborn/afro-health-qa-data`.
 
-**Incident (2026-09-24):** A real HF token was hardcoded in `notebooks/uploaded_nb_code.py` and `notebooks/Copy_of_notebook26836f548f.ipynb`. GitHub push protection blocked the push; the token was replaced with `os.environ["HF_TOKEN"]` before anything reached the remote. That token must be revoked. Never hardcode tokens in notebooks.
+**Incident (2026-09-24):** A real HF token was hardcoded in `notebooks/uploaded_nb_code.py` (deleted 2026-10-01) and `notebooks/Copy_of_notebook26836f548f.ipynb` (now `archive/notebooks/`). GitHub push protection blocked the push; the token was replaced with `os.environ["HF_TOKEN"]` before anything reached the remote. That token must be revoked. Never hardcode tokens in notebooks.
 
 **Alternatives rejected:** uploading via the molab sidebar each session (molab storage isn't durable); making the GitHub repo private (the repo is meant to be shareable).
 

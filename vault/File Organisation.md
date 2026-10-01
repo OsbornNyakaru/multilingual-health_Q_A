@@ -2,6 +2,8 @@
 tags: [data, ops]
 updated: 2026-09-18
 ---
+> Superseded: `README.md` (data policy), [[D-006-data-hosting-private-hf]] and `archive/README.md`. See [[00_INDEX]].
+
 # File Organisation
 
 ## Local workspace (Mac) — done 2026-09-18

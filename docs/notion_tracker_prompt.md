@@ -1,5 +1,7 @@
 # notion ai prompt: experiment archive
 
+The vault (`vault/00_INDEX.md`) and `experiments/RESULTS.md` are the record; Notion mirrors them.
+
 paste everything inside the box below into notion ai, on a new empty page.
 
 ```

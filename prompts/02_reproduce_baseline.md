@@ -1,6 +1,6 @@
 # 02 — Reproduce the 11th-Place Approach
 
-Run after `00_orchestrator.md` has finished (vault exists, metric replica
+Run after `archive/prompts/00_orchestrator.md` has finished (vault exists, metric replica
 works). Read `vault/00_INDEX.md`, `vault/facts/F-003-reference-approach.md`,
 and `vault/facts/metric-replica.md` before starting.
 
@@ -16,7 +16,8 @@ tree): `https://github.com/koleshjr/multilingual_qa_training`. Key files:
 `config.py`, `utils.py`.
 
 Implement everything **inside our package** `src/afro_health_qa/` with
-settings in **our Hydra `configs/`**, not as loose scripts, so later
+settings in **experiment specs** (the old Hydra `configs/` tree is in
+`archive/configs/`), not as loose scripts, so later
 experiments are one config change away. You write and unit-test code
 locally. GPU steps are run through the molab notebooks from prompt 03,
 so if those don't exist yet, build `notebooks/00_setup_data.py` and

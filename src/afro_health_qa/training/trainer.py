@@ -9,7 +9,7 @@ from transformers import TrainingArguments
 
 
 def build_training_args(cfg: dict[str, Any], output_dir: str | Path) -> TrainingArguments:
-    """Map configs/training/*.yaml's ``training`` block to TrainingArguments."""
+    """Map archive/configs/training/*.yaml's ``training`` block to TrainingArguments."""
     t = cfg["training"]
     return TrainingArguments(
         output_dir=str(output_dir),

@@ -12,7 +12,7 @@ links: ["[[D-001-metric-weights-and-tokenizer]]", "[[H-002-beam-search-lift]]", 
 ## Notes
 Superseded: AfroLM-BS is not on the leaderboard; ranking candidates by an unscored metric was a recorded mistake (`autoresearch_nlp/LESSONS.md` #5). Any reranker must select by the scored metric (ROUGE proxy / judge). See [[D-001-metric-weights-and-tokenizer]].
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[D-001-metric-weights-and-tokenizer]]

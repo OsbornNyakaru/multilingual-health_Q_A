@@ -12,7 +12,7 @@ links: ["[[D-002-reject-aya-expanse]]", "[[00_INDEX]]"]
 ## Notes
 Superseded: depends on Aya ([[D-002-reject-aya-expanse]]). A generic 'ensemble two fine-tuned bases' idea can be re-opened as a new hypothesis once there are two measured adapters.
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[D-002-reject-aya-expanse]]

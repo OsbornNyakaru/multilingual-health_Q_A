@@ -58,7 +58,7 @@ def _load_fasttext_model(model_path: str | None = None):
     if not Path(path).exists():
         raise FileNotFoundError(
             f"fastText lid.176 model not found at {path}. "
-            "Run: bash scripts/download_data.sh (downloads lid.176.bin), "
+            "Run: bash archive/scripts/download_data.sh (archived; downloads lid.176.bin), "
             "or manually: curl -L -o data/external/lid.176.bin "
             "https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
         )

@@ -1,6 +1,8 @@
 ---
 tags: [code, experiments]
 ---
+> Superseded: `autoresearch_nlp/program.md` and `autoresearch_nlp/experiment.py` (`train.py` archived to `archive/autoresearch_nlp/`). See [[00_INDEX]].
+
 # Autoresearch Harness (`autoresearch_nlp/`)
 
 A Karpathy-style autoresearch loop adapted for generative NLP. Dated 2026-06-07. This is the cleanest, most recent codified pipeline and the thing we port to [[Molab Platform]].

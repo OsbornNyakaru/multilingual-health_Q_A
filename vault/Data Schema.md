@@ -16,7 +16,7 @@ The canonical copies now live in `data/raw/` (see [[File Organisation]]). All fo
 
 - `input` = question, `output` = reference answer, `subset` = locale code.
 - IDs look like `ID_TR_Aka_Gha_A3B1799D`; the third token is the language.
-- **Gotcha:** `configs/base.yaml` still expects the pre-drop boilerplate columns (`Question`, `Language`, `Response`, `TargetBert`). The real schema is the one above. The [[Autoresearch Harness]] `prepare.py` is already correct.
+- **Gotcha:** `archive/configs/base.yaml` still expects the pre-drop boilerplate columns (`Question`, `Language`, `Response`, `TargetBert`). The real schema is the one above. The [[Autoresearch Harness]] `prepare.py` is already correct.
 
 ## Subsets in Train (8 locales, 5 languages)
 

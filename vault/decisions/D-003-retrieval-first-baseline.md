@@ -15,7 +15,7 @@ links: ["[[EXP-004-bge-m3-retrieval-heldout]]", "[[FND-001-retrieval-strength-by
 - Pure fine-tuned generation for all rows: leaves easy retrieval points on the table.
 - Pure retrieval: caps out on Amharic (~0.01) and Akan.
 
-Source: legacy [[Model Decisions]] (e5/BGE retrieval rows), `autoresearch_nlp/COMPETITION_INTEL.md` §5, `docs/ROADMAP_TOP5.md`.
+Source: legacy [[Model Decisions]] (e5/BGE retrieval rows), `autoresearch_nlp/COMPETITION_INTEL.md` §5, `archive/docs/ROADMAP_TOP5.md`.
 
 ## Links
 - [[00_INDEX]]

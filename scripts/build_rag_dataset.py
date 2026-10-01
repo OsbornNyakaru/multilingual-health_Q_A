@@ -6,9 +6,9 @@ and set the completion to the row's own reference answer. Fine-tuning on this
 teaches the model to adapt retrieved context into the target answer — the
 11th-place "RAG-enriched fine-tuning" recipe.
 
-Prompt formatting mirrors ``autoresearch_nlp/train.py`` exactly (same per-language
-system instruction, question/answer markers), so a fine-tuned adapter drops into
-that harness for inference unchanged.
+Prompt formatting mirrors the archived ``archive/autoresearch_nlp/train.py`` exactly
+(same per-language system instruction, question/answer markers). Note: the molab
+notebook's system instructions add a "never refuse" sentence, so they are not 1:1.
 
 Guarantees (validated at the end):
   - a row never retrieves itself,
@@ -38,7 +38,8 @@ import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "autoresearch_nlp"))  # for the prompt conventions
+sys.path.insert(0, str(REPO / "autoresearch_nlp"))  # train.py imports prepare
+sys.path.insert(0, str(REPO / "archive" / "autoresearch_nlp"))  # archived train.py: prompt conventions
 
 # Pull the exact language conventions from the harness so prompts match 1:1.
 from train import (  # type: ignore  # noqa: E402

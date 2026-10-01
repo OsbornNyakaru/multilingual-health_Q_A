@@ -22,7 +22,7 @@ Post-close practice run of Zindi's **Multilingual Health Question Answering in L
 - [[F-002-data-shape]] — row counts, columns, the 8 subsets (orchestrator said 9; data has 8)
 - [[F-003-reference-approach]] — koleshjr 11th place: BGE-M3 retrieval R1 0.5548 / RL 0.4823 / Judge 0.7379, Sunflower-32B RAG LoRA, sweetlhare router
 - [[F-004-rules]] — open-source only, no paid APIs, seeds, unlimited practice submissions
-- [[repo-state]] — F-005 repo audit: `src/` package broken (missing `models` subpackage, 0.25/0.25/0.30/0.20 weights); working code = `autoresearch_nlp/`, molab notebook, retrieval scripts; RAG builder partial, LoRA partial, vLLM + router missing; no tests; EXP-004 was scored with the default (non-whitespace) tokenizer
+- [[repo-state]] — F-005 repo audit: `src/` package broken (missing `models` subpackage, 0.25/0.25/0.30/0.20 weights); working code = `autoresearch_nlp/`, molab notebook, retrieval scripts; RAG builder partial, LoRA partial, vLLM + router missing; EXP-004 was scored with the default (non-whitespace) tokenizer. 2026-10-01: tests exist, combined.py fixed to 0.37/0.37/0.26, stale files archived (see its addendum)
 - [[metric-replica]] — F-006 per-subset scorer (`evaluation/scorer.py`, 0.37/0.37/0.26, injectable judge); starter = whitespace ROUGE; EXP-004 re-scored whitespace = 0.3700 (not 0.3892), Amh_Eth 0.115 (0.012 was a tokenizer artifact)
 
 ## Open hypotheses
@@ -66,11 +66,11 @@ On the current 2,088-row split, measured numbers are the crude token-overlap ret
 - `docs/notion_tracker_prompt.md`: Notion AI prompt that builds the shared "runs" database (the team's live log). Copy each finished run into an `experiments/EXP-xxx` note here.
 
 ## Experiments
-- [[EXP-000-scaffold]] — repo bootstrap (the only row in `experiments/LOG.md`)
+- [[EXP-000-scaffold]] — repo bootstrap (the only row in `archive/experiments/LOG.md`)
 - [[EXP-001-aya-expanse-oom]] — Aya-Expanse-8B on T4, OOM, no score
 - [[EXP-002-afriquellama-fewshot-colab]] — AfriqueLlama-8B few-shot, produced `final_checkpoint.csv`, never scored
 - [[EXP-003-token-overlap-retrieval]] — crude retrieval, held-out 2,088, ROUGE-only 0.279
-- [[EXP-004-bge-m3-retrieval-heldout]] — BGE-M3 retrieval, held-out 1,491, ROUGE-only 0.3892 (current best)
+- [[EXP-004-bge-m3-retrieval-heldout]] — BGE-M3 retrieval, old 1,491-row held-out, ROUGE-only 0.3700 with the whitespace scorer (0.3892 under the wrong tokenizer)
 - [[EXP-005-length-truncation-ablation]] — truncating retrieval outputs, reverted
 - [[EXP-006-e5-small-retrieval-test-submission]] — retrieval test submission file, no LB score recorded
 
@@ -94,7 +94,7 @@ Notes marked "Migrated" have been folded into the graph above but are kept for t
 - Code: [[Autoresearch Harness]], [[Repo Layout]], [[Latest Colab Notebook]]
 - Ops: [[Repo Recovery 2026-09-18]], [[Session Log]]
 
-Repo-side trackers `experiments/LOG.md`, `experiments/HYPOTHESES.md` and `experiments/ABLATIONS.md` are kept but superseded by this vault.
+Repo-side trackers `LOG.md`, `HYPOTHESES.md` and `ABLATIONS.md` moved to `archive/experiments/` on 2026-10-01, superseded by this vault and `experiments/RESULTS.md`; every archived file is listed in `archive/README.md`. The legacy notes now carry Superseded banners.
 
 ## Links
 See all sections above.

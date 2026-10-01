@@ -1,7 +1,7 @@
 """Stratified train/val/held-out split with per-language balance guarantees.
 
 The held-out slice (default 5%) must never be used for training, eval-during-
-training, or model selection. It is only touched by `scripts/select_final.py`
+training, or model selection. It is only touched by `archive/scripts/select_final.py`
 at the very end, to decide which two submissions Zindi sees.
 """
 

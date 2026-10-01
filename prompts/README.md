@@ -6,13 +6,13 @@ this order:
 
 | # | file | when | what it produces |
 |---|---|---|---|
-| 00 | `00_orchestrator.md` | once, first | operating rules, subagents A–C: vault, repo audit, metric replica |
+| 00 | `archive/prompts/00_orchestrator.md` (done, archived 2026-10-01) | once, first | operating rules, subagents A–C: vault, repo audit, metric replica |
 | 01 | `01_vault_graph_setup.md` | called by 00 (re-runnable) | `vault/` Obsidian graph, migrated experiment logs, `00_INDEX.md` |
 | 02 | `02_reproduce_baseline.md` | once, after 00 | retrieval-only + RAG-FT baselines matching 11th place, first submission |
 | 03 | `03_marimo_molab_notebooks.md` | after 00, alongside 02 | `notebooks/*.py` that open in molab from GitHub |
 | 04 | `04_experiment_loop.md` | repeatedly | one improvement loop per run: hypotheses → EXP notes → new best |
 
-How to feed them: `Read prompts/00_orchestrator.md and carry it out.`
+How to feed them: `Read prompts/<file>.md and carry it out.`
 Referencing the file keeps the agent reading the version in git, so an
 edit to a prompt is picked up next time.
 

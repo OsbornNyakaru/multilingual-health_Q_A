@@ -12,7 +12,7 @@ links: ["[[F-001-competition-metric]]", "[[F-004-rules]]", "[[00_INDEX]]"]
 ## Notes
 Planned ablation 'Data mix'. Note AfroLM-BS is not on the leaderboard ([[F-001-competition-metric]]); judge by ROUGE-L and the judge stand-in instead. Check licence ([[F-004-rules]]).
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[F-001-competition-metric]]

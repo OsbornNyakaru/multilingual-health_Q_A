@@ -10,9 +10,9 @@ links: ["[[F-001-competition-metric]]", "[[00_INDEX]]"]
 **Statement:** Per-language prompt templates (native-language labels, in-language instruction) beat a single English `Question:/Answer:` prompt.
 
 ## Notes
-Planned ablation 'Prompt template'. The starter notebook's `build_prompt()` omits the language line entirely, so even adding the language name is expected to help (`autoresearch_nlp/COMPETITION_INTEL.md` §1). Per-language prompts are already wired in `autoresearch_nlp/train.py`.
+Planned ablation 'Prompt template'. The starter notebook's `build_prompt()` omits the language line entirely, so even adding the language name is expected to help (`autoresearch_nlp/COMPETITION_INTEL.md` §1). Per-language prompts are already wired in `notebooks/molab_afro_health_qa.py` (originally `autoresearch_nlp/train.py`, now archived).
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[F-001-competition-metric]]

@@ -12,7 +12,7 @@ links: ["[[D-002-reject-aya-expanse]]", "[[EXP-001-aya-expanse-oom]]", "[[EXP-00
 ## Notes
 Superseded: Aya-Expanse-8B was rejected as a base model ([[D-002-reject-aya-expanse]]) and never produced a measured score (4-bit load OOM'd on a T4, [[EXP-001-aya-expanse-oom]]). The 0.35 floor was also stated under the old 0.25/0.25/0.30/0.20 weights. Retrieval already sets a higher floor ([[EXP-004-bge-m3-retrieval-heldout]]).
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[D-002-reject-aya-expanse]]

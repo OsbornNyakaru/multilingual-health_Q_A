@@ -1,7 +1,7 @@
 ---
 tags: [questions]
 ---
-> Migrated to vault/ graph, see [[00_INDEX]]
+> Superseded: the open hypotheses and decisions (e.g. [[D-004-base-model-for-molab]]) listed in the index. See [[00_INDEX]].
 
 # Open Questions
 

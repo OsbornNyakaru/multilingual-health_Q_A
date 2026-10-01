@@ -51,10 +51,11 @@ everything.
 
 ## Timeline
 Closes 2026-06-21. Private LB revealed at close.
+**Update 2026-10-01:** the challenge is closed; we are in post-close practice and submissions are unlimited (no daily cap).
 
 ## Implications baked into this instance
 1. 74% of the score is ROUGE → match reference wording + length, per subset.
 2. English is ~56% of the test set → win the majority first.
-3. Length is a free lever (LENGTH_BOUNDS in train.py).
+3. Length is a free lever (LENGTH_BOUNDS in `notebooks/molab_afro_health_qa.py`; formerly train.py, now archived).
 4. The submission writer enforces the 4-col identical-target schema.
-5. Model licensing matters for the top-10 audit → see MODEL_DECISION.md.
+5. Model licensing matters for the top-10 audit → see `vault/decisions/D-004-base-model-for-molab.md` (old guide: `archive/autoresearch_nlp/MODEL_DECISION.md`).

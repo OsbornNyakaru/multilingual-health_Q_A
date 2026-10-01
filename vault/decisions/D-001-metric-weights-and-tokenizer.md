@@ -12,7 +12,7 @@ links: ["[[F-001-competition-metric]]", "[[H-013-whitespace-tokenizer-matches-gr
 **Why:** The repo spent weeks optimising the pre-drop guess (0.25/0.25/0.30 AfroLM/0.20), a metric that scored zero on the board (`autoresearch_nlp/LESSONS.md` #1, #5). The whitespace tokenizer matches the starter notebook and keeps Ge'ez tokens (default tokenizer drops them).
 
 **Alternatives considered:**
-- `configs/base.yaml` weights: rejected, wrong.
+- `configs/base.yaml` (now `archive/configs/base.yaml`) weights: rejected, wrong.
 - Default `rouge-score` tokenizer: rejected, it zeroes Amharic; keep only as a comparison in the metric replica.
 
 **Open:** whether the host grader really uses whitespace tokenization ([[H-013-whitespace-tokenizer-matches-grader]]). Resolves the metric-weights item of legacy [[Open Questions]].

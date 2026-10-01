@@ -1,6 +1,8 @@
 ---
 tags: [log]
 ---
+> Superseded: the vault notes and the `experiments/RESULTS.md` ledger; no per-session log is kept. See [[00_INDEX]].
+
 # Session Log
 
 Newest first. One entry per working session; link the notes touched.

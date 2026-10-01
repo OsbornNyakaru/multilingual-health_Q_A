@@ -1,6 +1,6 @@
 # 01 — Obsidian Vault / Graph Engineering Setup
 
-Run standalone, or as Subagent A from `00_orchestrator.md`. Idempotent —
+Run standalone, or as Subagent A from `archive/prompts/00_orchestrator.md`. Idempotent —
 safe to re-run; it should skip files that already exist and only add
 what's missing.
 
@@ -45,8 +45,8 @@ don't break when titles change.
 
 ## Migration tasks
 
-1. **Read `experiments/LOG.md`, `experiments/HYPOTHESES.md`,
-   `experiments/ABLATIONS.md`** (the repo already has these — don't
+1. **Read `archive/experiments/LOG.md`, `archive/experiments/HYPOTHESES.md`,
+   `archive/experiments/ABLATIONS.md`** (the repo already has these — don't
    duplicate their purpose, convert them). For each existing entry:
    - A hypothesis → `vault/hypotheses/H-XXX-<slug>.md`
    - A logged run → `vault/experiments/EXP-XXX-<slug>.md`

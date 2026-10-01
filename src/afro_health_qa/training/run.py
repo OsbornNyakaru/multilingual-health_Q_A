@@ -1,6 +1,6 @@
 """Entry point for fine-tuning.
 
-    python -m afro_health_qa.training.run --config configs/training/qlora_default.yaml
+    python -m afro_health_qa.training.run --config archive/configs/training/qlora_default.yaml
 
 The run:
     1. Seeds all five RNGs (+ transformers.set_seed).
@@ -39,14 +39,14 @@ def _load_yaml(path: str | Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True, help="configs/training/<name>.yaml")
+    parser.add_argument("--config", required=True, help="archive/configs/training/<name>.yaml")
     parser.add_argument("--dry-run", action="store_true", help="Parse configs, skip training.")
     args = parser.parse_args()
 
     # --- 1. Seed ---
     from afro_health_qa.seeding import set_all_seeds
 
-    base_cfg = _load_yaml("configs/base.yaml")
+    base_cfg = _load_yaml("archive/configs/base.yaml")
     set_all_seeds(base_cfg.get("seed", 42))
     from transformers import set_seed
 
@@ -55,7 +55,7 @@ def main() -> int:
     # --- 2. Load configs ---
     train_cfg = _load_yaml(args.config)
     model_cfg_path = train_cfg["model_config"]
-    data_cfg = _load_yaml(train_cfg.get("data_config", "configs/data.yaml"))
+    data_cfg = _load_yaml(train_cfg.get("data_config", "archive/configs/data.yaml"))
 
     from afro_health_qa.models.registry import resolve_model_config
 

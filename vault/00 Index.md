@@ -16,10 +16,10 @@ Open this folder (`vault/`) as an Obsidian vault, or open the whole repo as a va
 
 ## Code and experiments
 - [[Repo Layout]] — what lives where in the workspace
-- [[Autoresearch Harness]] — `autoresearch_nlp/` frozen prepare.py + editable train.py loop
+- [[Autoresearch Harness]] — `autoresearch_nlp/` frozen prepare.py + editable train.py loop (train.py now in `archive/`)
 - [[Model Decisions]] — which base models were tried, licences, VRAM reality
 - [[Latest Colab Notebook]] — the AfriqueLlama-8B T4 inference notebook from `resources/`
-- [[Experiment History]] — pointer to `experiments/LOG.md` and what was actually submitted
+- [[Experiment History]] — pointer to `archive/experiments/LOG.md` and what was actually submitted
 
 ## Platform move: Molab
 - [[Molab Platform]] — free GPU notebook host, limits, storage rules

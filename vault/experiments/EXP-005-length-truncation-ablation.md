@@ -12,7 +12,7 @@ links: ["[[H-003-per-language-length-bounds]]", "[[EXP-004-bge-m3-retrieval-held
 - **Hypothesis:** [[H-003-per-language-length-bounds]] (applied to retrieval predictions).
 - **Base run:** [[EXP-004-bge-m3-retrieval-heldout]] (same 1,491 rows; baseline columns match EXP-004 exactly).
 - **Single change:** truncate each prediction to a per-subset "optimal" word length.
-- **Source (measured):** repo root `length_optimization_summary.csv`, `length_optimization_results.csv`, `length_calibration_full_report.csv`. Score = ROUGE-only combined.
+- **Source (measured):** `archive/experiments/data/` (`length_optimization_summary.csv`, `length_optimization_results.csv`, `length_calibration_full_report.csv`; moved from the repo root 2026-10-01). Score = ROUGE-only combined.
 
 | subset | gold median len | pred len | optimal len | baseline | truncated | Δ |
 |--------|---:|---:|---:|---:|---:|---:|
@@ -26,7 +26,7 @@ links: ["[[H-003-per-language-length-bounds]]", "[[EXP-004-bge-m3-retrieval-held
 | Swa_Ken | 65.5 | 86.3 | 85 | 0.5942 | 0.5374 | −0.0569 |
 
 - **Verdict:** revert. Truncation hurts every high-overlap subset; the only gains (Amh_Eth, Aka_Gha) are within noise (< +0.003). Folded into [[FND-002-length-truncation-on-retrieval]].
-- This was the only ablation with results; `experiments/ABLATIONS.md` otherwise holds planned sweeps, now tracked as hypotheses ([[H-002-beam-search-lift]], [[H-003-per-language-length-bounds]], [[H-004-qlora-comp-only-beats-zero-shot]], [[H-005-medmcqa-translated-augmentation]], [[H-010-per-language-prompts]]).
+- This was the only ablation with results; `archive/experiments/ABLATIONS.md` otherwise holds planned sweeps, now tracked as hypotheses ([[H-002-beam-search-lift]], [[H-003-per-language-length-bounds]], [[H-004-qlora-comp-only-beats-zero-shot]], [[H-005-medmcqa-translated-augmentation]], [[H-010-per-language-prompts]]).
 
 ## Links
 - [[00_INDEX]]

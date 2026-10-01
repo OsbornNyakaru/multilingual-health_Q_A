@@ -4,7 +4,7 @@ Given predictions + references + languages, produces a table:
     lang | n | rouge1 | rougeL | afrolm_bs | judge_sampled | combined
 
 The max-min combined gap across languages is a primary selection criterion in
-scripts/select_final.py — a model that's great in Swahili but collapses in
+archive/scripts/select_final.py — a model that's great in Swahili but collapses in
 Amharic is risky under the private-LB's 70% weight.
 """
 

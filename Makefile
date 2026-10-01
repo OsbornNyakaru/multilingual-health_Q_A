@@ -1,13 +1,14 @@
 # afro-health-qa — common commands.
-# Run `make help` for the list.
+# Run `make help` for the list. Override the interpreter with e.g.
+#   make test PYTHON=.venv-marimo/bin/python
 
 PYTHON ?= python
 PIP ?= $(PYTHON) -m pip
 VENV ?= .venv
-CONFIG ?= configs/training/qlora_default.yaml
 RUN ?=
+REFS ?= data/processed/held_out.csv
 
-.PHONY: help setup audit baseline train evaluate submit verify test lint format clean
+.PHONY: help setup evaluate sanity submit test lint format clean
 
 help:  ## Show this help.
 	@echo "Targets:"
@@ -20,29 +21,20 @@ setup:  ## Create venv and install pinned deps.
 	$(VENV)/bin/$(PIP) install -e .
 	@echo "Activate with: source $(VENV)/bin/activate   (Windows: $(VENV)/Scripts/activate)"
 
-audit:  ## Tokeniser audit — chars/token per language per model.
-	$(PYTHON) -m afro_health_qa.data.tokeniser_audit --output docs/TOKENISER_AUDIT.md
+evaluate:  ## Score predictions per subset (whitespace ROUGE, 0.37/0.37/0.26). RUN=<preds.csv> [REFS=<refs.csv>]
+	@test -n "$(RUN)" || (echo "RUN=<predictions.csv> is required (REFS defaults to $(REFS))"; exit 1)
+	PYTHONPATH=src $(PYTHON) -m afro_health_qa.evaluation.scorer --predictions $(RUN) --references $(REFS)
 
-baseline:  ## Run zero-shot Aya baseline and write a submission CSV.
-	$(PYTHON) scripts/run_baseline.sh || bash scripts/run_baseline.sh
-
-train:  ## Fine-tune. Pass CONFIG=configs/training/<name>.yaml
-	$(PYTHON) -m afro_health_qa.training.run --config $(CONFIG)
-
-evaluate:  ## Score a prediction file. Pass RUN=submissions/<file>.csv
-	@test -n "$(RUN)" || (echo "RUN=submissions/<file>.csv is required"; exit 1)
-	$(PYTHON) -m afro_health_qa.evaluation.combined --predictions $(RUN) --split val
+sanity:  ## CPU smoke test of the autoresearch harness (synthetic data, no model).
+	$(PYTHON) autoresearch_nlp/tools/synth_sanity.py
 
 submit:  ## Build and validate a Zindi-format submission CSV. Pass RUN=<predictions>.
 	@test -n "$(RUN)" || (echo "RUN=<predictions> is required"; exit 1)
-	$(PYTHON) -m afro_health_qa.submission.format --input $(RUN) --output submissions/$$(date +%Y-%m-%d_%H%M)_$(notdir $(basename $(RUN))).csv
-	$(PYTHON) -m afro_health_qa.submission.validate --path submissions/
-
-verify:  ## End-to-end reproducibility check — re-runs pipeline, hashes output.
-	$(PYTHON) scripts/verify_reproducibility.py
+	PYTHONPATH=src $(PYTHON) -m afro_health_qa.submission.format --input $(RUN) --output submissions/$$(date +%Y-%m-%d_%H%M)_$(notdir $(basename $(RUN))).csv
+	PYTHONPATH=src $(PYTHON) -m afro_health_qa.submission.validate --path submissions/
 
 test:  ## Run pytest.
-	$(PYTHON) -m pytest -ra
+	PYTHONPATH=src $(PYTHON) -m pytest -q tests
 
 lint:  ## Ruff check.
 	$(PYTHON) -m ruff check src tests scripts

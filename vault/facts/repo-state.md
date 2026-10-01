@@ -22,7 +22,7 @@ Subagent B audit. I opened every module in `src/afro_health_qa/`, every config, 
 |---|---|---|
 | `seeding.py` | implemented | seeds 5 RNGs; `pass` at l.51 is a benign `except` |
 | `data/load.py` | implemented | maps real columns `input/output/subset` → internal `Question/Response/Language` |
-| `data/split.py` | implemented | generic stratified split; configured by `configs/data.yaml` (85/10/5, seed 42), **not** [[D-005-held-out-protocol]] |
+| `data/split.py` | implemented | generic stratified split; configured by `configs/data.yaml` (now `archive/configs/data.yaml`; 85/10/5, seed 42), **not** [[D-005-held-out-protocol]] |
 | `data/runtime.py`, `language_id.py`, `tokeniser_audit.py`, `length_bounds.py`, `augment.py` | implemented | `length_bounds.py` is an auto-generated table for exp001 |
 | `data/sources/sunbird_salt.py`, `ghananlp_khaya.py`, `medmcqa_translated.py`, `synthetic_qa.py` | **stub** | `raise NotImplementedError` (+ TODO) |
 | `data/sources/who_factsheets.py` | stub-ish | only passes through a hand-curated parquet that doesn't exist |
@@ -41,24 +41,24 @@ Subagent B audit. I opened every module in `src/afro_health_qa/`, every config, 
 | Path | State | Notes |
 |---|---|---|
 | `autoresearch_nlp/prepare.py` | **implemented, correct** | frozen harness ([[Autoresearch Harness]]); `tools/synth_sanity.py` passed on CPU today (perfect=0.7400, 4 columns validated) |
-| `autoresearch_nlp/train.py` | dry-run stub | `DRY_RUN = True`, `MODEL_ID = CohereLabs/aya-expanse-8b`; the stub output `submissions/exp001_zeroshot_baseline.csv` is all "information" ([[EXP-000-scaffold]]) |
+| `autoresearch_nlp/train.py` (now `archive/autoresearch_nlp/`) | dry-run stub | `DRY_RUN = True`, `MODEL_ID = CohereLabs/aya-expanse-8b`; the stub output `submissions/exp001_zeroshot_baseline.csv` (deleted 2026-10-01) is all "information" ([[EXP-000-scaffold]]) |
 | `autoresearch_nlp/results.tsv` | empty | header only |
 | `notebooks/molab_afro_health_qa.py` | implemented, never run on GPU | modes `dry_run`/`zero_shot`/`few_shot`; weights 0.37/0.37/0.26, whitespace ROUGE, judge=0 locally; checkpointing; optional LoRA cell (PEFT, r=16, α=2r, bf16) and HF Hub push. No retrieval mode, no RAG, no router, no vLLM ([[Molab Notebook Plan]]) |
 | `scripts/retrieval_baseline_bge.py` | implemented, **stale** | BGE-M3 held-out retrieval → `docs/competition_report/data/bge_retrieval_scores.json`; scores with `src` `score_rouge` (default tokenizer), reads the missing `data/processed/train_core.csv`, hard-coded Windows `CACHE_DIR` |
 | `scripts/retrieval_test_submission.py` | implemented, stale | produced [[EXP-006-e5-small-retrieval-test-submission]]; same Windows cache path |
 | `scripts/build_rag_dataset.py` | **partial** | see the gap table |
-| `scripts/run_baseline.sh` / `make baseline` | **broken** | runs `notebooks/02_baseline_zeroshot.ipynb`, which doesn't exist |
-| `scripts/verify_reproducibility.py` | broken | `--tiny` needs `tests/fixtures/tiny_predictions.csv` (missing) |
-| `scripts/select_final.py` | implemented | reads submission JSON sidecars |
-| `scripts/run_exp001.py`, `local_multilingual_qa.py`, `notebooks/exp00*_*`, `uploaded_nb_code.py`, `Copy_of_notebook*.ipynb` | historical | May-era Kaggle/Colab code ([[EXP-001-aya-expanse-oom]], [[EXP-002-afriquellama-fewshot-colab]]) |
-| `scripts/build_report_*.py` | implemented | competition-report PDF/charts only |
-| `mac_local_execution/` | README only | describes an MLX/AfriqueLlama pipeline, but no code is present |
+| `scripts/run_baseline.sh` / `make baseline` (both removed/archived 2026-10-01) | **broken** | runs `notebooks/02_baseline_zeroshot.ipynb`, which doesn't exist |
+| `scripts/verify_reproducibility.py` (archived) | broken | `--tiny` needs `tests/fixtures/tiny_predictions.csv` (missing) |
+| `scripts/select_final.py` (archived) | implemented | reads submission JSON sidecars |
+| `scripts/run_exp001.py`, `local_multilingual_qa.py`, `notebooks/exp00*_*`, `uploaded_nb_code.py`, `Copy_of_notebook*.ipynb` (all archived, `uploaded_nb_code.py` deleted) | historical | May-era Kaggle/Colab code ([[EXP-001-aya-expanse-oom]], [[EXP-002-afriquellama-fewshot-colab]]) |
+| `scripts/build_report_*.py` (archived) | implemented | competition-report PDF/charts only |
+| `mac_local_execution/` (archived) | README only | describes an MLX/AfriqueLlama pipeline, but no code is present |
 | `models/`, `*.safetensors` | none | no adapters or checkpoints exist anywhere |
 | `submissions/` | 4 files + 1 sidecar | `final_checkpoint.csv`, `submission_ready.csv`, `submission_20260512_0241.xlsx` (not a valid format), `20260624_095953_e5-small_retrieval_test.csv(+.json)`; no local or LB score recorded for any of them |
 
 Docs and files referenced by README/Makefile but missing: `docs/SCORING.md`, `docs/DECISIONS.md`, `docs/KNOWN_ISSUES.md`, `notebooks/99_final_submission.ipynb`, `tests/`.
 
-## Config groups (`configs/`)
+## Config groups (`configs/`, now `archive/configs/`)
 These are plain YAML loaded with `yaml.safe_load`. Nothing imports Hydra, although `hydra-core==1.3.2` is pinned and the README calls the configs "Hydra-composable".
 
 | Group | Options |
@@ -96,10 +96,10 @@ EXP-004's numbers reproduce exactly with the **default** tokenizer, not the "LB-
 | Component | Status | Where / what's missing |
 |---|---|---|
 | BGE-M3 retrieval baseline | **present (stale)** | `scripts/retrieval_baseline_bge.py`, `retrieval_test_submission.py`; needs a repo-relative cache path, the current `work_train.csv`/`held_out.csv` split, and whitespace ROUGE via `prepare.py` |
-| RAG context generation | **partial** | `scripts/build_rag_dataset.py`: k=3 same-subset neighbours, excludes self, never touches held-out, prompts match `autoresearch_nlp/train.py`, writes prompt/completion JSONL. Gaps: builds **train-side only**, with no builder for held-out/test prompts (the reference uses train for val and train+val for test); depends on the missing `train_core.csv` and a Windows-only embedding cache; only `data/processed/val_rag_enriched.jsonl` (1,416 rows) is on disk, and `train_rag_enriched.jsonl` is missing; RAG was never wired into the molab notebook |
+| RAG context generation | **partial** | `scripts/build_rag_dataset.py`: k=3 same-subset neighbours, excludes self, never touches held-out, prompts match `autoresearch_nlp/train.py` (now imported from `archive/autoresearch_nlp/`), writes prompt/completion JSONL. Gaps: builds **train-side only**, with no builder for held-out/test prompts (the reference uses train for val and train+val for test); depends on the missing `train_core.csv` and a Windows-only embedding cache; only `data/processed/val_rag_enriched.jsonl` (1,416 rows) is on disk, and `train_rag_enriched.jsonl` is missing; RAG was never wired into the molab notebook |
 | LoRA fine-tune script | **partial** | molab notebook cell 10 (plain PEFT, bf16, r=16 default, dropout 0.05, completion-only labels) works on paper but was never run. It trains on plain prompts, not RAG JSONL. `src/.../training/run.py` is broken (missing `models` package). No Unsloth, and nothing configured for `Sunbird/Sunflower-32B` |
 | vLLM inference | **missing** | no `vllm` anywhere; all generation is HF `model.generate` (notebook, `train.py`, `src/.../generate.py`) |
-| Per-subset router (closed-pool vs generative) | **missing** | only the idea exists ([[H-011-closed-pool-vs-generative-router]], `scripts/build_report_pdf.py` text). `inference/ensemble.py` `language_routed` routes between models, not retrieval-vs-LLM |
+| Per-subset router (closed-pool vs generative) | **missing** | only the idea exists ([[H-011-closed-pool-vs-generative-router]], `archive/scripts/build_report_pdf.py` text). `inference/ensemble.py` `language_routed` routes between models, not retrieval-vs-LLM |
 | HF Hub artifact push | **partial** | molab notebook: `upload_file` of submission and `upload_folder` of adapter to `HF_RUNS_REPO` (dataset repo), gated by a switch, never exercised; data pull via `HF_DATA_REPO` |
 | molab notebooks | **partial** | one notebook `notebooks/molab_afro_health_qa.py` (no GPU run recorded in `results.tsv` or the vault); no retrieval, RAG or router cells |
 
@@ -110,6 +110,13 @@ EXP-004's numbers reproduce exactly with the **default** tokenizer, not the "LB-
 4. **Finish RAG data:** make `build_rag_dataset.py` read `work_train.csv`, use a portable cache, and add held-out/test prompt builders (held-out retrieves from work_train; test from train+val). Wire into the molab LoRA cell with the reference hyper-parameters → [[H-012-rag-enriched-finetune]]; base model per [[D-004-base-model-for-molab]].
 5. **Add vLLM inference** (optionally LoRA) to the molab notebook for held-out and test throughput.
 6. Housekeeping: add a minimal `tests/` (metric replica, submission validation, split determinism); fix `.gitignore` so `configs/models/` is tracked; drop or fix `make baseline` and the stale Aya configs; commit untracked work (pending the owner's OK).
+
+## Addendum 2026-10-01
+As of 2026-10-01, several items above have changed:
+- **Tests exist:** `tests/test_metric_replica.py` (26 tests, `make test` passes).
+- **`src/afro_health_qa/evaluation/combined.py` weights are fixed** to 0.37/0.37/0.26 (AfroLM 0.0).
+- **`configs/models/` is tracked** (the YAML files are in git; the tree now lives at `archive/configs/`).
+- **Stale docs, notebooks, scripts, configs and the old trackers were moved to `archive/`** (list in `archive/README.md`). `autoresearch_nlp/train.py` was archived (replaced by `autoresearch_nlp/experiment.py`). `make baseline/train/verify/audit` were removed, and `make evaluate` now calls `afro_health_qa.evaluation.scorer`.
 
 ## Links
 - [[00_INDEX]]

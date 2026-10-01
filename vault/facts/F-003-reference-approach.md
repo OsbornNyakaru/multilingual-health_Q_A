@@ -7,7 +7,7 @@ links: ["[[H-011-closed-pool-vs-generative-router]]", "[[H-012-rag-enriched-fine
 ---
 # F-003 Reference approach (11th place, koleshjr)
 
-Source: `koleshjr/multilingual_qa_training` (11th place), as summarised in `prompts/00_orchestrator.md`.
+Source: `koleshjr/multilingual_qa_training` (11th place), as summarised in `archive/prompts/00_orchestrator.md`.
 
 ## Retrieval-only baseline (their numbers, verbatim)
 **BGE-M3 retrieval-only** (return the nearest labelled example's answer):

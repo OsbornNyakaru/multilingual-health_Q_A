@@ -17,7 +17,7 @@ links: ["[[D-002-reject-aya-expanse]]", "[[F-003-reference-approach]]", "[[F-004
 |-------|-----------------|
 | `McGill-NLP/AfriqueLlama-8B` | Actually run in 4-bit on T4 ([[EXP-002-afriquellama-fewshot-colab]]); never scored locally. Fastest path to reproduce the old baseline in bf16. |
 | `Sunbird/Sunflower-32B` | The 11th-place base for RAG-enriched LoRA ([[F-003-reference-approach]]). |
-| Gemma-2-9B / 27B | `configs/models/gemma2_9b.yaml` exists; config only. |
+| Gemma-2-9B / 27B | `archive/configs/models/gemma2_9b.yaml` exists; config only. |
 | Llama-3.1-8B, Qwen2.5 | Suggested in legacy notes, untested. |
 | `CohereLabs/aya-expanse-8b` | Rejected ([[D-002-reject-aya-expanse]]). |
 | AfroLM | Encoder for BertScore only, not a generator. |

@@ -12,7 +12,7 @@ links: ["[[EXP-004-bge-m3-retrieval-heldout]]", "[[D-004-base-model-for-molab]]"
 ## Notes
 Originally 'beats Aya-Expanse on Swahili-only AfroLM-BS'; restated against the current base model and the scored metric. Note Swa_Ken is already strong for retrieval (R1 0.816 on held-out, [[EXP-004-bge-m3-retrieval-heldout]]), so the bar is high.
 
-Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md`.
+Migrated from `experiments/HYPOTHESES.md` / `experiments/ABLATIONS.md` (now in `archive/experiments/`).
 
 ## Links
 - [[EXP-004-bge-m3-retrieval-heldout]]

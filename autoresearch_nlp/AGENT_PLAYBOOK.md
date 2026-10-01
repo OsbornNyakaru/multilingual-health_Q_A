@@ -52,7 +52,7 @@ ROUGE on generative QA without overfitting:
 - Decoding choices (beam vs sampling, length_penalty, no_repeat_ngram) and their
   documented ROUGE deltas.
 - Post-processing that reliably lifts ROUGE (preamble stripping, dedup).
-Give concrete, testable train.py changes, one lever each, with expected sign of
+Give concrete, testable experiment changes, one lever each, with expected sign of
 effect. Cap 1000 words. Cite sources; mark estimates as estimates.
 ```
 

@@ -2,6 +2,8 @@
 tags: [molab, marimo, handoff, experiments]
 updated: 2026-09-18
 ---
+> Superseded: `docs/molab_runbook.md` and `notebooks/molab_runner.py`. See [[00_INDEX]].
+
 # Molab Notebook Plan
 
 `notebooks/molab_afro_health_qa.py` is the single interactive notebook intended for Molab. It is a **practice-research workspace**, not a finished competition submission. It mirrors the frozen local harness: the 7% stratified Train holdout (seed 1234), whitespace-token ROUGE, and the 4-column submission schema.

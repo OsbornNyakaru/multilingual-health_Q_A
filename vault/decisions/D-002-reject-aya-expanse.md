@@ -7,7 +7,7 @@ links: ["[[EXP-001-aya-expanse-oom]]", "[[D-004-base-model-for-molab]]", "[[F-00
 ---
 # D-002 Do not use Aya-Expanse-8B as the base model
 
-**Decision:** Drop `CohereLabs/aya-expanse-8b` (still the default in `autoresearch_nlp/train.py` and `configs/`) as a candidate generator.
+**Decision:** Drop `CohereLabs/aya-expanse-8b` (was the default in `autoresearch_nlp/train.py` and `configs/`, both now in `archive/`) as a candidate generator.
 
 **Why:**
 - CC-BY-NC licence — a risk under the open-source/prize rules ([[F-004-rules]]).
@@ -16,9 +16,9 @@ links: ["[[EXP-001-aya-expanse-oom]]", "[[D-004-base-model-for-molab]]", "[[F-00
 
 **Alternatives:** see [[D-004-base-model-for-molab]] (AfriqueLlama-8B, Gemma-2-9B/27B, Llama-3.1-8B, Qwen2.5, Sunflower-32B).
 
-**Consequences:** supersedes [[H-001-zero-shot-aya-floor]] and [[H-009-gemma-aya-adapter-ensemble]]. `train.py` MODEL_ID must be changed before the first real molab run.
+**Consequences:** supersedes [[H-001-zero-shot-aya-floor]] and [[H-009-gemma-aya-adapter-ensemble]]. `train.py` MODEL_ID must be changed before the first real molab run (moot since 2026-10-01: `train.py` archived, replaced by `autoresearch_nlp/experiment.py`).
 
-Source: legacy [[Model Decisions]], `autoresearch_nlp/MODEL_DECISION.md`.
+Source: legacy [[Model Decisions]], `archive/autoresearch_nlp/MODEL_DECISION.md`.
 
 ## Links
 - [[00_INDEX]]

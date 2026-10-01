@@ -18,7 +18,7 @@ Weighted mean of three per-row scores, averaged over the test set:
 
 - 74% of the score is lexical overlap (ROUGE).
 - **AfroLM BertScore F1** is a host-side *secondary* check on top solutions. It is **not** on the leaderboard (weight 0). Don't trade meaning for overlap, but don't select models by it either (see `autoresearch_nlp/LESSONS.md` #1 and #5).
-- Resolved discrepancy: `configs/base.yaml` still carries the pre-drop guess 0.25 R1 / 0.25 RL / 0.30 AfroLM-BS / 0.20 judge. That was wrong. The actual leaderboard weights are 0.37/0.37/0.26 (orchestrator context, `autoresearch_nlp/prepare.py`, `autoresearch_nlp/LESSONS.md`). `experiments/LOG.md` column definitions still quote the old weights — ignore them.
+- Resolved discrepancy: `archive/configs/base.yaml` still carries the pre-drop guess 0.25 R1 / 0.25 RL / 0.30 AfroLM-BS / 0.20 judge. That was wrong. The actual leaderboard weights are 0.37/0.37/0.26 (orchestrator context, `autoresearch_nlp/prepare.py`, `autoresearch_nlp/LESSONS.md`). `archive/experiments/LOG.md` column definitions still quote the old weights — ignore them.
 
 ## ROUGE tokenization (matters for Amharic / Ge'ez)
 - The official starter notebook scores ROUGE with a `WhitespaceTokenizer` and `use_stemmer=False`. The `rouge-score` default tokenizer lowercases and regex-splits on `[a-z0-9]`, which deletes Ge'ez script entirely (Amharic would score ~0).
@@ -38,7 +38,7 @@ ID_TS_Aka_Gha_A3B1799D,"<answer>","<answer>","<answer>"
 - 2,618 rows; IDs must equal Test IDs; no duplicates, no empties; CSV not `.xlsx`; no extra 5th column.
 - Use `autoresearch_nlp/prepare.py` `build_submission()` / `validate_submission()`; don't hand-roll.
 
-Sources migrated: `vault/Scoring Metric.md`, `vault/Submission Format.md`, `autoresearch_nlp/COMPETITION_INTEL.md`, `autoresearch_nlp/LESSONS.md`, `prompts/00_orchestrator.md`.
+Sources migrated: `vault/Scoring Metric.md`, `vault/Submission Format.md`, `autoresearch_nlp/COMPETITION_INTEL.md`, `autoresearch_nlp/LESSONS.md`, `archive/prompts/00_orchestrator.md`.
 
 ## Links
 - [[00_INDEX]]

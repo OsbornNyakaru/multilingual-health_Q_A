@@ -1,6 +1,8 @@
 ---
 tags: [repo]
 ---
+> Superseded: [[repo-state]] (F-005 audit) for the code state and `archive/README.md` for files moved on 2026-10-01. See [[00_INDEX]].
+
 # Repo Layout
 
 Workspace: `afro-health-qa/` (git remote `OsbornNyakaru/multilingual-health_Q_A`, branch `main`, single commit `00d444b` as of 2026-09-18).
