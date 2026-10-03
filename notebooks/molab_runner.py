@@ -420,7 +420,16 @@ def _(
         return result
 
     def run_queue(watch: bool = False, idle_minutes: float = 30, max_runs: int = 100, log=print) -> list[dict]:
-        hf_put({"_runner/ping.json": json.dumps({"at": _now(), "gpu": gpu_info})}, "runner ping")
+        try:
+            hf_put({"_runner/ping.json": json.dumps({"at": _now(), "gpu": gpu_info})}, "runner ping")
+        except Exception as e:
+            if "403" in str(e) or "write token" in str(e).lower():
+                raise RuntimeError(
+                    "This token can't write to the runs repo. Create a fine-grained token with WRITE on "
+                    "afro-health-qa-runs and READ on afro-health-qa-data (or a classic write token), paste it "
+                    "above, and press Run queue again."
+                ) from None
+            raise
         results, idle_since = [], time.time()
         while len(results) < max_runs:
             todo = pending_runs()
