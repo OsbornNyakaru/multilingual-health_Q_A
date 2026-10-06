@@ -98,7 +98,7 @@ def _(data_repo_input, hf_token_input, mo, os, runs_repo_input):
     api = HfApi()
     try:
         _who = api.whoami()["name"]
-        auth_msg = mo.md(f"Hugging Face: signed in as **{_who}**")
+        auth_msg = mo.md(f"Hugging Face: signed in as **{_who}** · runner version **{RUNNER_VERSION}**")
     except Exception as _e:
         _who = None
         auth_msg = mo.callout(mo.md(f"Hugging Face: **not signed in** ({type(_e).__name__}). Paste a token above."), kind="danger")
