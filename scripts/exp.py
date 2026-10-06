@@ -198,7 +198,7 @@ def cmd_submit(a) -> None:
         sys.exit(f"HEAD {head[:7]} is not what GitHub main has ({remote[:7]}); push first (molab fetches code by SHA)")
     api = HfApi()
     ensure_runs_repo(api)
-    todo = [s for s in load_specs() if not s.get("run_id") and (not a.exp or s["exp"] in a.exp)]
+    todo = [s for s in load_specs() if not s.get("run_id") and not s.get("withdrawn") and (not a.exp or s["exp"] in a.exp)]
     if not todo:
         print("nothing to submit")
         return
@@ -443,7 +443,9 @@ def cmd_status(a) -> None:
     done = {r["run_id"]: r for r in load_records()}
     for s in load_specs():
         rid = s.get("run_id")
-        if not rid:
+        if s.get("withdrawn"):
+            state = f"withdrawn: {s['withdrawn']}"
+        elif not rid:
             state = "draft (not submitted)"
         elif rid in done:
             state = f"pulled: {done[rid]['status']}, won {done[rid].get('won') or 'none'}"
