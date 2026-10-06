@@ -1,0 +1,51 @@
+{
+  "exp": "EXP-012",
+  "hypothesis": "H-011",
+  "description": "hybrid: bge-m3 blended 50/50 with char tf-idf (aimed at Lug_Uga)",
+  "parent": "exp009_ret_bgem3_nhall-vall_ad6575",
+  "changed": [
+    "hybrid_with"
+  ],
+  "config": {
+    "mode": "retrieval",
+    "embedder": "BAAI/bge-m3",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "retrieve_on": "input",
+    "embed_batch": 64,
+    "hybrid_with": "tfidf-char",
+    "hybrid_alpha": 0.5,
+    "rerank_model": null,
+    "rerank_k": 20,
+    "rerank_on": "question",
+    "rerank_batch": 64,
+    "select": "top1",
+    "vote_k": 50,
+    "vote_power": 4.0,
+    "model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "precision": "auto",
+    "adapter": null,
+    "num_beams": 1,
+    "infer_batch": 32,
+    "max_input_tokens": 1024,
+    "no_repeat_ngram": 3,
+    "length_penalty": 1.0,
+    "few_shot_k": 2,
+    "few_shot_max_chars": 150,
+    "rag_max_chars": 400,
+    "router_threshold": 0.85,
+    "router_generate_mode": "rag_few_shot",
+    "length_mode": "pool_p95",
+    "checkpoint_every": 10
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": null,
+  "max_minutes": 60.0,
+  "drafted": "2026-10-06T15:05:26+00:00",
+  "git_sha": "f5fff0cb627a615b45cfc6d4702d807b224783ca",
+  "created": "2026-10-06T15:05:33+00:00",
+  "run_id": "exp012_ret_bgem3_nhall-vall_c5159b"
+}
