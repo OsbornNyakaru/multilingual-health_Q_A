@@ -169,3 +169,14 @@ def test_setup_is_noop_for_non_lora_and_lora_rag_uses_trained_adapter(monkeypatc
     monkeypatch.setattr(E, "generate", fake_generate)
     answers, _ = E.run({"mode": "lora_rag", "embedder": "tfidf-char", "few_shot_k": 2}, EVAL, POOL, ctx)
     assert seen["adapter"] == "/adapters/6" and len(seen["ex"]) == 2 and set(answers.values()) == {"GEN"}
+
+
+def test_lora_rag_trains_inline_on_runners_without_setup(monkeypatch):
+    calls = []
+    monkeypatch.setattr(E, "train_lora", lambda cfg, pool, c: calls.append(len(pool)) or "/adapters/inline")
+    monkeypatch.setattr(E, "generate", lambda cfg, rows, ex, c, answers, pool: answers.update({i: cfg["adapter"] for i in rows["ID"]}))
+    ctx = Ctx()  # old runner: no run_id, no setup, no upload
+    cfg = {"mode": "lora_rag", "embedder": "tfidf-char", "few_shot_k": 2}
+    a1, _ = E.run(cfg, EVAL, POOL, ctx)
+    a2, _ = E.run(cfg, EVAL, POOL, ctx)  # second eval set reuses the adapter
+    assert calls == [6] and set(a1.values()) == set(a2.values()) == {"/adapters/inline"}

@@ -331,8 +331,16 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
 # ── LoRA fine-tuning (mode lora_rag) ─────────────────────────────────────────
 
 
-def _adapter_key(ctx) -> tuple:
-    return ("lora_adapter", ctx.run_id)
+def _adapter_key(ctx, cfg: dict | None = None) -> tuple:
+    # newer runners pass run_id; older ones don't, so fall back to a hash of the config
+    rid = getattr(ctx, "run_id", None) or hashlib.sha256(repr(sorted((cfg or {}).items())).encode()).hexdigest()[:12]
+    return ("lora_adapter", rid)
+
+
+def _work_dir(ctx, cfg: dict):
+    from pathlib import Path
+
+    return getattr(ctx, "work_dir", None) or Path.cwd() / "runner_work" / "train" / _adapter_key(ctx, cfg)[1]
 
 
 def setup(config: dict, sets: dict, ctx) -> None:
@@ -346,7 +354,7 @@ def setup(config: dict, sets: dict, ctx) -> None:
         return
     name = next(n for n in ("held_out", "val", "test") if n in sets)
     ctx.log(f"training on the {name} pool")
-    ctx.cache[_adapter_key(ctx)] = train_lora(cfg, sets[name][1], ctx)
+    ctx.cache[_adapter_key(ctx, cfg)] = train_lora(cfg, sets[name][1], ctx)
 
 
 def training_rows(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[str, str, list[tuple[str, str]], str]]:
@@ -378,14 +386,20 @@ def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
     from transformers import (AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, Trainer,
                               TrainerCallback, TrainingArguments)
 
-    out = ctx.work_dir
+    out = _work_dir(ctx, cfg)
     adapter_dir = out / "adapter"
-    if ctx.download_folder("adapter", adapter_dir):
+    upload = getattr(ctx, "upload_folder", None)      # older runners can't upload or resume:
+    download = getattr(ctx, "download_folder", None)  # training then simply runs start to finish
+    if adapter_dir.joinpath("adapter_config.json").exists():
+        ctx.log("found a finished adapter in this session; skipping training")
+        return str(adapter_dir)
+    if download and download("adapter", adapter_dir):
         ctx.log("found a finished adapter for this run on HF; skipping training")
         return str(adapter_dir)
 
     examples = training_rows(cfg, pool_df, ctx)
-    ctx.free_model()
+    if hasattr(ctx, "free_model"):
+        ctx.free_model()
     tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
@@ -427,21 +441,22 @@ def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
 
         def on_save(self, a, state, control, **kw):
             ck = out / "trainer" / f"checkpoint-{state.global_step}"
-            if ck.exists():
-                ctx.upload_folder(ck, "train_ckpt")
+            if ck.exists() and upload:
+                upload(ck, "train_ckpt")
                 ctx.log(f"checkpoint {state.global_step} uploaded")
 
     trainer = Trainer(model=model, args=args, train_dataset=data, callbacks=[Progress()],
                       data_collator=DataCollatorForSeq2Seq(tok, padding=True, label_pad_token_id=-100, pad_to_multiple_of=8))
     resume_dir = out / "resume_ckpt"
-    resume = str(resume_dir) if ctx.download_folder("train_ckpt", resume_dir) else None
+    resume = str(resume_dir) if download and download("train_ckpt", resume_dir) else None
     if resume:
         ctx.log("resuming training from the checkpoint on HF")
     trainer.train(resume_from_checkpoint=resume)
     model.save_pretrained(str(adapter_dir))
     tok.save_pretrained(str(adapter_dir))
-    ctx.upload_folder(adapter_dir, "adapter")
-    ctx.log("adapter uploaded")
+    if upload:
+        upload(adapter_dir, "adapter")
+        ctx.log("adapter uploaded")
     del trainer, model
     import gc
 
@@ -466,9 +481,11 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
 
     needs_nn = mode in {"retrieval", "rag_few_shot", "router", "lora_rag"}
     if mode == "lora_rag":
-        if not hasattr(ctx, "run_id") or _adapter_key(ctx) not in ctx.cache:
-            raise RuntimeError("lora_rag needs the runner with the setup step (2026-10-06): reopen notebooks/molab_runner.py on molab")
-        cfg["adapter"] = ctx.cache[_adapter_key(ctx)]
+        key = _adapter_key(ctx, cfg)
+        if key not in ctx.cache:  # older runner without the setup step: train inline on this set's pool
+            ctx.log("no setup step in this runner; training the adapter inline on this set's pool")
+            ctx.cache[key] = train_lora(cfg, pool_df, ctx)
+        cfg["adapter"] = ctx.cache[key]
     uses_rag = mode in {"rag_few_shot", "lora_rag"} or (mode == "router" and cfg["router_generate_mode"] == "rag_few_shot")
     k_nn = max(1, int(cfg["few_shot_k"])) if uses_rag else 1
     if mode in {"retrieval", "router"} and cfg["select"] == "vote":

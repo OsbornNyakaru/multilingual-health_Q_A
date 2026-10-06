@@ -57,7 +57,5 @@
   ],
   "max_minutes": 180.0,
   "drafted": "2026-10-06T16:47:43+00:00",
-  "git_sha": "25926fb3ca4c01c1d721312962d8ae5eabd931c4",
-  "created": "2026-10-06T16:47:47+00:00",
-  "run_id": "exp029_lora_rag_qwen257bin_sub2_nhall_359be2"
+  "withdrawn": "replaced by EXP-030, which trains inline so the already-running older runner can take it"
 }

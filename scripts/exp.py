@@ -209,7 +209,7 @@ def cmd_submit(a) -> None:
         num = spec["exp"].split("-")[1]
         spec["run_id"] = f"exp{num}_{slug(spec['config'], spec['eval'], spec['subsets'])}_{hashlib.sha256(key.encode()).hexdigest()[:6]}"
         api.upload_file(
-            path_or_fileobj=json.dumps(spec, indent=2).encode(), path_in_repo=f"queue_v2/{spec['run_id']}.json",
+            path_or_fileobj=json.dumps(spec, indent=2).encode(), path_in_repo=f"{'queue' if a.legacy_queue else 'queue_v2'}/{spec['run_id']}.json",
             repo_id=RUNS_REPO, repo_type="dataset", commit_message=f"queue {spec['run_id']}",
         )
         save_spec(spec)
@@ -513,6 +513,7 @@ def main() -> None:
     n.add_argument("--allow-multi", action="store_true", help="allow more than one changed key")
     s = sub.add_parser("submit", help="stamp git SHA and queue specs on HF")
     s.add_argument("exp", nargs="*", help="EXP ids (default: all unsubmitted)")
+    s.add_argument("--legacy-queue", action="store_true", help="post to queue/ so runners older than 2026-10-06-v2 pick it up")
     p = sub.add_parser("pull", help="fetch, score and record finished runs")
     p.add_argument("--wait", action="store_true", help="poll every 60 s until all submitted runs finish")
     p.add_argument("--timeout", type=float, default=240, help="minutes to wait with --wait")
