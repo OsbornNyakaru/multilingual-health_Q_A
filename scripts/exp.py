@@ -436,10 +436,16 @@ def cmd_submission(a) -> None:
     if not best:
         sys.exit("no best runs yet")
     test = pd.read_csv(TEST_CSV, dtype=str).fillna("")
+    # a best run's test predictions come from a child run: same config, eval {"test": 0}, parent = best run
+    test_run = {
+        r["parent"]: r["run_id"] for r in load_records()
+        if r["status"] == "ok" and "test" in (r.get("eval") or {}) and r.get("parent")
+    }
     parts, missing = [], []
     for s in sorted(test["subset"].unique()):
         b = best.get(s)
-        pf = RUNS_DIR / b["run_id"] / "test_preds.csv" if b else None
+        tr = test_run.get(b["run_id"]) if b else None
+        pf = RUNS_DIR / tr / "test_preds.csv" if tr else None
         if not pf or not pf.exists():
             missing.append(f"{s} (best {b['run_id'] if b else 'none'})")
             continue
@@ -447,7 +453,7 @@ def cmd_submission(a) -> None:
         parts.append(p[p["subset"] == s])
     if missing:
         sys.exit("no test predictions for: " + "; ".join(missing)
-                 + "\nqueue them with: exp.py new --from <run_id> --eval test=0 --allow-multi, then submit + pull")
+                 + "\nqueue them with: exp.py new --from <run_id> --eval test=0 --desc "test predictions", then submit + pull")
     preds = pd.concat(parts)
     sub = prepare.build_submission(preds["ID"].tolist(), preds["pred"].tolist())
     prepare.validate_submission(sub, expected_ids=test["ID"].tolist())

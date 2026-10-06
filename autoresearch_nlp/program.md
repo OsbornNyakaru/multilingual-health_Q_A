@@ -56,7 +56,7 @@ spec (each spec gets a new run_id, so nothing resumes stale answers by accident)
 
 ## Submitting to Zindi
 
-Every best run needs test predictions: `exp.py new --from <run_id> --eval test=0 --allow-multi`,
+Every best run needs test predictions: `exp.py new --from <run_id> --eval test=0 --desc "..."` (same config, test set only),
 then submit and pull. `python scripts/exp.py submission` assembles the per-subset composite into
 `experiments/runs/submissions/composite_*.csv` (gitignored). Record the public score in the ledger.
 The first submission also settles H-013 (does the grader tokenize like us).
