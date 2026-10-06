@@ -1,0 +1,53 @@
+{
+  "exp": "EXP-020",
+  "hypothesis": "H-012",
+  "description": "SMOKE: rag few-shot generation path on 40 held-out rows (Qwen2.5-7B, k=2)",
+  "parent": "exp009_ret_bgem3_nhall-vall_ad6575",
+  "changed": [
+    "mode"
+  ],
+  "config": {
+    "mode": "rag_few_shot",
+    "embedder": "BAAI/bge-m3",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "retrieve_on": "input",
+    "embed_batch": 64,
+    "hybrid_with": null,
+    "hybrid_alpha": 0.5,
+    "rerank_model": null,
+    "rerank_k": 20,
+    "rerank_on": "question",
+    "rerank_batch": 64,
+    "select": "top1",
+    "vote_k": 50,
+    "vote_power": 4.0,
+    "model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "precision": "auto",
+    "adapter": null,
+    "num_beams": 1,
+    "infer_batch": 32,
+    "max_input_tokens": 1024,
+    "no_repeat_ngram": 3,
+    "length_penalty": 1.0,
+    "few_shot_k": 2,
+    "few_shot_max_chars": 150,
+    "rag_max_chars": 400,
+    "router_threshold": 0.85,
+    "router_generate_mode": "rag_few_shot",
+    "length_mode": "pool_p95",
+    "checkpoint_every": 10
+  },
+  "eval": {
+    "held_out": 40
+  },
+  "subsets": [
+    "Aka_Gha",
+    "Eng_Gha"
+  ],
+  "max_minutes": 45.0,
+  "drafted": "2026-10-06T15:51:09+00:00",
+  "git_sha": "c9508b1ac0922a3b70079d68646ee98d539ffbbe",
+  "created": "2026-10-06T15:51:17+00:00",
+  "run_id": "exp020_rag_bgem3_qwen257bin_k2_sub2_nh40_4658cc"
+}
