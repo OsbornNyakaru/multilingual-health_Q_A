@@ -209,7 +209,7 @@ def cmd_submit(a) -> None:
         num = spec["exp"].split("-")[1]
         spec["run_id"] = f"exp{num}_{slug(spec['config'], spec['eval'], spec['subsets'])}_{hashlib.sha256(key.encode()).hexdigest()[:6]}"
         api.upload_file(
-            path_or_fileobj=json.dumps(spec, indent=2).encode(), path_in_repo=f"queue/{spec['run_id']}.json",
+            path_or_fileobj=json.dumps(spec, indent=2).encode(), path_in_repo=f"queue_v2/{spec['run_id']}.json",
             repo_id=RUNS_REPO, repo_type="dataset", commit_message=f"queue {spec['run_id']}",
         )
         save_spec(spec)

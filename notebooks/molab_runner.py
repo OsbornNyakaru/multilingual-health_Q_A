@@ -91,7 +91,7 @@ def _(data_repo_input, hf_token_input, mo, os, runs_repo_input):
     # Frozen harness: autoresearch_nlp/prepare.py must hash to this, or the runner refuses to run.
     PREPARE_SHA256 = "532b2c174894b7107129c3d7056613c62c4066e530761193b1518487e784f5dd"
     HELD_OUT_FINGERPRINT = "a8026f24ea3d"
-    RUNNER_VERSION = "2026-10-06-setup"  # reported in every ping so the Mac side can see which runner is live
+    RUNNER_VERSION = "2026-10-06-v2"  # reported in every ping so the Mac side can see which runner is live
 
     from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 
@@ -348,7 +348,8 @@ def _(
     def pending_runs() -> list[dict]:
         files = hf_files()
         done = {f.split("/")[1] for f in files if f.startswith("runs/") and f.endswith("/result.json")}
-        specs = [hf_json(f) for f in files if f.startswith("queue/") and f.endswith(".json")]
+        # queue_v2/: runners older than 2026-10-06-setup only read queue/, so they can't grab these specs
+        specs = [hf_json(f) for f in files if f.startswith("queue_v2/") and f.endswith(".json")]
         todo = [s for s in specs if s["run_id"] not in done]
         return sorted(todo, key=lambda s: s.get("created", ""))  # submit order; exp.py submits same-model runs together
 

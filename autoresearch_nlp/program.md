@@ -19,7 +19,7 @@ work runs on molab, and results travel back through a private Hugging Face datas
 | `vault/experiments/EXP-NNN-*.md` | one vault note per run, linked from `vault/00_INDEX.md` | generated |
 
 Private HF datasets: `nyakaruosborn/afro-health-qa-data` (competition CSVs) and
-`nyakaruosborn/afro-health-qa-runs` (`queue/` specs, `runs/<run_id>/` predictions + `result.json`).
+`nyakaruosborn/afro-health-qa-runs` (`queue_v2/` specs (runners older than 2026-10-06 read `queue/` and are ignored), `runs/<run_id>/` predictions + `result.json`).
 Predictions contain competition text, so they never go to GitHub (`experiments/runs/` is gitignored).
 
 ## How a run is judged
