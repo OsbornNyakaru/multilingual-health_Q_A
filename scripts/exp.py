@@ -453,7 +453,7 @@ def cmd_submission(a) -> None:
         parts.append(p[p["subset"] == s])
     if missing:
         sys.exit("no test predictions for: " + "; ".join(missing)
-                 + "\nqueue them with: exp.py new --from <run_id> --eval test=0 --desc "test predictions", then submit + pull")
+                 + "\nqueue them with: exp.py new --from <run_id> --eval test=0 --desc 'test predictions', then submit + pull")
     preds = pd.concat(parts)
     sub = prepare.build_submission(preds["ID"].tolist(), preds["pred"].tolist())
     prepare.validate_submission(sub, expected_ids=test["ID"].tolist())
