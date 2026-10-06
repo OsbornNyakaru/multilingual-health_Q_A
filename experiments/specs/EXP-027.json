@@ -1,13 +1,16 @@
 {
-  "exp": "EXP-022",
+  "exp": "EXP-027",
   "hypothesis": "H-012",
-  "description": "WITHDRAWN before running: inherits no_repeat_ngram=3, which broke generation in EXP-020. rag few-shot with 4 neighbours instead of 2",
-  "parent": "EXP-021",
+  "description": "LoRA SMOKE: RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3 (reference r64/a64/drop0.5/lr2e-4); eval held-out Aka_Gha + Eng_Gha",
+  "parent": "exp025_rag_bgem3_qwen257bin_k2_sub2_nh40_cc19d5",
   "changed": [
-    "few_shot_k"
+    "few_shot_k",
+    "lora_data_frac",
+    "lora_epochs",
+    "mode"
   ],
   "config": {
-    "mode": "rag_few_shot",
+    "mode": "lora_rag",
     "embedder": "BAAI/bge-m3",
     "query_prefix": "",
     "passage_prefix": "",
@@ -28,27 +31,38 @@
     "num_beams": 1,
     "infer_batch": 32,
     "max_input_tokens": 1024,
-    "no_repeat_ngram": 3,
+    "no_repeat_ngram": 0,
     "length_penalty": 1.0,
-    "few_shot_k": 4,
+    "few_shot_k": 3,
     "few_shot_max_chars": 150,
     "rag_max_chars": 400,
     "router_threshold": 0.85,
     "router_generate_mode": "rag_few_shot",
     "length_mode": "pool_p95",
-    "checkpoint_every": 10
+    "checkpoint_every": 10,
+    "lora_r": 64,
+    "lora_alpha": 64,
+    "lora_dropout": 0.5,
+    "lora_lr": 0.0002,
+    "lora_epochs": 1,
+    "lora_batch": 4,
+    "lora_grad_acc": 1,
+    "lora_warmup": 0.03,
+    "lora_max_len": 2048,
+    "lora_data_frac": 0.1,
+    "lora_optim": "adamw_torch",
+    "lora_save_steps": 500
   },
   "eval": {
-    "held_out": 0,
-    "val": 0
+    "held_out": 0
   },
   "subsets": [
     "Aka_Gha",
     "Eng_Gha"
   ],
   "max_minutes": 180.0,
-  "drafted": "2026-10-06T15:51:11+00:00",
+  "drafted": "2026-10-06T16:15:47+00:00",
   "git_sha": "abbac19b2d3751d00d6d267ca6b9b6578f32fb71",
-  "created": "2026-10-06T16:15:50+00:00",
-  "run_id": "exp022_rag_bgem3_qwen257bin_k4_sub2_nhall-vall_984ce4"
+  "created": "2026-10-06T16:15:53+00:00",
+  "run_id": "exp027_lora_rag_qwen257bin_sub2_nhall_26988d"
 }
