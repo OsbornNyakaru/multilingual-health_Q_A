@@ -91,6 +91,7 @@ def _(data_repo_input, hf_token_input, mo, os, runs_repo_input):
     # Frozen harness: autoresearch_nlp/prepare.py must hash to this, or the runner refuses to run.
     PREPARE_SHA256 = "532b2c174894b7107129c3d7056613c62c4066e530761193b1518487e784f5dd"
     HELD_OUT_FINGERPRINT = "a8026f24ea3d"
+    RUNNER_VERSION = "2026-10-06-setup"  # reported in every ping so the Mac side can see which runner is live
 
     from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 
@@ -103,8 +104,8 @@ def _(data_repo_input, hf_token_input, mo, os, runs_repo_input):
         auth_msg = mo.callout(mo.md(f"Hugging Face: **not signed in** ({type(_e).__name__}). Paste a token above."), kind="danger")
     auth_msg
     return (
-        CommitOperationAdd, DATA_REPO, GITHUB_REPO, HELD_OUT_FINGERPRINT, PREPARE_SHA256, RUNS_REPO,
-        api, hf_hub_download,
+        CommitOperationAdd, DATA_REPO, GITHUB_REPO, HELD_OUT_FINGERPRINT, PREPARE_SHA256, RUNNER_VERSION,
+        RUNS_REPO, api, hf_hub_download,
     )
 
 
@@ -328,7 +329,7 @@ def _(DATA_DIR, HELD_OUT_FINGERPRINT, KERNEL, WORK_DIR, pd):
 
 @app.cell
 def _(
-    KERNEL, WORK_DIR, build_sets, check_harness, datetime, fetch_code, free_model, get_embedder, get_model,
+    KERNEL, RUNNER_VERSION, WORK_DIR, build_sets, check_harness, datetime, fetch_code, free_model, get_embedder, get_model,
     gpu_info, hf_download, hf_files, hf_get_folder, hf_json, hf_put, hf_put_folder, json, load_module, mo, pd,
     time, timezone, traceback,
 ):
@@ -467,7 +468,8 @@ def _(
 
     def run_queue(watch: bool = False, idle_minutes: float = 30, max_runs: int = 100, log=print) -> list[dict]:
         try:
-            hf_put({"_runner/ping.json": json.dumps({"at": _now(), "gpu": gpu_info})}, "runner ping")
+            hf_put({"_runner/ping.json": json.dumps({"at": _now(), "gpu": gpu_info, "version": RUNNER_VERSION})},
+                   f"runner ping {RUNNER_VERSION}")
         except Exception as e:
             if "403" in str(e) or "write token" in str(e).lower():
                 raise RuntimeError(
