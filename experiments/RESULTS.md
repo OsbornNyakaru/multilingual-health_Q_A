@@ -6,28 +6,37 @@ a run is adopted per subset only if it wins by ≥ 0.003 on both held-out and va
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.2984**, **val 0.3048** (8/8 subsets covered)
+composite test-mix: **held-out 0.3723**, **val 0.3708** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.3899 | 0.4025 |
+| Eng_Uga | 28.4% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5467 | 0.5420 |
 | Aka_Gha | 18.8% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.1801 | 0.1694 |
-| Eng_Gha | 18.8% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.1546 | 0.1591 |
-| Lug_Uga | 14.3% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.3508 | 0.3700 |
-| Swa_Ken | 8.7% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.4194 | 0.4254 |
-| Eng_Ken | 6.4% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.4116 | 0.4306 |
-| Amh_Eth | 2.3% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.0832 | 0.1091 |
-| Eng_Eth | 2.3% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.4265 | 0.3771 |
+| Eng_Gha | 18.8% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.1687 | 0.1738 |
+| Lug_Uga | 14.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.3760 | 0.3803 |
+| Swa_Ken | 8.7% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5413 | 0.5593 |
+| Eng_Ken | 6.4% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5895 | 0.5704 |
+| Amh_Eth | 2.3% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.0981 | 0.1168 |
+| Eng_Eth | 2.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.4568 | 0.4350 |
 
 ## runs (newest first)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-010 | `exp010_ret_multilingu_nhall-vall_7bc6f6` | 2026-10-06 14:48 | embedder, passage_prefix, query_prefix | held_out=all, val=all | 0.3614 | 0.3639 | — | ok | dense retrieval with multilingual-e5-large (query:/passage: prefixes are part of the model) |
+| EXP-009 | `exp009_ret_bgem3_nhall-vall_ad6575` | 2026-10-06 14:47 | embedder | held_out=all, val=all | 0.3620 | 0.3587 | Amh_Eth, Eng_Gha, Eng_Ken, Eng_Uga, Swa_Ken | ok | dense retrieval with bge-m3 instead of char tf-idf |
+| EXP-008 | `exp008_ret_tfidfchar_nhall-vall_402044` | 2026-10-06 14:45 | select | held_out=all, val=all | 0.3053 | 0.3075 | Eng_Eth, Eng_Uga, Lug_Uga | ok | answer vote over top-50 neighbours (sim^4) instead of top-1 |
 | EXP-007 | `exp007_ret_tfidfchar_nhall-vall_6d656b` | 2026-10-01 11:17 | embedder | held_out=all, val=all | 0.2984 | 0.3048 | Aka_Gha, Amh_Eth, Eng_Eth, Eng_Gha, Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken | ok | CPU baseline: char 3-5-gram tfidf retrieval, top-1, within subset |
 
 ## per-subset scores by run
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-010 | held_out | 0.5450 | 0.1756 | 0.1681 | 0.3315 | 0.5177 | 0.5773 | 0.1020 | 0.4407 |
+| EXP-010 | val | 0.5375 | 0.1621 | 0.1747 | 0.3515 | 0.5511 | 0.5881 | 0.1153 | 0.4074 |
+| EXP-009 | held_out | 0.5467 | 0.1745 | 0.1687 | 0.3134 | 0.5413 | 0.5895 | 0.0981 | 0.4435 |
+| EXP-009 | val | 0.5420 | 0.1668 | 0.1738 | 0.3055 | 0.5593 | 0.5704 | 0.1168 | 0.3973 |
+| EXP-008 | held_out | 0.4070 | 0.1800 | 0.1568 | 0.3760 | 0.3958 | 0.4027 | 0.0832 | 0.4568 |
+| EXP-008 | val | 0.4062 | 0.1693 | 0.1621 | 0.3803 | 0.4113 | 0.4236 | 0.1091 | 0.4350 |
 | EXP-007 | held_out | 0.3899 | 0.1801 | 0.1546 | 0.3508 | 0.4194 | 0.4116 | 0.0832 | 0.4265 |
 | EXP-007 | val | 0.4025 | 0.1694 | 0.1591 | 0.3700 | 0.4254 | 0.4306 | 0.1091 | 0.3771 |

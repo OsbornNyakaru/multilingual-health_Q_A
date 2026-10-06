@@ -9,66 +9,66 @@
     "since": "2026-10-01T11:17:36+00:00"
   },
   "Amh_Eth": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
+    "exp": "EXP-009",
     "scores": {
-      "held_out": 0.0832,
-      "val": 0.1091
+      "held_out": 0.0981,
+      "val": 0.1168
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:47:22+00:00"
   },
   "Eng_Eth": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp008_ret_tfidfchar_nhall-vall_402044",
+    "exp": "EXP-008",
     "scores": {
-      "held_out": 0.4265,
-      "val": 0.3771
+      "held_out": 0.4568,
+      "val": 0.435
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:45:53+00:00"
   },
   "Eng_Gha": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
+    "exp": "EXP-009",
     "scores": {
-      "held_out": 0.1546,
-      "val": 0.1591
+      "held_out": 0.1687,
+      "val": 0.1738
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:47:22+00:00"
   },
   "Eng_Ken": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
+    "exp": "EXP-009",
     "scores": {
-      "held_out": 0.4116,
-      "val": 0.4306
+      "held_out": 0.5895,
+      "val": 0.5704
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:47:22+00:00"
   },
   "Eng_Uga": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
+    "exp": "EXP-009",
     "scores": {
-      "held_out": 0.3899,
-      "val": 0.4025
+      "held_out": 0.5467,
+      "val": 0.542
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:47:22+00:00"
   },
   "Lug_Uga": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp008_ret_tfidfchar_nhall-vall_402044",
+    "exp": "EXP-008",
     "scores": {
-      "held_out": 0.3508,
-      "val": 0.37
+      "held_out": 0.376,
+      "val": 0.3803
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:45:53+00:00"
   },
   "Swa_Ken": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
+    "exp": "EXP-009",
     "scores": {
-      "held_out": 0.4194,
-      "val": 0.4254
+      "held_out": 0.5413,
+      "val": 0.5593
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T14:47:22+00:00"
   }
 }

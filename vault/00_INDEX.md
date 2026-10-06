@@ -66,6 +66,12 @@ As of 2026-10-01: composite **held-out 0.2984 / Val 0.3048** test-mix (ROUGE-onl
 
 - [[EXP-007-ret-tfidfchar-nhall-vall]] — CPU baseline: char 3-5-gram tfidf retrieval, top-1, within subset (ok; won: Aka_Gha, Amh_Eth, Eng_Eth, Eng_Gha, Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken)
 
+- [[EXP-008-ret-tfidfchar-nhall-vall]] — answer vote over top-50 neighbours (sim^4) instead of top-1 (ok; won: Eng_Eth, Eng_Uga, Lug_Uga)
+
+- [[EXP-009-ret-bgem3-nhall-vall]] — dense retrieval with bge-m3 instead of char tf-idf (ok; won: Amh_Eth, Eng_Gha, Eng_Ken, Eng_Uga, Swa_Ken)
+
+- [[EXP-010-ret-multilingu-nhall-vall]] — dense retrieval with multilingual-e5-large (query:/passage: prefixes are part of the model) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
