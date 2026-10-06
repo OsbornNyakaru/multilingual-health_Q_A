@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-020 | `exp020_rag_bgem3_qwen257bin_k2_sub2_nh40_4658cc` | 2026-10-06 15:53 | mode | held_out=40 | 0.0872 |  | — | ok | SMOKE: rag few-shot generation path on 40 held-out rows (Qwen2.5-7B, k=2) |
 | EXP-019 | `exp019_ret_bgem3_ntall_5ce5cb` | 2026-10-06 15:31 | — | test=all |  |  | — | ok | test predictions for EXP-013 (pool = Train + Val) |
 | EXP-018 | `exp018_ret_bgem3_ntall_1f9a20` | 2026-10-06 15:30 | — | test=all |  |  | — | ok | test predictions for EXP-012 (pool = Train + Val) |
 | EXP-017 | `exp017_ret_bgem3_ntall_a2e3ac` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-009 (pool = Train + Val) |
@@ -50,6 +51,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-020 | held_out |  | 0.0718 | 0.1026 |  |  |  |  |  |
 | EXP-014 | held_out | 0.4570 | 0.1850 | 0.1666 | 0.3137 | 0.4491 | 0.4349 | 0.0924 | 0.3082 |
 | EXP-014 | val | 0.4440 | 0.1762 | 0.1727 | 0.3001 | 0.4292 | 0.4627 | 0.1039 | 0.2868 |
 | EXP-013 | held_out | 0.5542 | 0.1784 | 0.1638 | 0.3762 | 0.5454 | 0.5854 | 0.0953 | 0.4367 |

@@ -1,10 +1,10 @@
 {
-  "exp": "EXP-022",
+  "exp": "EXP-025",
   "hypothesis": "H-012",
-  "description": "WITHDRAWN before running: inherits no_repeat_ngram=3, which broke generation in EXP-020. rag few-shot with 4 neighbours instead of 2",
-  "parent": "EXP-021",
+  "description": "SCREEN: same 40 rows as EXP-020 with no_repeat_ngram off (it pushed Qwen into Chinese and garbled Akan)",
+  "parent": "exp020_rag_bgem3_qwen257bin_k2_sub2_nh40_4658cc",
   "changed": [
-    "few_shot_k"
+    "no_repeat_ngram"
   ],
   "config": {
     "mode": "rag_few_shot",
@@ -28,9 +28,9 @@
     "num_beams": 1,
     "infer_batch": 32,
     "max_input_tokens": 1024,
-    "no_repeat_ngram": 3,
+    "no_repeat_ngram": 0,
     "length_penalty": 1.0,
-    "few_shot_k": 4,
+    "few_shot_k": 2,
     "few_shot_max_chars": 150,
     "rag_max_chars": 400,
     "router_threshold": 0.85,
@@ -39,13 +39,12 @@
     "checkpoint_every": 10
   },
   "eval": {
-    "held_out": 0,
-    "val": 0
+    "held_out": 40
   },
   "subsets": [
     "Aka_Gha",
     "Eng_Gha"
   ],
-  "max_minutes": 180.0,
-  "drafted": "2026-10-06T15:51:11+00:00"
+  "max_minutes": 45.0,
+  "drafted": "2026-10-06T16:00:50+00:00"
 }
