@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-025 | `exp025_rag_bgem3_qwen257bin_k2_sub2_nh40_cc19d5` | 2026-10-06 16:14 | no_repeat_ngram | held_out=40 | 0.1801 |  | — | ok | SCREEN: same 40 rows as EXP-020 with no_repeat_ngram off (it pushed Qwen into Chinese and garbled Akan) |
+| EXP-021 | `exp021_rag_bgem3_qwen257bin_k2_sub2_nhall-vall_a26d61` | 2026-10-06 16:13 | mode | held_out=all, val=all | 0.0983 | 0.0984 | — | ok | rag few-shot: Qwen2.5-7B writes answers after 2 nearest bge-m3 Q&A pairs (Aka_Gha, Eng_Gha) |
 | EXP-020 | `exp020_rag_bgem3_qwen257bin_k2_sub2_nh40_4658cc` | 2026-10-06 15:53 | mode | held_out=40 | 0.0872 |  | — | ok | SMOKE: rag few-shot generation path on 40 held-out rows (Qwen2.5-7B, k=2) |
 | EXP-019 | `exp019_ret_bgem3_ntall_5ce5cb` | 2026-10-06 15:31 | — | test=all |  |  | — | ok | test predictions for EXP-013 (pool = Train + Val) |
 | EXP-018 | `exp018_ret_bgem3_ntall_1f9a20` | 2026-10-06 15:30 | — | test=all |  |  | — | ok | test predictions for EXP-012 (pool = Train + Val) |
@@ -51,6 +53,9 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-025 | held_out |  | 0.1785 | 0.1818 |  |  |  |  |  |
+| EXP-021 | held_out |  | 0.0725 | 0.1242 |  |  |  |  |  |
+| EXP-021 | val |  | 0.0736 | 0.1232 |  |  |  |  |  |
 | EXP-020 | held_out |  | 0.0718 | 0.1026 |  |  |  |  |  |
 | EXP-014 | held_out | 0.4570 | 0.1850 | 0.1666 | 0.3137 | 0.4491 | 0.4349 | 0.0924 | 0.3082 |
 | EXP-014 | val | 0.4440 | 0.1762 | 0.1727 | 0.3001 | 0.4292 | 0.4627 | 0.1039 | 0.2868 |

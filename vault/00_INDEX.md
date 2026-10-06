@@ -90,6 +90,12 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-019-ret-bgem3-ntall]] — test predictions for EXP-013 (pool = Train + Val) (ok; won: none)
 
+- [[EXP-020-rag-bgem3-qwen257bin-k2-sub2-nh40]] — SMOKE: rag few-shot generation path on 40 held-out rows (Qwen2.5-7B, k=2) (ok; won: none)
+
+- [[EXP-021-rag-bgem3-qwen257bin-k2-sub2-nhall-vall]] — rag few-shot: Qwen2.5-7B writes answers after 2 nearest bge-m3 Q&A pairs (Aka_Gha, Eng_Gha) (ok; won: none)
+
+- [[EXP-025-rag-bgem3-qwen257bin-k2-sub2-nh40]] — SCREEN: same 40 rows as EXP-020 with no_repeat_ngram off (it pushed Qwen into Chinese and garbled Akan) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

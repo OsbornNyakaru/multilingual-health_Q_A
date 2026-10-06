@@ -139,3 +139,33 @@ def test_rerank_reorders_candidates():
     answers, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "fake-ce", "rerank_k": 3}, EVAL, POOL, ctx)
     assert answers["q1"] == "mosquito bites"
     assert meta["q1"]["rerank_score"] == 1.0 and meta["q1"]["rerank_id"] == "p2"
+
+
+def test_training_rows_exclude_self_and_stay_in_subset():
+    pool = POOL.assign(ID=POOL["ID"])
+    rows = E.training_rows({**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "few_shot_k": 2}, pool, Ctx())
+    assert len(rows) == len(pool)
+    for (q, a, ex, subset), (_, r) in zip(rows, pool.iterrows()):
+        assert q == r["input"] and a == r["output"] and subset == r["subset"]
+        assert (r["input"], r["output"][:400]) not in ex  # never its own Q&A
+        same = set(pool[pool.subset == subset]["input"])
+        assert all(eq in same for eq, _ in ex) and 1 <= len(ex) <= 2
+
+
+def test_setup_is_noop_for_non_lora_and_lora_rag_uses_trained_adapter(monkeypatch):
+    ctx = Ctx()
+    ctx.run_id = "r1"
+    E.setup({"mode": "retrieval"}, {"held_out": (EVAL, POOL)}, ctx)
+    assert ("lora_adapter", "r1") not in ctx.cache
+    monkeypatch.setattr(E, "train_lora", lambda cfg, pool, c: f"/adapters/{len(pool)}")
+    E.setup({"mode": "lora_rag", "embedder": "tfidf-char"}, {"val": (EVAL, POOL.iloc[:4]), "held_out": (EVAL, POOL)}, ctx)
+    assert ctx.cache[("lora_adapter", "r1")] == "/adapters/6"  # held_out's pool wins over val's
+    seen = {}
+
+    def fake_generate(cfg, rows, examples_for, c, answers, pool_df):
+        seen["adapter"], seen["ex"] = cfg["adapter"], examples_for(rows["ID"].iloc[0], rows["subset"].iloc[0])
+        answers.update({i: "GEN" for i in rows["ID"]})
+
+    monkeypatch.setattr(E, "generate", fake_generate)
+    answers, _ = E.run({"mode": "lora_rag", "embedder": "tfidf-char", "few_shot_k": 2}, EVAL, POOL, ctx)
+    assert seen["adapter"] == "/adapters/6" and len(seen["ex"]) == 2 and set(answers.values()) == {"GEN"}

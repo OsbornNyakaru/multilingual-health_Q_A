@@ -34,7 +34,7 @@ import pandas as pd
 ID_COL, INPUT_COL, OUTPUT_COL, SUBSET_COL = "ID", "input", "output", "subset"
 
 DEFAULT_CONFIG: dict = {
-    # retrieval | zero_shot | few_shot | rag_few_shot | router
+    # retrieval | zero_shot | few_shot | rag_few_shot | router | lora_rag
     "mode": "retrieval",
     # retrieval (used by retrieval, rag_few_shot, router)
     "embedder": "BAAI/bge-m3",   # any sentence-transformers id, or "tfidf-char" (CPU)
@@ -58,7 +58,7 @@ DEFAULT_CONFIG: dict = {
     "num_beams": 1,
     "infer_batch": 32,
     "max_input_tokens": 1024,
-    "no_repeat_ngram": 3,
+    "no_repeat_ngram": 0,         # 3 pushed Qwen into Chinese and garbled Akan (EXP-020/021)
     "length_penalty": 1.0,
     "few_shot_k": 2,             # fixed examples per subset (few_shot) or neighbours (rag_few_shot)
     "few_shot_max_chars": 150,   # cap on fixed few-shot example answers
@@ -71,6 +71,21 @@ DEFAULT_CONFIG: dict = {
     # "fixed" uses LENGTH_BOUNDS as-is.
     "length_mode": "pool_p95",
     "checkpoint_every": 10,      # batches
+    # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
+    # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
+    # Defaults = the 11th-place reference recipe.
+    "lora_r": 64,
+    "lora_alpha": 64,
+    "lora_dropout": 0.5,
+    "lora_lr": 2e-4,
+    "lora_epochs": 3.0,
+    "lora_batch": 4,
+    "lora_grad_acc": 1,
+    "lora_warmup": 0.03,
+    "lora_max_len": 2048,
+    "lora_data_frac": 1.0,       # fraction of the training pool (stratified by subset) to train on
+    "lora_optim": "adamw_torch",
+    "lora_save_steps": 500,      # also uploads the checkpoint to HF so training survives a molab restart
 }
 
 SUBSET_TO_LANG = {
@@ -106,7 +121,7 @@ LENGTH_BOUNDS = {
 DEFAULT_BOUNDS = {"min_new_tokens": 8, "max_new_tokens": 160}
 # NOTE: these were calibrated in words, not tokens; only used with length_mode="fixed".
 
-GENERATIVE_MODES = {"zero_shot", "few_shot", "rag_few_shot"}
+GENERATIVE_MODES = {"zero_shot", "few_shot", "rag_few_shot", "lora_rag"}
 
 
 def lang_of(subset: str) -> str:
@@ -313,6 +328,128 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
     ctx.save(answers)
 
 
+# ── LoRA fine-tuning (mode lora_rag) ─────────────────────────────────────────
+
+
+def _adapter_key(ctx) -> tuple:
+    return ("lora_adapter", ctx.run_id)
+
+
+def setup(config: dict, sets: dict, ctx) -> None:
+    """Called once per run before the eval sets. sets = {name: (eval_df, pool_df)}.
+
+    lora_rag trains on the pool of the most honest set present: held_out's pool (work_train), else
+    val's (Train), else test's (Train + Val). Eval rows are never in that pool.
+    """
+    cfg = {**DEFAULT_CONFIG, **(config or {})}
+    if cfg["mode"] != "lora_rag":
+        return
+    name = next(n for n in ("held_out", "val", "test") if n in sets)
+    ctx.log(f"training on the {name} pool")
+    ctx.cache[_adapter_key(ctx)] = train_lora(cfg, sets[name][1], ctx)
+
+
+def training_rows(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[str, str, list[tuple[str, str]], str]]:
+    """(question, answer, examples, subset) per training row; examples = k nearest OTHER pool rows, same subset."""
+    frac = float(cfg["lora_data_frac"])
+    rows = pool_df if frac >= 1 else pd.concat(
+        [g.sample(max(1, int(round(len(g) * frac))), random_state=0) for _, g in pool_df.groupby(SUBSET_COL)]
+    )
+    rows = rows.reset_index(drop=True)
+    k = max(1, int(cfg["few_shot_k"]))
+    nn = neighbours(cfg, rows, pool_df, ctx, k=k + 1)
+    pool_ids = pool_df[ID_COL].astype(str).to_numpy()
+    cap = int(cfg["rag_max_chars"])
+    out = []
+    for _, r in rows.iterrows():
+        rid = str(r[ID_COL])
+        hits = [j for j, _ in nn[rid] if pool_ids[j] != rid][:k]
+        ex = [(str(pool_df[INPUT_COL].iloc[j]).strip()[:300], str(pool_df[OUTPUT_COL].iloc[j]).strip()[:cap]) for j in reversed(hits)]
+        out.append((str(r[INPUT_COL]), str(r[OUTPUT_COL]).strip(), ex, str(r[SUBSET_COL])))
+    return out
+
+
+def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
+    """Train (or resume, or reuse) a LoRA adapter; returns its local directory."""
+    import dataclasses
+
+    import torch
+    from peft import LoraConfig, get_peft_model
+    from transformers import (AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, Trainer,
+                              TrainerCallback, TrainingArguments)
+
+    out = ctx.work_dir
+    adapter_dir = out / "adapter"
+    if ctx.download_folder("adapter", adapter_dir):
+        ctx.log("found a finished adapter for this run on HF; skipping training")
+        return str(adapter_dir)
+
+    examples = training_rows(cfg, pool_df, ctx)
+    ctx.free_model()
+    tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
+    if tok.pad_token is None:
+        tok.pad_token = tok.eos_token
+    tok.padding_side = "right"
+    max_len, data, skipped = int(cfg["lora_max_len"]), [], 0
+    for q, a, ex, subset in examples:
+        p_ids = tok(render_prompt(tok, build_messages(q, subset, ex)), add_special_tokens=False)["input_ids"]
+        a_ids = tok(a + (tok.eos_token or ""), add_special_tokens=False)["input_ids"]
+        if len(p_ids) > max_len - 32:
+            skipped += 1
+            continue
+        ids = (p_ids + a_ids)[:max_len]
+        data.append({"input_ids": ids, "labels": ([-100] * len(p_ids) + a_ids)[:max_len]})
+    ctx.log(f"{len(data):,} training sequences ({skipped} skipped: prompt longer than {max_len} tokens)")
+
+    model = AutoModelForCausalLM.from_pretrained(cfg["model_id"], dtype=torch.bfloat16, device_map="auto", trust_remote_code=True)
+    model.config.use_cache = False
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()
+    model = get_peft_model(model, LoraConfig(
+        r=int(cfg["lora_r"]), lora_alpha=int(cfg["lora_alpha"]), lora_dropout=float(cfg["lora_dropout"]),
+        bias="none", task_type="CAUSAL_LM", target_modules="all-linear",
+    ))
+
+    fields = {f.name for f in dataclasses.fields(TrainingArguments)}
+    compat = {"warmup_ratio": float(cfg["lora_warmup"])} if "warmup_ratio" in fields else {"warmup_steps": float(cfg["lora_warmup"])}
+    args = TrainingArguments(
+        output_dir=str(out / "trainer"), num_train_epochs=float(cfg["lora_epochs"]),
+        per_device_train_batch_size=int(cfg["lora_batch"]), gradient_accumulation_steps=int(cfg["lora_grad_acc"]),
+        learning_rate=float(cfg["lora_lr"]), lr_scheduler_type="cosine", optim=cfg["lora_optim"], bf16=True,
+        logging_steps=20, save_strategy="steps", save_steps=int(cfg["lora_save_steps"]), save_total_limit=1,
+        report_to="none", seed=3407, remove_unused_columns=False, **compat,
+    )
+
+    class Progress(TrainerCallback):
+        def on_log(self, a, state, control, logs=None, **kw):
+            if logs and "loss" in logs:
+                ctx.log(f"step {state.global_step}/{state.max_steps} loss {logs['loss']:.4f}")
+
+        def on_save(self, a, state, control, **kw):
+            ck = out / "trainer" / f"checkpoint-{state.global_step}"
+            if ck.exists():
+                ctx.upload_folder(ck, "train_ckpt")
+                ctx.log(f"checkpoint {state.global_step} uploaded")
+
+    trainer = Trainer(model=model, args=args, train_dataset=data, callbacks=[Progress()],
+                      data_collator=DataCollatorForSeq2Seq(tok, padding=True, label_pad_token_id=-100, pad_to_multiple_of=8))
+    resume_dir = out / "resume_ckpt"
+    resume = str(resume_dir) if ctx.download_folder("train_ckpt", resume_dir) else None
+    if resume:
+        ctx.log("resuming training from the checkpoint on HF")
+    trainer.train(resume_from_checkpoint=resume)
+    model.save_pretrained(str(adapter_dir))
+    tok.save_pretrained(str(adapter_dir))
+    ctx.upload_folder(adapter_dir, "adapter")
+    ctx.log("adapter uploaded")
+    del trainer, model
+    import gc
+
+    gc.collect()
+    torch.cuda.empty_cache()
+    return str(adapter_dir)
+
+
 # ── entry point ──────────────────────────────────────────────────────────────
 
 
@@ -327,8 +464,12 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     answers: dict[str, str] = dict(ctx.resume)
     meta: dict[str, dict] = {}
 
-    needs_nn = mode in {"retrieval", "rag_few_shot", "router"}
-    uses_rag = mode == "rag_few_shot" or (mode == "router" and cfg["router_generate_mode"] == "rag_few_shot")
+    needs_nn = mode in {"retrieval", "rag_few_shot", "router", "lora_rag"}
+    if mode == "lora_rag":
+        if not hasattr(ctx, "run_id") or _adapter_key(ctx) not in ctx.cache:
+            raise RuntimeError("lora_rag needs the runner with the setup step (2026-10-06): reopen notebooks/molab_runner.py on molab")
+        cfg["adapter"] = ctx.cache[_adapter_key(ctx)]
+    uses_rag = mode in {"rag_few_shot", "lora_rag"} or (mode == "router" and cfg["router_generate_mode"] == "rag_few_shot")
     k_nn = max(1, int(cfg["few_shot_k"])) if uses_rag else 1
     if mode in {"retrieval", "router"} and cfg["select"] == "vote":
         k_nn = max(k_nn, int(cfg["vote_k"]))
@@ -367,6 +508,7 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
         "zero_shot": lambda i, s: [],
         "few_shot": lambda i, s: bank.get(s, []),
         "rag_few_shot": rag_examples,
+        "lora_rag": rag_examples,  # same prompt shape the adapter was trained on
     }
 
     if mode in GENERATIVE_MODES:

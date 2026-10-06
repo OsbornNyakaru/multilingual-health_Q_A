@@ -149,7 +149,7 @@ def _(DATA_REPO, Path, mo):
 
 @app.cell
 def _(
-    CommitOperationAdd, GITHUB_REPO, PREPARE_SHA256, RUNS_REPO, WORK_DIR, api, gc, gpu_info, hashlib,
+    CommitOperationAdd, GITHUB_REPO, PREPARE_SHA256, Path, RUNS_REPO, WORK_DIR, api, gc, gpu_info, hashlib,
     hf_hub_download, importlib, io, json, pd, sys, tarfile, time, urllib,
 ):
     # Kernel-lifetime state: survives across queued runs so models and embeddings load once.
@@ -226,6 +226,8 @@ def _(
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, adapter)
+            if prec != "4bit":
+                model = model.merge_and_unload()  # merged weights generate faster
         model.generation_config = GenerationConfig(
             do_sample=False, temperature=None, top_p=None, top_k=None,
             pad_token_id=tok.pad_token_id, eos_token_id=tok.eos_token_id,
@@ -250,6 +252,25 @@ def _(
     def hf_json(path_in_repo: str) -> dict:
         return json.loads(open(hf_download(path_in_repo), encoding="utf-8").read())
 
+    def hf_put_folder(local_dir, path_in_repo: str, message: str):
+        """Replace runs-repo folder `path_in_repo` with the contents of local_dir."""
+        api.upload_folder(folder_path=str(local_dir), path_in_repo=path_in_repo, repo_id=RUNS_REPO,
+                          repo_type="dataset", commit_message=message, delete_patterns="*")
+
+    def hf_get_folder(path_in_repo: str, local_dir) -> bool:
+        """Download runs-repo folder `path_in_repo` into local_dir; False if it doesn't exist."""
+        from huggingface_hub import snapshot_download
+
+        if not any(f.startswith(path_in_repo.rstrip("/") + "/") for f in hf_files()):
+            return False
+        tmp = snapshot_download(RUNS_REPO, repo_type="dataset", allow_patterns=[path_in_repo.rstrip("/") + "/*"])
+        import shutil
+
+        src = Path(tmp) / path_in_repo
+        shutil.rmtree(local_dir, ignore_errors=True)
+        shutil.copytree(src, local_dir)
+        return True
+
     def hf_put(files: dict, message: str):
         """files: {path_in_repo: str | bytes | DataFrame}"""
         ops = []
@@ -263,7 +284,7 @@ def _(
 
     return (
         KERNEL, check_harness, fetch_code, free_model, get_embedder, get_model, hf_download, hf_files,
-        hf_json, hf_put, load_module,
+        hf_get_folder, hf_json, hf_put, hf_put_folder, load_module,
     )
 
 
@@ -307,8 +328,9 @@ def _(DATA_DIR, HELD_OUT_FINGERPRINT, KERNEL, WORK_DIR, pd):
 
 @app.cell
 def _(
-    KERNEL, build_sets, check_harness, datetime, fetch_code, free_model, get_embedder, get_model,
-    gpu_info, hf_download, hf_files, hf_json, hf_put, json, load_module, mo, pd, time, timezone, traceback,
+    KERNEL, WORK_DIR, build_sets, check_harness, datetime, fetch_code, free_model, get_embedder, get_model,
+    gpu_info, hf_download, hf_files, hf_get_folder, hf_json, hf_put, hf_put_folder, json, load_module, mo, pd,
+    time, timezone, traceback,
 ):
     def _now():
         return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -349,17 +371,14 @@ def _(
             prepare = load_module(prep_path, f"prepare_{tag}")
             experiment = load_module(root / "autoresearch_nlp" / "experiment.py", f"experiment_{tag}")
             files = hf_files()
-            for set_name, (eval_df, pool_df) in build_sets(prepare, spec).items():
-                partial = f"{base}/partial_{set_name}.csv"
-                resume = {}
-                if partial in files:
-                    _p = pd.read_csv(hf_download(partial), dtype=str).fillna("")
-                    resume = dict(zip(_p["ID"], _p["answer"]))
-                    _log(f"{set_name}: resuming {len(resume):,} answers")
+
+            def make_ctx(scope: str, resume: dict, partial: str | None):
                 last_save = {"t": 0.0}
 
                 class Ctx:
                     cache = KERNEL["cache"]
+                    run_id = rid
+                    work_dir = WORK_DIR / "train" / rid
 
                     def __init__(self):
                         self.resume = resume
@@ -373,11 +392,23 @@ def _(
                         return get_embedder(name)
 
                     @staticmethod
+                    def free_model():
+                        free_model()
+
+                    @staticmethod
                     def save(answers):
-                        if time.time() - last_save["t"] > 300:
+                        if partial and time.time() - last_save["t"] > 300:
                             hf_put({partial: pd.DataFrame({"ID": list(answers), "answer": list(answers.values())})},
-                                   f"{rid}: checkpoint {set_name} ({len(answers)})")
+                                   f"{rid}: checkpoint {scope} ({len(answers)})")
                             last_save["t"] = time.time()
+
+                    @staticmethod
+                    def upload_folder(local_dir, name: str):
+                        hf_put_folder(local_dir, f"{base}/{name}", f"{rid}: upload {name}")
+
+                    @staticmethod
+                    def download_folder(name: str, local_dir) -> bool:
+                        return hf_get_folder(f"{base}/{name}", local_dir)
 
                     @staticmethod
                     def should_stop():
@@ -385,11 +416,26 @@ def _(
 
                     @staticmethod
                     def log(msg, progress=None):
-                        _log(f"{set_name}: {msg}")
+                        _log(f"{scope}: {msg}")
 
+                return Ctx()
+
+            sets = build_sets(prepare, spec)
+            if hasattr(experiment, "setup"):
+                # one-time work shared by all eval sets (e.g. fine-tuning an adapter)
+                experiment.setup(spec["config"], {k: (e.drop(columns=["output"], errors="ignore"), p) for k, (e, p) in sets.items()},
+                                 make_ctx("setup", {}, None))
+            for set_name, (eval_df, pool_df) in sets.items():
+                partial = f"{base}/partial_{set_name}.csv"
+                resume = {}
+                if partial in files:
+                    _p = pd.read_csv(hf_download(partial), dtype=str).fillna("")
+                    resume = dict(zip(_p["ID"], _p["answer"]))
+                    _log(f"{set_name}: resuming {len(resume):,} answers")
                 _log(f"{set_name}: {len(eval_df):,} rows, pool {len(pool_df):,}")
                 ts = time.time()
-                answers, meta = experiment.run(spec["config"], eval_df.drop(columns=["output"], errors="ignore"), pool_df, Ctx())
+                answers, meta = experiment.run(spec["config"], eval_df.drop(columns=["output"], errors="ignore"), pool_df,
+                                               make_ctx(set_name, resume, partial))
                 missing = [i for i in eval_df["ID"] if i not in answers]
                 preds = eval_df[["ID", "subset"]].copy()
                 preds["pred"] = [answers.get(i, "") for i in preds["ID"]]
