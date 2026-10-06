@@ -1,21 +1,21 @@
 {
   "Aka_Gha": {
-    "run_id": "exp007_ret_tfidfchar_nhall-vall_6d656b",
-    "exp": "EXP-007",
+    "run_id": "exp012_ret_bgem3_nhall-vall_c5159b",
+    "exp": "EXP-012",
     "scores": {
-      "held_out": 0.1801,
-      "val": 0.1694
+      "held_out": 0.1838,
+      "val": 0.1735
     },
-    "since": "2026-10-01T11:17:36+00:00"
+    "since": "2026-10-06T15:06:56+00:00"
   },
   "Amh_Eth": {
-    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
-    "exp": "EXP-009",
+    "run_id": "exp012_ret_bgem3_nhall-vall_c5159b",
+    "exp": "EXP-012",
     "scores": {
-      "held_out": 0.0981,
-      "val": 0.1168
+      "held_out": 0.1041,
+      "val": 0.1213
     },
-    "since": "2026-10-06T14:47:22+00:00"
+    "since": "2026-10-06T15:06:56+00:00"
   },
   "Eng_Eth": {
     "run_id": "exp008_ret_tfidfchar_nhall-vall_402044",
@@ -45,13 +45,13 @@
     "since": "2026-10-06T14:47:22+00:00"
   },
   "Eng_Uga": {
-    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
-    "exp": "EXP-009",
+    "run_id": "exp013_ret_bgem3_nhall-vall_179e11",
+    "exp": "EXP-013",
     "scores": {
-      "held_out": 0.5467,
-      "val": 0.542
+      "held_out": 0.5542,
+      "val": 0.5527
     },
-    "since": "2026-10-06T14:47:22+00:00"
+    "since": "2026-10-06T15:11:11+00:00"
   },
   "Lug_Uga": {
     "run_id": "exp008_ret_tfidfchar_nhall-vall_402044",

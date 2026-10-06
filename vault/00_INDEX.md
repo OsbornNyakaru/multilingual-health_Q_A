@@ -72,6 +72,20 @@ As of 2026-10-01: composite **held-out 0.2984 / Val 0.3048** test-mix (ROUGE-onl
 
 - [[EXP-010-ret-multilingu-nhall-vall]] — dense retrieval with multilingual-e5-large (query:/passage: prefixes are part of the model) (ok; won: none)
 
+- [[EXP-011-ret-bgem3-nhall-vall]] — bge-m3 + answer vote over top-50 (sim^4) (ok; won: none)
+
+- [[EXP-012-ret-bgem3-nhall-vall]] — hybrid: bge-m3 blended 50/50 with char tf-idf (aimed at Lug_Uga) (ok; won: Aka_Gha, Amh_Eth)
+
+- [[EXP-013-ret-bgem3-nhall-vall]] — bge-m3 top-20 reranked by bge-reranker-v2-m3, question vs neighbour question (ok; won: Eng_Uga)
+
+- [[EXP-014-ret-bgem3-nhall-vall]] — rerank on question vs neighbour answer instead of neighbour question (ok; won: none)
+
+- [[EXP-015-ret-tfidfchar-ntall]] — test predictions for EXP-007 (pool = Train + Val) (ok; won: none)
+
+- [[EXP-016-ret-tfidfchar-ntall]] — test predictions for EXP-008 (pool = Train + Val) (ok; won: none)
+
+- [[EXP-017-ret-bgem3-ntall]] — test predictions for EXP-009 (pool = Train + Val) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

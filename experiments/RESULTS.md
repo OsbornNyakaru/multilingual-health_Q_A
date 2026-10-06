@@ -6,23 +6,30 @@ a run is adopted per subset only if it wins by ≥ 0.003 on both held-out and va
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.3723**, **val 0.3708** (8/8 subsets covered)
+composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5467 | 0.5420 |
-| Aka_Gha | 18.8% | EXP-007 `exp007_ret_tfidfchar_nhall-vall_6d656b` | 0.1801 | 0.1694 |
+| Eng_Uga | 28.4% | EXP-013 `exp013_ret_bgem3_nhall-vall_179e11` | 0.5542 | 0.5527 |
+| Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.1687 | 0.1738 |
 | Lug_Uga | 14.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.3760 | 0.3803 |
 | Swa_Ken | 8.7% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5413 | 0.5593 |
 | Eng_Ken | 6.4% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5895 | 0.5704 |
-| Amh_Eth | 2.3% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.0981 | 0.1168 |
+| Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
 | Eng_Eth | 2.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.4568 | 0.4350 |
 
 ## runs (newest first)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-017 | `exp017_ret_bgem3_ntall_a2e3ac` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-009 (pool = Train + Val) |
+| EXP-016 | `exp016_ret_tfidfchar_ntall_0458c5` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-008 (pool = Train + Val) |
+| EXP-015 | `exp015_ret_tfidfchar_ntall_bccc1b` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-007 (pool = Train + Val) |
+| EXP-014 | `exp014_ret_bgem3_nhall-vall_a1737b` | 2026-10-06 15:22 | rerank_on | held_out=all, val=all | 0.3169 | 0.3106 | — | ok | rerank on question vs neighbour answer instead of neighbour question |
+| EXP-013 | `exp013_ret_bgem3_nhall-vall_179e11` | 2026-10-06 15:11 | rerank_model | held_out=all, val=all | 0.3728 | 0.3650 | Eng_Uga | ok | bge-m3 top-20 reranked by bge-reranker-v2-m3, question vs neighbour question |
+| EXP-012 | `exp012_ret_bgem3_nhall-vall_c5159b` | 2026-10-06 15:06 | hybrid_with | held_out=all, val=all | 0.3434 | 0.3457 | Aka_Gha, Amh_Eth | ok | hybrid: bge-m3 blended 50/50 with char tf-idf (aimed at Lug_Uga) |
+| EXP-011 | `exp011_ret_bgem3_nhall-vall_2f8d92` | 2026-10-06 15:06 | select | held_out=all, val=all | 0.2810 | 0.2882 | — | ok | bge-m3 + answer vote over top-50 (sim^4) |
 | EXP-010 | `exp010_ret_multilingu_nhall-vall_7bc6f6` | 2026-10-06 14:48 | embedder, passage_prefix, query_prefix | held_out=all, val=all | 0.3614 | 0.3639 | — | ok | dense retrieval with multilingual-e5-large (query:/passage: prefixes are part of the model) |
 | EXP-009 | `exp009_ret_bgem3_nhall-vall_ad6575` | 2026-10-06 14:47 | embedder | held_out=all, val=all | 0.3620 | 0.3587 | Amh_Eth, Eng_Gha, Eng_Ken, Eng_Uga, Swa_Ken | ok | dense retrieval with bge-m3 instead of char tf-idf |
 | EXP-008 | `exp008_ret_tfidfchar_nhall-vall_402044` | 2026-10-06 14:45 | select | held_out=all, val=all | 0.3053 | 0.3075 | Eng_Eth, Eng_Uga, Lug_Uga | ok | answer vote over top-50 neighbours (sim^4) instead of top-1 |
@@ -32,6 +39,14 @@ composite test-mix: **held-out 0.3723**, **val 0.3708** (8/8 subsets covered)
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-014 | held_out | 0.4570 | 0.1850 | 0.1666 | 0.3137 | 0.4491 | 0.4349 | 0.0924 | 0.3082 |
+| EXP-014 | val | 0.4440 | 0.1762 | 0.1727 | 0.3001 | 0.4292 | 0.4627 | 0.1039 | 0.2868 |
+| EXP-013 | held_out | 0.5542 | 0.1784 | 0.1638 | 0.3762 | 0.5454 | 0.5854 | 0.0953 | 0.4367 |
+| EXP-013 | val | 0.5527 | 0.1706 | 0.1679 | 0.3438 | 0.5437 | 0.5603 | 0.1225 | 0.3957 |
+| EXP-012 | held_out | 0.4787 | 0.1838 | 0.1624 | 0.3726 | 0.5069 | 0.5076 | 0.1041 | 0.4361 |
+| EXP-012 | val | 0.4830 | 0.1735 | 0.1686 | 0.3933 | 0.5048 | 0.5065 | 0.1213 | 0.3832 |
+| EXP-011 | held_out | 0.4133 | 0.1750 | 0.1739 | 0.2565 | 0.3274 | 0.3320 | 0.0976 | 0.4063 |
+| EXP-011 | val | 0.4542 | 0.1676 | 0.1733 | 0.2157 | 0.3567 | 0.3371 | 0.1178 | 0.3853 |
 | EXP-010 | held_out | 0.5450 | 0.1756 | 0.1681 | 0.3315 | 0.5177 | 0.5773 | 0.1020 | 0.4407 |
 | EXP-010 | val | 0.5375 | 0.1621 | 0.1747 | 0.3515 | 0.5511 | 0.5881 | 0.1153 | 0.4074 |
 | EXP-009 | held_out | 0.5467 | 0.1745 | 0.1687 | 0.3134 | 0.5413 | 0.5895 | 0.0981 | 0.4435 |
