@@ -2,7 +2,7 @@
 type: hypothesis
 id: H-013
 created: 2026-09-24
-status: testing
+status: confirmed
 links: ["[[D-001-metric-weights-and-tokenizer]]", "[[F-001-competition-metric]]", "[[00_INDEX]]"]
 ---
 # H-013 whitespace tokenizer matches grader
@@ -22,6 +22,11 @@ Source: new, from `vault/Open Questions.md` and `autoresearch_nlp/COMPETITION_IN
 - Confound: test predictions retrieve from Train + Val, Val predictions only from Train, which by itself lifts test scores. So this is suggestive, not proof.
 - Decisive probe queued with the user: resubmit the same file with every answer UPPERCASED (`experiments/runs/submissions/probe_uppercase_20261006.csv`). If the LB's ROUGE-1/ROUGE-L stay at 0.5616/0.5096, the grader lowercases (default tokenizer: lowercase, keep only [a-z0-9], so Ge'ez scores ~0). If they collapse, the grader is case-sensitive whitespace, as assumed.
 - If the default tokenizer is confirmed: the frozen harness must switch tokenizer (a new pinned prepare.py hash in the runner), all runs get re-scored, and Amharic ROUGE becomes worthless (only the judge counts there).
+
+## 2026-10-06: probe result, hypothesis confirmed
+- Uppercase probe on the LB: ROUGE-1 0.5616 → **0.0171**, ROUGE-L 0.5096 → **0.0169**; judge 0.7526 → 0.7586 (unaffected). A lowercasing tokenizer (rouge-score default) would have left ROUGE unchanged, so the grader is **case-sensitive**, consistent with the starter notebook's whitespace split that `prepare.py` uses. The residual 0.017 fits whitespace tokens untouched by uppercasing (Ge'ez Amharic answers, numbers, punctuation).
+- Consequences: keep the frozen harness as it is; Amharic ROUGE counts. The ~0.02 local-vs-LB ROUGE gap is not the tokenizer; most likely the larger test pool (Train + Val) plus Val/Test differences. Expect LB ROUGE ≈ local Val test-mix + ~0.02 for retrieval composites (one data point; re-check on later submissions).
+- Also learned: the judge ignores letter case, and ROUGE is reported per component on the LB, which makes cheap probes like this possible.
 
 ## Links
 - [[metric-replica]]

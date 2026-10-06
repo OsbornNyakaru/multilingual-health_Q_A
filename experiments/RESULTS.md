@@ -43,6 +43,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-06 | `probe_uppercase_20261006.csv` | 0.2098 | 0.2098 | 0.0171 | 0.0169 | 0.7586 |  | probe: same answers uppercased. ROUGE collapsed, so the grader is case-sensitive (no lowercasing): whitespace tokenizer confirmed (H-013). Not a real attempt. |
 | 2026-10-06 | `composite_20261006_1834.csv` | 0.5920 | 0.5816 | 0.5616 | 0.5096 | 0.7526 | 0.3747 | first submission: per-subset retrieval composite (EXP-008/009/012/013). LB rouge-only 0.3963 vs local whitespace 0.3747; default rouge tokenizer on Val gives 0.3952 |
 
 ## per-subset scores by run
