@@ -104,6 +104,8 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-028-lora-rag-qwen257bin-sub2-nhall]] — LoRA SMOKE (re-run of EXP-027, which hit the old runner): RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3; eval held-out Aka_Gha + Eng_Gha (crash; won: none)
 
+- [[EXP-030-lora-rag-qwen257bin-sub2-nhall]] — LoRA SMOKE on the already-running runner (inline training): RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3; eval held-out Aka_Gha + Eng_Gha (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

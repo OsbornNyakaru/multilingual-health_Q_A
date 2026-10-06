@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.3808**, **val 0.3783** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-030 | `exp030_lora_rag_qwen257bin_sub2_nhall_9a4f45` | 2026-10-06 17:13 | — | held_out=all | 0.1907 |  | — | ok | LoRA SMOKE on the already-running runner (inline training): RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3; eval held-out Aka_Gha + Eng_Gha |
 | EXP-028 | `exp028_lora_rag_qwen257bin_sub2_nhall_5b098e` | 2026-10-06 16:41 | — | held_out=all |  |  | — | crash | LoRA SMOKE (re-run of EXP-027, which hit the old runner): RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3; eval held-out Aka_Gha + Eng_Gha |
 | EXP-027 | `exp027_lora_rag_qwen257bin_sub2_nhall_26988d` | 2026-10-06 16:36 | few_shot_k, lora_data_frac, lora_epochs, mode | held_out=all |  |  | — | crash | LoRA SMOKE: RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3 (reference r64/a64/drop0.5/lr2e-4); eval held-out Aka_Gha + Eng_Gha |
 | EXP-026 | `exp026_rag_bgem3_qwen257bin_k2_sub2_nhall-vall_47e98d` | 2026-10-06 16:36 | — | held_out=all, val=all | 0.1863 | 0.1801 | Eng_Gha | ok | full run of EXP-025: Qwen2.5-7B rag few-shot k=2, no_repeat_ngram off, Aka_Gha + Eng_Gha |
@@ -57,6 +58,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-030 | held_out |  | 0.1287 | 0.2529 |  |  |  |  |  |
 | EXP-026 | held_out |  | 0.1745 | 0.1982 |  |  |  |  |  |
 | EXP-026 | val |  | 0.1675 | 0.1928 |  |  |  |  |  |
 | EXP-023 | held_out |  | 0.0760 | 0.1270 |  |  |  |  |  |
