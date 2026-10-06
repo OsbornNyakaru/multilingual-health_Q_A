@@ -327,7 +327,7 @@ def _(
         done = {f.split("/")[1] for f in files if f.startswith("runs/") and f.endswith("/result.json")}
         specs = [hf_json(f) for f in files if f.startswith("queue/") and f.endswith(".json")]
         todo = [s for s in specs if s["run_id"] not in done]
-        return sorted(todo, key=lambda s: (s["config"].get("model_id", ""), s.get("created", "")))
+        return sorted(todo, key=lambda s: s.get("created", ""))  # submit order; exp.py submits same-model runs together
 
     def run_one(spec: dict, log) -> dict:
         rid = spec["run_id"]
