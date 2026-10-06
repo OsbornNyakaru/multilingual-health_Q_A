@@ -27,13 +27,13 @@
     "since": "2026-10-06T14:45:53+00:00"
   },
   "Eng_Gha": {
-    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
-    "exp": "EXP-009",
+    "run_id": "exp026_rag_bgem3_qwen257bin_k2_sub2_nhall-vall_47e98d",
+    "exp": "EXP-026",
     "scores": {
-      "held_out": 0.1687,
-      "val": 0.1738
+      "held_out": 0.1982,
+      "val": 0.1928
     },
-    "since": "2026-10-06T14:47:22+00:00"
+    "since": "2026-10-06T16:36:28+00:00"
   },
   "Eng_Ken": {
     "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",

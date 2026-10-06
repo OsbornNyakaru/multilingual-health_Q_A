@@ -96,6 +96,12 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-025-rag-bgem3-qwen257bin-k2-sub2-nh40]] — SCREEN: same 40 rows as EXP-020 with no_repeat_ngram off (it pushed Qwen into Chinese and garbled Akan) (ok; won: none)
 
+- [[EXP-023-rag-bgem3-afriquella-k2-sub2-nhall-vall]] — rag few-shot with AfriqueLlama-8B instead of Qwen2.5-7B (started by a second runner session before it was put on hold) (ok; won: none)
+
+- [[EXP-026-rag-bgem3-qwen257bin-k2-sub2-nhall-vall]] — full run of EXP-025: Qwen2.5-7B rag few-shot k=2, no_repeat_ngram off, Aka_Gha + Eng_Gha (ok; won: Eng_Gha)
+
+- [[EXP-027-lora-rag-qwen257bin-sub2-nhall]] — LoRA SMOKE: RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3 (reference r64/a64/drop0.5/lr2e-4); eval held-out Aka_Gha + Eng_Gha (crash; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

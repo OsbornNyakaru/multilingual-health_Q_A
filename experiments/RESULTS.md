@@ -6,13 +6,13 @@ a run is adopted per subset only if it wins by ≥ 0.003 on both held-out and va
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
+composite test-mix: **held-out 0.3808**, **val 0.3783** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-013 `exp013_ret_bgem3_nhall-vall_179e11` | 0.5542 | 0.5527 |
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
-| Eng_Gha | 18.8% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.1687 | 0.1738 |
+| Eng_Gha | 18.8% | EXP-026 `exp026_rag_bgem3_qwen257bin_k2_sub2_nhall-vall_47e98d` | 0.1982 | 0.1928 |
 | Lug_Uga | 14.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.3760 | 0.3803 |
 | Swa_Ken | 8.7% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5413 | 0.5593 |
 | Eng_Ken | 6.4% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5895 | 0.5704 |
@@ -23,6 +23,9 @@ composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-027 | `exp027_lora_rag_qwen257bin_sub2_nhall_26988d` | 2026-10-06 16:36 | few_shot_k, lora_data_frac, lora_epochs, mode | held_out=all |  |  | — | crash | LoRA SMOKE: RAG-enriched LoRA on Qwen2.5-7B, 10% of work_train, 1 epoch, k=3 (reference r64/a64/drop0.5/lr2e-4); eval held-out Aka_Gha + Eng_Gha |
+| EXP-026 | `exp026_rag_bgem3_qwen257bin_k2_sub2_nhall-vall_47e98d` | 2026-10-06 16:36 | — | held_out=all, val=all | 0.1863 | 0.1801 | Eng_Gha | ok | full run of EXP-025: Qwen2.5-7B rag few-shot k=2, no_repeat_ngram off, Aka_Gha + Eng_Gha |
+| EXP-023 | `exp023_rag_bgem3_afriquella_k2_sub2_nhall-vall_6c67a3` | 2026-10-06 16:23 | model_id | held_out=all, val=all | 0.1015 | 0.0993 | — | ok | rag few-shot with AfriqueLlama-8B instead of Qwen2.5-7B (started by a second runner session before it was put on hold) |
 | EXP-025 | `exp025_rag_bgem3_qwen257bin_k2_sub2_nh40_cc19d5` | 2026-10-06 16:14 | no_repeat_ngram | held_out=40 | 0.1801 |  | — | ok | SCREEN: same 40 rows as EXP-020 with no_repeat_ngram off (it pushed Qwen into Chinese and garbled Akan) |
 | EXP-021 | `exp021_rag_bgem3_qwen257bin_k2_sub2_nhall-vall_a26d61` | 2026-10-06 16:13 | mode | held_out=all, val=all | 0.0983 | 0.0984 | — | ok | rag few-shot: Qwen2.5-7B writes answers after 2 nearest bge-m3 Q&A pairs (Aka_Gha, Eng_Gha) |
 | EXP-020 | `exp020_rag_bgem3_qwen257bin_k2_sub2_nh40_4658cc` | 2026-10-06 15:53 | mode | held_out=40 | 0.0872 |  | — | ok | SMOKE: rag few-shot generation path on 40 held-out rows (Qwen2.5-7B, k=2) |
@@ -53,6 +56,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-026 | held_out |  | 0.1745 | 0.1982 |  |  |  |  |  |
+| EXP-026 | val |  | 0.1675 | 0.1928 |  |  |  |  |  |
+| EXP-023 | held_out |  | 0.0760 | 0.1270 |  |  |  |  |  |
+| EXP-023 | val |  | 0.0763 | 0.1224 |  |  |  |  |  |
 | EXP-025 | held_out |  | 0.1785 | 0.1818 |  |  |  |  |  |
 | EXP-021 | held_out |  | 0.0725 | 0.1242 |  |  |  |  |  |
 | EXP-021 | val |  | 0.0736 | 0.1232 |  |  |  |  |  |
