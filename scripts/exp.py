@@ -98,8 +98,16 @@ def slug(cfg: dict, eval_: dict, subsets) -> str:
     parts = [short]
     if mode in {"retrieval", "rag_few_shot", "router"}:
         parts.append(re.sub(r"[^a-z0-9]", "", cfg["embedder"].split("/")[-1].lower())[:10])
+    if cfg.get("hybrid_with"):
+        parts.append("hyb")
+    if cfg.get("rerank_model"):
+        parts.append("rr" + cfg.get("rerank_on", "question")[0])
+    if cfg.get("select") == "vote" and mode in {"retrieval", "router"}:
+        parts.append("vote")
     if mode != "retrieval":
         parts.append(re.sub(r"[^a-z0-9]", "", cfg["model_id"].split("/")[-1].lower())[:10])
+    if mode in {"few_shot", "rag_few_shot"} or (mode == "router" and cfg.get("router_generate_mode") != "zero_shot"):
+        parts.append(f"k{cfg['few_shot_k']}")
     if subsets:
         parts.append("sub" + str(len(subsets)))
     parts.append("n" + "-".join(f"{k[0]}{v or 'all'}" for k, v in sorted(eval_.items())))
