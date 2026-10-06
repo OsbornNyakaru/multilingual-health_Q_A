@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-019 | `exp019_ret_bgem3_ntall_5ce5cb` | 2026-10-06 15:31 | — | test=all |  |  | — | ok | test predictions for EXP-013 (pool = Train + Val) |
+| EXP-018 | `exp018_ret_bgem3_ntall_1f9a20` | 2026-10-06 15:30 | — | test=all |  |  | — | ok | test predictions for EXP-012 (pool = Train + Val) |
 | EXP-017 | `exp017_ret_bgem3_ntall_a2e3ac` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-009 (pool = Train + Val) |
 | EXP-016 | `exp016_ret_tfidfchar_ntall_0458c5` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-008 (pool = Train + Val) |
 | EXP-015 | `exp015_ret_tfidfchar_ntall_bccc1b` | 2026-10-06 15:22 | — | test=all |  |  | — | ok | test predictions for EXP-007 (pool = Train + Val) |

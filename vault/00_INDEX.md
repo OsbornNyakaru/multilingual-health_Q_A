@@ -86,6 +86,10 @@ As of 2026-10-01: composite **held-out 0.2984 / Val 0.3048** test-mix (ROUGE-onl
 
 - [[EXP-017-ret-bgem3-ntall]] — test predictions for EXP-009 (pool = Train + Val) (ok; won: none)
 
+- [[EXP-018-ret-bgem3-ntall]] — test predictions for EXP-012 (pool = Train + Val) (ok; won: none)
+
+- [[EXP-019-ret-bgem3-ntall]] — test predictions for EXP-013 (pool = Train + Val) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
