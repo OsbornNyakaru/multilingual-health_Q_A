@@ -42,6 +42,12 @@ DEFAULT_CONFIG: dict = {
     "passage_prefix": "",        # e.g. "passage: " for intfloat/multilingual-e5-*
     "retrieve_on": "input",      # match eval questions against pool questions
     "embed_batch": 64,
+    "hybrid_with": None,         # e.g. "tfidf-char": blend a second retriever's similarity in
+    "hybrid_alpha": 0.5,         # weight of hybrid_with in the blend
+    "rerank_model": None,        # e.g. "BAAI/bge-reranker-v2-m3": cross-encoder over the top rerank_k
+    "rerank_k": 20,
+    "rerank_on": "question",     # question (paraphrase check) | answer (relevance check)
+    "rerank_batch": 64,
     "select": "top1",            # top1 | vote: sum sim**vote_power over neighbours sharing an answer
     "vote_k": 50,
     "vote_power": 4.0,
@@ -120,40 +126,52 @@ def postprocess(text: str, subset: str) -> str:
 # ── retrieval ────────────────────────────────────────────────────────────────
 
 
-def _pool_key(cfg: dict, pool_df: pd.DataFrame) -> str:
+def _pool_key(name: str, prefix: str, cfg: dict, pool_df: pd.DataFrame) -> str:
     h = hashlib.sha256(pd.util.hash_pandas_object(pool_df[[ID_COL]], index=False).values.tobytes()).hexdigest()[:12]
-    return f"pool_emb|{cfg['embedder']}|{cfg['passage_prefix']}|{cfg['retrieve_on']}|{h}"
+    return f"pool_emb|{name}|{prefix}|{cfg['retrieve_on']}|{h}"
 
 
-def neighbours(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, k: int) -> dict[str, list[tuple[int, float]]]:
-    """Top-k pool rows (positional index into pool_df, cosine) per eval ID, within the same subset."""
-    import numpy as np
-
-    key = _pool_key(cfg, pool_df)
-    pool_texts = [cfg["passage_prefix"] + str(t) for t in pool_df[cfg["retrieve_on"]]]
-    queries = [cfg["query_prefix"] + str(t) for t in eval_df[INPUT_COL]]
-    if cfg["embedder"] == "tfidf-char":
-        # CPU baseline: char 3-5-gram TF-IDF (rows are L2-normalised, so dot = cosine).
+def _encode(name: str, cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx):
+    """(query vectors, pool vectors) for one retriever; rows L2-normalised so dot = cosine."""
+    dense = name != "tfidf-char"
+    qp, pp = (cfg["query_prefix"], cfg["passage_prefix"]) if dense else ("", "")
+    key = _pool_key(name, pp, cfg, pool_df)
+    pool_texts = [pp + str(t) for t in pool_df[cfg["retrieve_on"]]]
+    queries = [qp + str(t) for t in eval_df[INPUT_COL]]
+    if not dense:
+        # CPU retriever: char 3-5-gram TF-IDF.
         from sklearn.feature_extraction.text import TfidfVectorizer
 
         if key not in ctx.cache:
             vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), sublinear_tf=True, min_df=2)
             ctx.cache[key] = (vec, vec.fit_transform(pool_texts))
         vec, pool_vecs = ctx.cache[key]
-        q_vecs = vec.transform(queries)
-    else:
-        emb = ctx.get_embedder(cfg["embedder"])
-        if key not in ctx.cache:
-            ctx.log(f"embedding pool: {len(pool_df):,} rows with {cfg['embedder']}")
-            ctx.cache[key] = emb.encode(
-                pool_texts, batch_size=int(cfg["embed_batch"]), normalize_embeddings=True,
-                convert_to_numpy=True, show_progress_bar=False,
-            )
-        pool_vecs = ctx.cache[key]
-        q_vecs = emb.encode(
-            queries, batch_size=int(cfg["embed_batch"]), normalize_embeddings=True,
+        return vec.transform(queries), pool_vecs
+    emb = ctx.get_embedder(name)
+    if key not in ctx.cache:
+        ctx.log(f"embedding pool: {len(pool_df):,} rows with {name}")
+        ctx.cache[key] = emb.encode(
+            pool_texts, batch_size=int(cfg["embed_batch"]), normalize_embeddings=True,
             convert_to_numpy=True, show_progress_bar=False,
         )
+    q_vecs = emb.encode(
+        queries, batch_size=int(cfg["embed_batch"]), normalize_embeddings=True,
+        convert_to_numpy=True, show_progress_bar=False,
+    )
+    return q_vecs, ctx.cache[key]
+
+
+def neighbours(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, k: int) -> dict[str, list[tuple[int, float]]]:
+    """Top-k pool rows (positional index into pool_df, similarity) per eval ID, within the same subset.
+
+    With hybrid_with set, similarity = (1 - hybrid_alpha) * embedder + hybrid_alpha * hybrid_with.
+    """
+    import numpy as np
+
+    parts = [(_encode(cfg["embedder"], cfg, eval_df, pool_df, ctx), 1.0)]
+    if cfg["hybrid_with"]:
+        a = float(cfg["hybrid_alpha"])
+        parts = [(parts[0][0], 1.0 - a), (_encode(cfg["hybrid_with"], cfg, eval_df, pool_df, ctx), a)]
     pool_subsets = pool_df[SUBSET_COL].to_numpy()
     out: dict[str, list[tuple[int, float]]] = {}
     for subset in eval_df[SUBSET_COL].unique():
@@ -161,14 +179,45 @@ def neighbours(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, k: 
         pi = (pool_subsets == subset).nonzero()[0]
         if len(pi) == 0:  # unseen subset: fall back to the whole pool
             pi = np.arange(len(pool_df))
-        sims = q_vecs[qi] @ pool_vecs[pi].T
-        sims = sims.toarray() if hasattr(sims, "toarray") else np.asarray(sims)
+        sims = 0.0
+        for (q_vecs, pool_vecs), w in parts:
+            block = q_vecs[qi] @ pool_vecs[pi].T
+            sims = sims + w * (block.toarray() if hasattr(block, "toarray") else np.asarray(block))
         kk = min(k, len(pi))
         top = np.argpartition(-sims, kk - 1, axis=1)[:, :kk]
         for row, q in enumerate(qi):
             order = top[row][np.argsort(-sims[row, top[row]])]
             out[str(eval_df[ID_COL].iloc[q])] = [(int(pi[j]), float(sims[row, j])) for j in order]
     return out
+
+
+def rerank(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, nn: dict, ctx) -> dict[str, list[tuple[int, float]]]:
+    """Re-score each eval row's top rerank_k candidates with a cross-encoder; returns them sorted by that score.
+
+    rerank_on="question" scores (eval question, neighbour's question): a paraphrase check.
+    rerank_on="answer" scores (eval question, neighbour's answer): a relevance check.
+    """
+    key = ("cross_encoder", cfg["rerank_model"])
+    if key not in ctx.cache:
+        import torch
+        from sentence_transformers import CrossEncoder
+
+        ctx.cache[key] = CrossEncoder(cfg["rerank_model"], max_length=512, device="cuda" if torch.cuda.is_available() else "cpu")
+    ce = ctx.cache[key]
+    col = INPUT_COL if cfg["rerank_on"] == "question" else OUTPUT_COL
+    questions = dict(zip(eval_df[ID_COL].astype(str), eval_df[INPUT_COL].astype(str)))
+    k = int(cfg["rerank_k"])
+    pairs, owners = [], []
+    for i, hits in nn.items():
+        for j, _ in hits[:k]:
+            pairs.append((questions[i], str(pool_df[col].iloc[j])))
+            owners.append((i, j))
+    ctx.log(f"reranking {len(pairs):,} pairs with {cfg['rerank_model']} on {cfg['rerank_on']}")
+    scores = ce.predict(pairs, batch_size=int(cfg["rerank_batch"]), show_progress_bar=False)
+    out: dict[str, list[tuple[int, float]]] = {i: [] for i in nn}
+    for (i, j), sc in zip(owners, scores):
+        out[i].append((j, float(sc)))
+    return {i: sorted(v, key=lambda t: -t[1]) for i, v in out.items()}
 
 
 # ── prompting + generation ───────────────────────────────────────────────────
@@ -283,10 +332,17 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     k_nn = max(1, int(cfg["few_shot_k"])) if uses_rag else 1
     if mode in {"retrieval", "router"} and cfg["select"] == "vote":
         k_nn = max(k_nn, int(cfg["vote_k"]))
+    if needs_nn and cfg["rerank_model"]:
+        k_nn = max(k_nn, int(cfg["rerank_k"]))
     nn = neighbours(cfg, eval_df, pool_df, ctx, k=k_nn) if needs_nn else {}
-    best_answer: dict[str, str] = {}
     for i, hits in nn.items():
         meta[i] = {"sim": round(hits[0][1], 4), "nn_id": str(pool_df[ID_COL].iloc[hits[0][0]])}
+    if nn and cfg["rerank_model"]:
+        nn = rerank(cfg, eval_df, pool_df, nn, ctx)
+        for i, hits in nn.items():
+            meta[i].update(rerank_score=round(hits[0][1], 4), rerank_id=str(pool_df[ID_COL].iloc[hits[0][0]]))
+    best_answer: dict[str, str] = {}
+    for i, hits in nn.items():
         if cfg["select"] == "vote":
             votes: dict[str, float] = {}
             for j, sim in hits:

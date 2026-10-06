@@ -105,3 +105,37 @@ def test_unknown_config_key_rejected():
 def test_postprocess_strips_marker_and_trailing_paragraphs():
     assert E.postprocess("Answer: use a net\n\nMore text", "Eng_Uga") == "use a net"
     assert E.postprocess("Jibu: tumia chandarua", "Swa_Ken") == "tumia chandarua"
+
+
+class FakeDense:
+    """Bag-of-words 'embedder' over a tiny vocabulary, L2-normalised."""
+
+    VOCAB = ["malaria", "pregnan", "hiv", "symptom", "kuzuia", "dalili", "prevent", "cause"]
+
+    def encode(self, texts, **kw):
+        import numpy as np
+
+        v = np.array([[float(w in t.lower()) for w in self.VOCAB] for t in texts]) + 1e-6
+        return v / np.linalg.norm(v, axis=1, keepdims=True)
+
+
+def test_hybrid_blends_two_retrievers():
+    ctx = Ctx()
+    ctx.get_embedder = lambda name: FakeDense()
+    dense, _ = E.run({"mode": "retrieval", "embedder": "fake-dense"}, EVAL, POOL, ctx)
+    hyb, meta = E.run({"mode": "retrieval", "embedder": "fake-dense", "hybrid_with": "tfidf-char", "hybrid_alpha": 0.5}, EVAL, POOL, ctx)
+    assert hyb["q1"] == "use a bed net" and hyb["q3"] == "tumia chandarua"
+    assert all(0 < m["sim"] <= 1.0001 for m in meta.values())
+
+
+def test_rerank_reorders_candidates():
+    class FakeCE:
+        # prefers candidates whose text mentions "cause": flips q1 from "use a bed net" to "mosquito bites"
+        def predict(self, pairs, **kw):
+            return [1.0 if "cause" in cand else 0.1 for _, cand in pairs]
+
+    ctx = Ctx()
+    ctx.cache[("cross_encoder", "fake-ce")] = FakeCE()
+    answers, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "fake-ce", "rerank_k": 3}, EVAL, POOL, ctx)
+    assert answers["q1"] == "mosquito bites"
+    assert meta["q1"]["rerank_score"] == 1.0 and meta["q1"]["rerank_id"] == "p2"
