@@ -37,6 +37,14 @@ composite test-mix: **held-out 0.3752**, **val 0.3747** (8/8 subsets covered)
 | EXP-008 | `exp008_ret_tfidfchar_nhall-vall_402044` | 2026-10-06 14:45 | select | held_out=all, val=all | 0.3053 | 0.3075 | Eng_Eth, Eng_Uga, Lug_Uga | ok | answer vote over top-50 neighbours (sim^4) instead of top-1 |
 | EXP-007 | `exp007_ret_tfidfchar_nhall-vall_6d656b` | 2026-10-01 11:17 | embedder | held_out=all, val=all | 0.2984 | 0.3048 | Aka_Gha, Amh_Eth, Eng_Eth, Eng_Gha, Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken | ok | CPU baseline: char 3-5-gram tfidf retrieval, top-1, within subset |
 
+## zindi submissions (newest first)
+
+total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
+
+| date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
+|---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-06 | `composite_20261006_1834.csv` | 0.5920 | 0.5816 | 0.5616 | 0.5096 | 0.7526 | 0.3747 | first submission: per-subset retrieval composite (EXP-008/009/012/013). LB rouge-only 0.3963 vs local whitespace 0.3747; default rouge tokenizer on Val gives 0.3952 |
+
 ## per-subset scores by run
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |

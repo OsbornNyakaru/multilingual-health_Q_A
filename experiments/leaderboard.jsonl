@@ -1,0 +1,1 @@
+{"date": "2026-10-06", "file": "composite_20261006_1834.csv", "public": 0.59202, "private": 0.581623, "rouge1": 0.5616, "rougeL": 0.5096, "judge": 0.7526, "local_val": 0.3747, "note": "first submission: per-subset retrieval composite (EXP-008/009/012/013). LB rouge-only 0.3963 vs local whitespace 0.3747; default rouge tokenizer on Val gives 0.3952"}

@@ -45,6 +45,7 @@ RUNS_DIR = EXP_DIR / "runs"
 RESULTS_JSONL = EXP_DIR / "results.jsonl"
 BEST_JSON = EXP_DIR / "BEST.json"
 RESULTS_MD = EXP_DIR / "RESULTS.md"
+LEADERBOARD_JSONL = EXP_DIR / "leaderboard.jsonl"
 VAULT = ROOT / "vault"
 RUNS_REPO = "nyakaruosborn/afro-health-qa-runs"
 KEEP_DELTA = 0.003
@@ -306,6 +307,22 @@ def write_results_md(records: list[dict], best: dict) -> None:
             f"{'' if ho is None else f'{ho:.4f}'} | {'' if va is None else f'{va:.4f}'} | "
             f"{', '.join(r.get('won') or []) or '—'} | {r['status']} | {r.get('description') or ''} |"
         )
+    lb = [json.loads(x) for x in LEADERBOARD_JSONL.read_text().splitlines() if x.strip()] if LEADERBOARD_JSONL.exists() else []
+    if lb:
+        lines += [
+            "",
+            "## zindi submissions (newest first)",
+            "",
+            "total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.",
+            "",
+            "| date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |",
+            "|---|---|--:|--:|--:|--:|--:|--:|---|",
+        ]
+        for e in reversed(lb):
+            lines.append(
+                f"| {e['date']} | `{e['file']}` | {e['public']:.4f} | {e.get('private') or 0:.4f} | {e.get('rouge1') or 0:.4f} | "
+                f"{e.get('rougeL') or 0:.4f} | {e.get('judge') or 0:.4f} | {e.get('local_val') or ''} | {e.get('note') or ''} |"
+            )
     lines += ["", "## per-subset scores by run", ""]
     subsets = sorted(w, key=w.get, reverse=True)
     lines += ["| exp | set | " + " | ".join(subsets) + " |", "|---|---|" + "--:|" * len(subsets)]
@@ -463,6 +480,15 @@ def cmd_submission(a) -> None:
     print(f"wrote {out} ({len(sub)} rows). Upload it to Zindi; it is gitignored on purpose.")
 
 
+def cmd_lb(a) -> None:
+    entry = {"date": a.date or datetime.now().strftime("%Y-%m-%d"), "file": a.file, "public": a.public, "private": a.private,
+             "rouge1": a.rouge1, "rougeL": a.rougeL, "judge": a.judge, "local_val": a.local_val, "note": a.note}
+    with LEADERBOARD_JSONL.open("a") as fh:
+        fh.write(json.dumps(entry) + "\n")
+    write_results_md(load_records(), load_best())
+    print(f"recorded {a.file}: public {a.public}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -482,8 +508,18 @@ def main() -> None:
     p.add_argument("--timeout", type=float, default=240, help="minutes to wait with --wait")
     sub.add_parser("status")
     sub.add_parser("submission")
+    lb = sub.add_parser("lb", help="record a Zindi leaderboard result")
+    lb.add_argument("--file", required=True)
+    lb.add_argument("--public", type=float, required=True)
+    lb.add_argument("--private", type=float)
+    lb.add_argument("--rouge1", type=float)
+    lb.add_argument("--rougeL", type=float)
+    lb.add_argument("--judge", type=float)
+    lb.add_argument("--local-val", dest="local_val", type=float, help="local val test-mix of the same composite")
+    lb.add_argument("--date")
+    lb.add_argument("--note", default="")
     a = ap.parse_args()
-    {"new": cmd_new, "submit": cmd_submit, "pull": cmd_pull, "status": cmd_status, "submission": cmd_submission}[a.cmd](a)
+    {"new": cmd_new, "submit": cmd_submit, "pull": cmd_pull, "status": cmd_status, "submission": cmd_submission, "lb": cmd_lb}[a.cmd](a)
 
 
 if __name__ == "__main__":
