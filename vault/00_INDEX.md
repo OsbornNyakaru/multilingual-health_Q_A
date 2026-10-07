@@ -148,6 +148,10 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-051-ret-bgem3-rrb-sub5-nhall-vall]] — answer-aware selector: the cross-encoder sees candidate question || answer (first 400 chars), trained and scored that way; fine-tuned retriever as in EXP-048 (ok; won: Eng_Uga, Lug_Uga)
 
+- [[EXP-052-ret-bgem3-rrb-sub4-ntall]] — test predictions for EXP-051 (answer-aware selector; retriever + selector retrained on Train + Val) (ok; won: none)
+
+- [[EXP-053-combine-rescore-sub3]] — re-scoring (selector rank + retriever rank + question-answer overlap) on top of the answer-aware selector EXP-051 (ok; won: Eng_Ken, Eng_Uga, Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

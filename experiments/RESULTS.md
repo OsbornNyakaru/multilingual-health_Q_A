@@ -6,16 +6,16 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4391**, **val 0.4304** (8/8 subsets covered)
+composite test-mix: **held-out 0.4404**, **val 0.432** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-051 `exp051_ret_bgem3_rrb_sub5_nhall-vall_86b264` | 0.6280 | 0.6163 |
+| Eng_Uga | 28.4% | EXP-053 `exp053_combine_rescore_sub3_6aaa58` | 0.6299 | 0.6200 |
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
 | Lug_Uga | 14.3% | EXP-051 `exp051_ret_bgem3_rrb_sub5_nhall-vall_86b264` | 0.4860 | 0.4862 |
-| Swa_Ken | 8.7% | EXP-050 `exp050_combine_rescore_sub2_d7c391` | 0.6138 | 0.6042 |
-| Eng_Ken | 6.4% | EXP-045 `exp045_combine_agree_sub2_494619` | 0.6029 | 0.5902 |
+| Swa_Ken | 8.7% | EXP-053 `exp053_combine_rescore_sub3_6aaa58` | 0.6122 | 0.6074 |
+| Eng_Ken | 6.4% | EXP-053 `exp053_combine_rescore_sub3_6aaa58` | 0.6167 | 0.5942 |
 | Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
 
@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4391**, **val 0.4304** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-053 | `exp053_combine_rescore_sub3_6aaa58` | 2026-10-07 07:17 | combine | held_out=all, val=all | 0.6244 | 0.6137 | Eng_Ken, Eng_Uga, Swa_Ken | ok | re-scoring (selector rank + retriever rank + question-answer overlap) on top of the answer-aware selector EXP-051 |
+| EXP-052 | `exp052_ret_bgem3_rrb_sub4_ntall_1f1723` | 2026-10-07 07:13 | — | test=all |  |  | — | ok | test predictions for EXP-051 (answer-aware selector; retriever + selector retrained on Train + Val) |
 | EXP-051 | `exp051_ret_bgem3_rrb_sub5_nhall-vall_86b264` | 2026-10-07 06:58 | rerank_on, rerank_train_max_len | held_out=all, val=all | 0.5850 | 0.5760 | Eng_Uga, Lug_Uga | ok | answer-aware selector: the cross-encoder sees candidate question || answer (first 400 chars), trained and scored that way; fine-tuned retriever as in EXP-048 |
 | EXP-050 | `exp050_combine_rescore_sub2_d7c391` | 2026-10-07 06:38 | combine | held_out=all, val=all | 0.5098 | 0.5173 | Lug_Uga, Swa_Ken | ok | re-pick among the selector's top-20 answers with selector rank + retriever rank + question-to-answer word overlap (weights tuned on held-out) |
 | EXP-049 | `exp049_ret_bgem3_rrq_sub2_ntall_7aa797` | 2026-10-07 06:21 | — | test=all |  |  | — | ok | test predictions for EXP-048 (Lug_Uga, Swa_Ken; retriever + selector retrained on Train + Val) |
@@ -83,6 +85,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-053 | held_out | 0.6299 |  |  |  | 0.6122 | 0.6167 |  |  |
+| EXP-053 | val | 0.6200 |  |  |  | 0.6074 | 0.5942 |  |  |
 | EXP-051 | held_out | 0.6280 |  |  | 0.4860 | 0.6120 | 0.6133 |  | 0.4875 |
 | EXP-051 | val | 0.6163 |  |  | 0.4862 | 0.6064 | 0.5878 |  | 0.4869 |
 | EXP-050 | held_out |  |  |  | 0.4461 | 0.6138 |  |  |  |
