@@ -42,6 +42,14 @@ DEFAULT_CONFIG: dict = {
     "passage_prefix": "",        # e.g. "passage: " for intfloat/multilingual-e5-*
     "retrieve_on": "input",      # match eval questions against pool questions
     "embed_batch": 64,
+    # embedder_train: fine-tune the embedder on the training pool (anchor = a question, positive = another
+    # question with the same answer, + 1 retrieved hard negative; in-batch negatives, contrastive loss)
+    "embedder_train": False,
+    "embedder_train_lr": 1e-5,
+    "embedder_train_epochs": 1.0,
+    "embedder_train_batch": 32,
+    "embedder_train_max_len": 128,
+    "embedder_train_subsets": None,  # e.g. ["Lug_Uga"]; None = every subset in the pool
     "hybrid_with": None,         # e.g. "tfidf-char": blend a second retriever's similarity in
     "hybrid_alpha": 0.5,         # weight of hybrid_with in the blend
     "rerank_model": None,        # e.g. "BAAI/bge-reranker-v2-m3": cross-encoder over the top rerank_k
@@ -374,6 +382,108 @@ def resolve_adapter(adapter, ctx):
     return resolve_artifact(adapter, ctx, "adapter", "adapter_config.json")
 
 
+# ── embedder fine-tuning (embedder_train) ────────────────────────────────────
+
+
+def _embedder_key(ctx, cfg: dict) -> tuple:
+    return ("trained_embedder",) + _adapter_key(ctx, cfg)[1:]
+
+
+def embedder_triplets(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> list[tuple[str, str, str]]:
+    """(anchor, positive, hard negative) question triplets from the pool alone; positive = another question
+    with the same answer, hard negative = the nearest retrieved question with a different answer."""
+    import random
+
+    rng = random.Random(seed)
+    pool = pool_df.reset_index(drop=True)
+    answers = pool[OUTPUT_COL].astype(str).str.strip().to_numpy()
+    questions = pool[INPUT_COL].astype(str).to_numpy()
+    ids = pool[ID_COL].astype(str).to_numpy()
+    subs = cfg["embedder_train_subsets"]
+    by_answer: dict[str, list[int]] = {}
+    for j, a in enumerate(answers):
+        by_answer.setdefault(a, []).append(j)
+    rows = [j for j in range(len(pool)) if len(by_answer[answers[j]]) > 1 and (not subs or pool[SUBSET_COL].iloc[j] in subs)]
+    if not rows:
+        return []
+    nn = neighbours(cfg, pool.iloc[rows], pool, ctx, k=12)
+    out = []
+    for j in rows:
+        mate = rng.choice([h for h in by_answer[answers[j]] if h != j])
+        neg = next((h for h, _ in nn[ids[j]] if h != j and answers[h] != answers[j]), None)
+        if neg is not None:
+            out.append((questions[j], questions[mate], questions[neg]))
+    return out
+
+
+def train_embedder(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
+    """Fine-tune the sentence-transformers embedder in cfg['embedder']; returns its local directory."""
+    import torch
+
+    out = _work_dir(ctx, cfg) / "embedder"
+    upload = getattr(ctx, "upload_folder", None)
+    download = getattr(ctx, "download_folder", None)
+    if (out / "modules.json").exists():
+        return str(out)
+    if download and download("embedder", out):
+        ctx.log("found a trained embedder for this run on HF; skipping training")
+        return str(out)
+    trips = embedder_triplets(cfg, pool_df, ctx)
+    ctx.log(f"embedder training: {len(trips):,} (anchor, positive, hard negative) triplets")
+    from sentence_transformers import SentenceTransformer
+
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    model = SentenceTransformer(resolve_artifact(cfg["embedder"], ctx, "embedder", "modules.json"), device=dev)
+    model.max_seq_length = int(cfg["embedder_train_max_len"])
+    model.train()
+    bs = int(cfg["embedder_train_batch"])
+    steps = int(len(trips) * float(cfg["embedder_train_epochs"]) / bs)
+    from transformers import get_cosine_schedule_with_warmup
+
+    opt = torch.optim.AdamW(model.parameters(), lr=float(cfg["embedder_train_lr"]), weight_decay=0.01)
+    sched = get_cosine_schedule_with_warmup(opt, max(1, steps // 20), max(1, steps))
+    import random
+
+    order = list(range(len(trips)))
+    random.Random(1).shuffle(order)
+
+    def embed(texts):
+        feats = {k: v.to(dev) for k, v in model.tokenize(texts).items()}
+        return torch.nn.functional.normalize(model(feats)["sentence_embedding"], dim=-1)
+
+    step = 0
+    while step < steps:
+        for b in range(0, len(order) - bs + 1, bs):
+            if step >= steps or ctx.should_stop():
+                break
+            batch = [trips[i] for i in order[b:b + bs]]
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=dev == "cuda"):
+                q = embed([t[0] for t in batch])
+                d = embed([t[1] for t in batch] + [t[2] for t in batch])  # positives, then hard negatives
+                logits = (q @ d.T).float() * 20.0
+            loss = torch.nn.functional.cross_entropy(logits, torch.arange(len(batch), device=dev))
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step(), sched.step(), opt.zero_grad()
+            step += 1
+            if step % 50 == 0:
+                ctx.log(f"embedder step {step}/{steps} loss {loss.item():.4f}")
+        random.Random(step).shuffle(order)
+    model.eval()
+    out.mkdir(parents=True, exist_ok=True)
+    model.save(str(out))
+    if upload:
+        upload(out, "embedder")
+        ctx.log("embedder uploaded")
+    del model, opt
+    import gc
+
+    gc.collect()
+    if dev == "cuda":
+        torch.cuda.empty_cache()
+    return str(out)
+
+
 # ── reranker fine-tuning (rerank_train) ──────────────────────────────────────
 
 
@@ -497,10 +607,13 @@ def setup(config: dict, sets: dict, ctx) -> None:
     val's (Train), else test's (Train + Val). Eval rows are never in that pool.
     """
     cfg = {**DEFAULT_CONFIG, **(config or {})}
-    if cfg["mode"] != "lora_rag" and not cfg["rerank_train"]:
+    if cfg["mode"] != "lora_rag" and not cfg["rerank_train"] and not cfg["embedder_train"]:
         return
     name = next(n for n in ("held_out", "val", "test") if n in sets)
     ctx.log(f"training on the {name} pool")
+    if cfg["embedder_train"]:
+        ctx.cache[_embedder_key(ctx, cfg)] = train_embedder(cfg, sets[name][1], ctx)
+        cfg["embedder"] = ctx.cache[_embedder_key(ctx, cfg)]  # the reranker/LoRA below train on its candidates
     if cfg["rerank_train"]:
         ctx.cache[_reranker_key(ctx, cfg)] = train_reranker(cfg, sets[name][1], ctx)
     if cfg["mode"] == "lora_rag":
@@ -645,6 +758,13 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     answers: dict[str, str] = dict(ctx.resume)
     meta: dict[str, dict] = {}
     cfg["adapter"] = resolve_adapter(cfg["adapter"], ctx)
+    if cfg["embedder_train"]:
+        ekey = _embedder_key(ctx, cfg)
+        if ekey not in ctx.cache:  # older runner without the setup step: train on this set's pool
+            ctx.cache[ekey] = train_embedder(cfg, pool_df, ctx)
+        cfg["embedder"] = ctx.cache[ekey]
+    elif str(cfg["embedder"]).startswith("run:"):
+        cfg["embedder"] = resolve_artifact(cfg["embedder"], ctx, "embedder", "modules.json")
     if cfg["rerank_train"]:
         key = _reranker_key(ctx, cfg)
         if key not in ctx.cache:  # older runner without the setup step: train on this set's pool

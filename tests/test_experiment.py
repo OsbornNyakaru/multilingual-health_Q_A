@@ -272,3 +272,34 @@ def test_rerank_train_wires_trained_model_into_rerank(monkeypatch):
     answers, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "base-ce", "rerank_train": True, "rerank_k": 3},
                           EVAL, POOL, ctx)
     assert answers["q1"] == "mosquito bites" and meta["q1"]["rerank_score"] == 1.0
+
+
+TRIP_POOL = pd.DataFrame({
+    "ID": [f"p{i}" for i in range(8)],
+    "input": ["prevent malaria pregnancy", "avoid malaria when pregnant", "malaria prevention pregnant women",
+              "hiv symptoms adults", "signs of hiv in adults", "what causes malaria", "malaria causes", "treat malaria"],
+    "output": ["net", "net", "net", "rash", "rash", "mosquito", "mosquito", "drugs"],
+    "subset": ["Lug_Uga"] * 5 + ["Eng_Uga"] * 3,
+})
+
+
+def test_embedder_triplets_pair_same_answers_and_respect_subset_filter():
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "tfidf-char"}
+    trips = E.embedder_triplets(cfg, TRIP_POOL, Ctx())
+    ans = dict(zip(TRIP_POOL["input"], TRIP_POOL["output"]))
+    assert trips and all(a != p and ans[a] == ans[p] and ans[n] != ans[a] for a, p, n in trips)
+    assert "treat malaria" not in [a for a, _, _ in trips]  # unique answer: no positive
+    lug = E.embedder_triplets({**cfg, "embedder_train_subsets": ["Lug_Uga"]}, TRIP_POOL, Ctx())
+    lug_qs = set(TRIP_POOL[TRIP_POOL.subset == "Lug_Uga"]["input"])
+    assert lug and all(a in lug_qs for a, _, _ in lug)
+
+
+def test_embedder_train_feeds_the_trained_embedder_to_the_reranker(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(E, "train_embedder", lambda cfg, pool, c: "/emb/trained")
+    monkeypatch.setattr(E, "train_reranker", lambda cfg, pool, c: seen.setdefault("emb", cfg["embedder"]) and "/rr/t")
+    ctx = Ctx()
+    ctx.run_id = "r8"
+    E.setup({"mode": "retrieval", "embedder_train": True, "rerank_train": True, "rerank_model": "base"},
+            {"held_out": (EVAL, POOL)}, ctx)
+    assert ctx.cache[("trained_embedder", "r8")] == "/emb/trained" and seen["emb"] == "/emb/trained"
