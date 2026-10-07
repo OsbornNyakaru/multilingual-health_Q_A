@@ -36,13 +36,13 @@
     "since": "2026-10-06T22:06:05+00:00"
   },
   "Eng_Ken": {
-    "run_id": "exp053_combine_rescore_sub3_6aaa58",
-    "exp": "EXP-053",
+    "run_id": "exp054_ret_bgem3_rrb_sub5_nhall-vall_984c50",
+    "exp": "EXP-054",
     "scores": {
-      "held_out": 0.6167,
-      "val": 0.5942
+      "held_out": 0.6164,
+      "val": 0.5999
     },
-    "since": "2026-10-07T07:17:03+00:00"
+    "since": "2026-10-07T07:43:32+00:00"
   },
   "Eng_Uga": {
     "run_id": "exp053_combine_rescore_sub3_6aaa58",

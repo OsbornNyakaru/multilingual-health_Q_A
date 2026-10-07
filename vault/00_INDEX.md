@@ -152,6 +152,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-053-combine-rescore-sub3]] — re-scoring (selector rank + retriever rank + question-answer overlap) on top of the answer-aware selector EXP-051 (ok; won: Eng_Ken, Eng_Uga, Swa_Ken)
 
+- [[EXP-054-ret-bgem3-rrb-sub5-nhall-vall]] — graded labels: the answer-aware selector learns soft targets = answer overlap with the gold (near-duplicate answers no longer taught as wrong) (ok; won: Eng_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
