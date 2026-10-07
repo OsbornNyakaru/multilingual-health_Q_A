@@ -506,6 +506,8 @@ def cmd_submission(a) -> None:
         b = best.get(s)
         tr = test_run.get(b["run_id"]) if b else None
         pf = RUNS_DIR / tr / "test_preds.csv" if tr else None
+        if b and (RUNS_DIR / b["run_id"] / "test_preds.csv").exists():  # e.g. an offline combination
+            pf = RUNS_DIR / b["run_id"] / "test_preds.csv"
         if not pf or not pf.exists():
             missing.append(f"{s} (best {b['run_id'] if b else 'none'})")
             continue
