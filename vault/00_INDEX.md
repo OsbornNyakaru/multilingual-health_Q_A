@@ -140,6 +140,8 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-047-ret-bgem3-rrq-sub5-nhall-vall]] — fine-tuned BGE-M3 retriever (same-answer pairs + hard negatives, all subsets), learned selector retrained on its candidates; target: Luganda recall@50 73% -> ~85% (crash; won: none)
 
+- [[EXP-048-ret-bgem3-rrq-sub5-nhall-vall]] — fine-tuned BGE-M3 retriever + learned selector (re-run of EXP-047 after the tokenizer fix); target: Luganda recall@50 73% -> ~85% (ok; won: Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
