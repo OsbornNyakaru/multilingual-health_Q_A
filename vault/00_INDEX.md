@@ -146,6 +146,8 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-050-combine-rescore-sub2]] — re-pick among the selector's top-20 answers with selector rank + retriever rank + question-to-answer word overlap (weights tuned on held-out) (ok; won: Lug_Uga, Swa_Ken)
 
+- [[EXP-051-ret-bgem3-rrb-sub5-nhall-vall]] — answer-aware selector: the cross-encoder sees candidate question || answer (first 400 chars), trained and scored that way; fine-tuned retriever as in EXP-048 (ok; won: Eng_Uga, Lug_Uga)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
