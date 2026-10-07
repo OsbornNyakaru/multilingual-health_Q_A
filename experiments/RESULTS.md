@@ -6,23 +6,25 @@ a run is adopted per subset only if it wins by ≥ 0.003 on both held-out and va
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.3933**, **val 0.391** (8/8 subsets covered)
+composite test-mix: **held-out 0.42**, **val 0.4151** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-013 `exp013_ret_bgem3_nhall-vall_179e11` | 0.5542 | 0.5527 |
+| Eng_Uga | 28.4% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.6068 | 0.6051 |
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
-| Lug_Uga | 14.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.3760 | 0.3803 |
-| Swa_Ken | 8.7% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5413 | 0.5593 |
-| Eng_Ken | 6.4% | EXP-009 `exp009_ret_bgem3_nhall-vall_ad6575` | 0.5895 | 0.5704 |
+| Lug_Uga | 14.3% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.4295 | 0.4149 |
+| Swa_Ken | 8.7% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.5637 | 0.5867 |
+| Eng_Ken | 6.4% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.5935 | 0.5835 |
 | Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
-| Eng_Eth | 2.3% | EXP-008 `exp008_ret_tfidfchar_nhall-vall_402044` | 0.4568 | 0.4350 |
+| Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
 
 ## runs (newest first)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-039 | `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 2026-10-07 04:55 | rerank_train | held_out=all, val=all | 0.5513 | 0.5497 | Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken | ok | learned selector: fine-tune bge-reranker-v2-m3 on work_train (positive = question with the same answer, 7 hard negatives), then rerank bge-m3 top-50 |
+| EXP-038 | `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 2026-10-07 04:48 | adapter, mode | held_out=all, val=all | 0.4923 | 0.4874 | Eng_Eth, Eng_Uga | ok | fine-tuned Qwen (EXP-031 adapter, trained on all subsets) on the closed-pool subsets: does it reproduce canned answers? |
 | EXP-037 | `exp037_ret_bgem3_rrq_vote_sub5_nhall-vall_919c98` | 2026-10-07 04:14 | select, vote_power | held_out=all, val=all | 0.3703 | 0.3835 | — | ok | answer-group scoring: sum reranker scores of all top-50 candidates that share an answer, instead of the single top question |
 | EXP-036 | `exp036_ret_bgem3_rrq_sub5_nhall-vall_fef674` | 2026-10-07 04:10 | diag_k, rerank_k | held_out=all, val=all | 0.5102 | 0.4979 | — | ok | DIAG: bge-m3 + rerank of top-50 (was 20), recording candidates for recall@k on the closed-pool subsets |
 | EXP-035 | `exp035_rag_bgem3_qwen257bin_k3_sub1_ntall_956f60` | 2026-10-07 04:00 | adapter, mode | test=all |  |  | — | ok | test predictions for EXP-031 (Eng_Gha), reusing its adapter; pool = Train + Val |
@@ -66,6 +68,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-039 | held_out | 0.6068 |  |  | 0.4295 | 0.5637 | 0.5935 |  | 0.4574 |
+| EXP-039 | val | 0.6051 |  |  | 0.4149 | 0.5867 | 0.5835 |  | 0.4665 |
+| EXP-038 | held_out | 0.5867 |  |  | 0.2880 | 0.4502 | 0.5691 |  | 0.5409 |
+| EXP-038 | val | 0.5851 |  |  | 0.2886 | 0.4577 | 0.5411 |  | 0.4777 |
 | EXP-037 | held_out | 0.4350 |  |  | 0.2700 | 0.3158 | 0.3633 |  | 0.4197 |
 | EXP-037 | val | 0.4585 |  |  | 0.2768 | 0.3227 | 0.3681 |  | 0.3937 |
 | EXP-036 | held_out | 0.5516 |  |  | 0.3879 | 0.5454 | 0.5770 |  | 0.4395 |

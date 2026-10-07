@@ -18,13 +18,13 @@
     "since": "2026-10-06T15:06:56+00:00"
   },
   "Eng_Eth": {
-    "run_id": "exp008_ret_tfidfchar_nhall-vall_402044",
-    "exp": "EXP-008",
+    "run_id": "exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e",
+    "exp": "EXP-038",
     "scores": {
-      "held_out": 0.4568,
-      "val": 0.435
+      "held_out": 0.5409,
+      "val": 0.4777
     },
-    "since": "2026-10-06T14:45:53+00:00"
+    "since": "2026-10-07T04:48:38+00:00"
   },
   "Eng_Gha": {
     "run_id": "exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e",
@@ -36,39 +36,39 @@
     "since": "2026-10-06T22:06:05+00:00"
   },
   "Eng_Ken": {
-    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
-    "exp": "EXP-009",
+    "run_id": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
+    "exp": "EXP-039",
     "scores": {
-      "held_out": 0.5895,
-      "val": 0.5704
+      "held_out": 0.5935,
+      "val": 0.5835
     },
-    "since": "2026-10-06T14:47:22+00:00"
+    "since": "2026-10-07T04:55:44+00:00"
   },
   "Eng_Uga": {
-    "run_id": "exp013_ret_bgem3_nhall-vall_179e11",
-    "exp": "EXP-013",
+    "run_id": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
+    "exp": "EXP-039",
     "scores": {
-      "held_out": 0.5542,
-      "val": 0.5527
+      "held_out": 0.6068,
+      "val": 0.6051
     },
-    "since": "2026-10-06T15:11:11+00:00"
+    "since": "2026-10-07T04:55:44+00:00"
   },
   "Lug_Uga": {
-    "run_id": "exp008_ret_tfidfchar_nhall-vall_402044",
-    "exp": "EXP-008",
+    "run_id": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
+    "exp": "EXP-039",
     "scores": {
-      "held_out": 0.376,
-      "val": 0.3803
+      "held_out": 0.4295,
+      "val": 0.4149
     },
-    "since": "2026-10-06T14:45:53+00:00"
+    "since": "2026-10-07T04:55:44+00:00"
   },
   "Swa_Ken": {
-    "run_id": "exp009_ret_bgem3_nhall-vall_ad6575",
-    "exp": "EXP-009",
+    "run_id": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
+    "exp": "EXP-039",
     "scores": {
-      "held_out": 0.5413,
-      "val": 0.5593
+      "held_out": 0.5637,
+      "val": 0.5867
     },
-    "since": "2026-10-06T14:47:22+00:00"
+    "since": "2026-10-07T04:55:44+00:00"
   }
 }

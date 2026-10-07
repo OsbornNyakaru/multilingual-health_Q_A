@@ -120,6 +120,10 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-037-ret-bgem3-rrq-vote-sub5-nhall-vall]] — answer-group scoring: sum reranker scores of all top-50 candidates that share an answer, instead of the single top question (ok; won: none)
 
+- [[EXP-038-rag-bgem3-qwen257bin-k3-sub5-nhall-vall]] — fine-tuned Qwen (EXP-031 adapter, trained on all subsets) on the closed-pool subsets: does it reproduce canned answers? (ok; won: Eng_Eth, Eng_Uga)
+
+- [[EXP-039-ret-bgem3-rrq-sub5-nhall-vall]] — learned selector: fine-tune bge-reranker-v2-m3 on work_train (positive = question with the same answer, 7 hard negatives), then rerank bge-m3 top-50 (ok; won: Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
