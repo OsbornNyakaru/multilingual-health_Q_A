@@ -70,6 +70,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-07 | `composite_20261007_0921.csv` | 0.6467 | 0.6405 | 0.6213 | 0.5721 | 0.7890 | 0.4222 | submission #5: #4 + fine-tuned retriever + selector (EXP-048) on Lug_Uga and Swa_Ken |
 | 2026-10-07 | `composite_20261007_0900.csv` | 0.6313 | 0.6365 | 0.6040 | 0.5544 | 0.7797 | 0.4173 | submission #4: #3 + selector/Qwen agreement on Eng_Uga/Eng_Ken (EXP-045) + 3-epoch selector on Swa_Ken (EXP-043) |
 | 2026-10-07 | `composite_20261007_0818.csv` | 0.6259 | 0.6317 | 0.5990 | 0.5493 | 0.7733 | 0.4151 | submission #3: learned answer selector (EXP-039) on Eng_Uga/Lug_Uga/Swa_Ken/Eng_Ken + fine-tuned Qwen on Eng_Eth. Private +0.030 |
 | 2026-10-07 | `composite_20261007_0704.csv` | 0.6142 | 0.6014 | 0.5871 | 0.5347 | 0.7660 | 0.391 | submission #2: #1 + Eng_Gha from fine-tuned Qwen (EXP-031/035). +0.022 public; judge 0.753 -> 0.766 |
