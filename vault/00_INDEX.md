@@ -126,6 +126,10 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-040-ret-bgem3-hyb-rrq-sub5-nhall-vall]] — EXP-039 with hybrid candidates (bge-m3 + char tf-idf) for better Luganda recall (73% at top-50 vs 88% possible) (ok; won: none)
 
+- [[EXP-041-ret-bgem3-rrq-sub5-ntall]] — test predictions for EXP-039 (learned selector retrained on Train + Val, the test pool) (ok; won: none)
+
+- [[EXP-042-rag-bgem3-qwen257bin-k3-sub1-ntall]] — test predictions for EXP-038 (Eng_Eth, fine-tuned Qwen adapter) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

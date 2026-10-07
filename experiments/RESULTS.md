@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.42**, **val 0.4151** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-042 | `exp042_rag_bgem3_qwen257bin_k3_sub1_ntall_c35f57` | 2026-10-07 05:08 | — | test=all |  |  | — | ok | test predictions for EXP-038 (Eng_Eth, fine-tuned Qwen adapter) |
+| EXP-041 | `exp041_ret_bgem3_rrq_sub5_ntall_e1a18d` | 2026-10-07 05:08 | — | test=all |  |  | — | ok | test predictions for EXP-039 (learned selector retrained on Train + Val, the test pool) |
 | EXP-040 | `exp040_ret_bgem3_hyb_rrq_sub5_nhall-vall_b949e3` | 2026-10-07 05:03 | hybrid_with | held_out=all, val=all | 0.5410 | 0.5441 | — | ok | EXP-039 with hybrid candidates (bge-m3 + char tf-idf) for better Luganda recall (73% at top-50 vs 88% possible) |
 | EXP-039 | `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 2026-10-07 04:55 | rerank_train | held_out=all, val=all | 0.5513 | 0.5497 | Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken | ok | learned selector: fine-tune bge-reranker-v2-m3 on work_train (positive = question with the same answer, 7 hard negatives), then rerank bge-m3 top-50 |
 | EXP-038 | `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 2026-10-07 04:48 | adapter, mode | held_out=all, val=all | 0.4923 | 0.4874 | Eng_Eth, Eng_Uga | ok | fine-tuned Qwen (EXP-031 adapter, trained on all subsets) on the closed-pool subsets: does it reproduce canned answers? |
