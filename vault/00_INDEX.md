@@ -124,6 +124,8 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-039-ret-bgem3-rrq-sub5-nhall-vall]] — learned selector: fine-tune bge-reranker-v2-m3 on work_train (positive = question with the same answer, 7 hard negatives), then rerank bge-m3 top-50 (ok; won: Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken)
 
+- [[EXP-040-ret-bgem3-hyb-rrq-sub5-nhall-vall]] — EXP-039 with hybrid candidates (bge-m3 + char tf-idf) for better Luganda recall (73% at top-50 vs 88% possible) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

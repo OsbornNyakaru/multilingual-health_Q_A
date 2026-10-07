@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.42**, **val 0.4151** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-040 | `exp040_ret_bgem3_hyb_rrq_sub5_nhall-vall_b949e3` | 2026-10-07 05:03 | hybrid_with | held_out=all, val=all | 0.5410 | 0.5441 | — | ok | EXP-039 with hybrid candidates (bge-m3 + char tf-idf) for better Luganda recall (73% at top-50 vs 88% possible) |
 | EXP-039 | `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 2026-10-07 04:55 | rerank_train | held_out=all, val=all | 0.5513 | 0.5497 | Eng_Ken, Eng_Uga, Lug_Uga, Swa_Ken | ok | learned selector: fine-tune bge-reranker-v2-m3 on work_train (positive = question with the same answer, 7 hard negatives), then rerank bge-m3 top-50 |
 | EXP-038 | `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 2026-10-07 04:48 | adapter, mode | held_out=all, val=all | 0.4923 | 0.4874 | Eng_Eth, Eng_Uga | ok | fine-tuned Qwen (EXP-031 adapter, trained on all subsets) on the closed-pool subsets: does it reproduce canned answers? |
 | EXP-037 | `exp037_ret_bgem3_rrq_vote_sub5_nhall-vall_919c98` | 2026-10-07 04:14 | select, vote_power | held_out=all, val=all | 0.3703 | 0.3835 | — | ok | answer-group scoring: sum reranker scores of all top-50 candidates that share an answer, instead of the single top question |
@@ -68,6 +69,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-040 | held_out | 0.5978 |  |  | 0.4057 | 0.5532 | 0.5958 |  | 0.4810 |
+| EXP-040 | val | 0.5963 |  |  | 0.4201 | 0.5741 | 0.5763 |  | 0.4665 |
 | EXP-039 | held_out | 0.6068 |  |  | 0.4295 | 0.5637 | 0.5935 |  | 0.4574 |
 | EXP-039 | val | 0.6051 |  |  | 0.4149 | 0.5867 | 0.5835 |  | 0.4665 |
 | EXP-038 | held_out | 0.5867 |  |  | 0.2880 | 0.4502 | 0.5691 |  | 0.5409 |
