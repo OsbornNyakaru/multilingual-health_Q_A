@@ -497,17 +497,21 @@ def cmd_submission(a) -> None:
         sys.exit("no best runs yet")
     test = pd.read_csv(TEST_CSV, dtype=str).fillna("")
     # a best run's test predictions come from a child run: same config, eval {"test": 0}, parent = best run
-    test_run = {
-        r["parent"]: r["run_id"] for r in load_records()
-        if r["status"] == "ok" and "test" in (r.get("eval") or {}) and r.get("parent")
-    }
+    # a best run can have several test children (e.g. one per group of subsets): newest first
+    children: dict[str, list[str]] = {}
+    for r in reversed(load_records()):
+        if r["status"] == "ok" and "test" in (r.get("eval") or {}) and r.get("parent"):
+            children.setdefault(r["parent"], []).append(r["run_id"])
     parts, missing = [], []
     for s in sorted(test["subset"].unique()):
         b = best.get(s)
-        tr = test_run.get(b["run_id"]) if b else None
-        pf = RUNS_DIR / tr / "test_preds.csv" if tr else None
-        if b and (RUNS_DIR / b["run_id"] / "test_preds.csv").exists():  # e.g. an offline combination
-            pf = RUNS_DIR / b["run_id"] / "test_preds.csv"
+        cands = ([b["run_id"]] if b else []) + (children.get(b["run_id"], []) if b else [])
+        pf = None
+        for rid in cands:  # the run itself (e.g. an offline combination), then its test children
+            f = RUNS_DIR / rid / "test_preds.csv"
+            if f.exists() and (pd.read_csv(f, dtype=str, usecols=["subset"])["subset"] == s).any():
+                pf = f
+                break
         if not pf or not pf.exists():
             missing.append(f"{s} (best {b['run_id'] if b else 'none'})")
             continue

@@ -448,7 +448,7 @@ def train_embedder(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
     random.Random(1).shuffle(order)
 
     def embed(texts):
-        feats = {k: v.to(dev) for k, v in model.tokenize(texts).items()}
+        feats = {k: (v.to(dev) if hasattr(v, "to") else v) for k, v in model.tokenize(texts).items()}
         return torch.nn.functional.normalize(model(feats)["sentence_embedding"], dim=-1)
 
     step = 0
