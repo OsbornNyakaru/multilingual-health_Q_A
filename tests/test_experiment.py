@@ -303,3 +303,21 @@ def test_embedder_train_feeds_the_trained_embedder_to_the_reranker(monkeypatch):
     E.setup({"mode": "retrieval", "embedder_train": True, "rerank_train": True, "rerank_model": "base"},
             {"held_out": (EVAL, POOL)}, ctx)
     assert ctx.cache[("trained_embedder", "r8")] == "/emb/trained" and seen["emb"] == "/emb/trained"
+
+
+def test_rerank_on_both_shows_question_and_answer_in_training_and_inference():
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "rerank_train_negs": 2, "rerank_on": "both", "rerank_answer_chars": 3}
+    groups = E.reranker_groups(cfg, TRIP_POOL, Ctx())
+    assert groups and all(" || " in c for _, cands in groups for c in cands)
+    assert all(len(c.split(" || ")[1]) <= 3 for _, cands in groups for c in cands)
+    seen = []
+
+    class SpyCE:
+        def predict(self, pairs, **kw):
+            seen.extend(c for _, c in pairs)
+            return [0.5] * len(pairs)
+
+    ctx = Ctx()
+    ctx.cache[("cross_encoder", "spy")] = SpyCE()
+    E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "spy", "rerank_k": 2, "rerank_on": "both"}, EVAL, POOL, ctx)
+    assert seen and all(" || " in c for c in seen)

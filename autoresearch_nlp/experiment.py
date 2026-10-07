@@ -54,7 +54,8 @@ DEFAULT_CONFIG: dict = {
     "hybrid_alpha": 0.5,         # weight of hybrid_with in the blend
     "rerank_model": None,        # e.g. "BAAI/bge-reranker-v2-m3": cross-encoder over the top rerank_k
     "rerank_k": 20,
-    "rerank_on": "question",     # question (paraphrase check) | answer (relevance check)
+    "rerank_on": "question",     # question (paraphrase check) | answer (relevance check) | both (question || answer)
+    "rerank_answer_chars": 400,  # answer prefix length used when rerank_on is "answer" or "both"
     "rerank_batch": 64,
     # rerank_train: fine-tune the cross-encoder (rerank_model = its starting point) on the training pool:
     # query = a training question; positive = another training question with the SAME answer; hard
@@ -227,6 +228,16 @@ def neighbours(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, k: 
     return out
 
 
+def candidate_text(cfg: dict, question: str, answer: str) -> str:
+    """What the cross-encoder sees for one pool row (training and inference use the same form)."""
+    n = int(cfg["rerank_answer_chars"])
+    if cfg["rerank_on"] == "answer":
+        return str(answer)[:n]
+    if cfg["rerank_on"] == "both":
+        return f"{question} || {str(answer)[:n]}"
+    return str(question)
+
+
 def rerank(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, nn: dict, ctx) -> dict[str, list[tuple[int, float]]]:
     """Re-score each eval row's top rerank_k candidates with a cross-encoder; returns them sorted by that score.
 
@@ -240,13 +251,12 @@ def rerank(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, nn: dict, ct
 
         ctx.cache[key] = CrossEncoder(cfg["rerank_model"], max_length=512, device="cuda" if torch.cuda.is_available() else "cpu")
     ce = ctx.cache[key]
-    col = INPUT_COL if cfg["rerank_on"] == "question" else OUTPUT_COL
     questions = dict(zip(eval_df[ID_COL].astype(str), eval_df[INPUT_COL].astype(str)))
     k = int(cfg["rerank_k"])
     pairs, owners = [], []
     for i, hits in nn.items():
         for j, _ in hits[:k]:
-            pairs.append((questions[i], str(pool_df[col].iloc[j])))
+            pairs.append((questions[i], candidate_text(cfg, pool_df[INPUT_COL].iloc[j], pool_df[OUTPUT_COL].iloc[j])))
             owners.append((i, j))
     ctx.log(f"reranking {len(pairs):,} pairs with {cfg['rerank_model']} on {cfg['rerank_on']}")
     scores = ce.predict(pairs, batch_size=int(cfg["rerank_batch"]), show_progress_bar=False)
@@ -519,7 +529,8 @@ def reranker_groups(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> lis
         negs = [h for h in hits if answers[h] != answers[j]][:negs_wanted]
         if len(negs) < negs_wanted:
             continue
-        groups.append((questions[j], [questions[pos]] + [questions[h] for h in negs]))
+        cand = lambda h: candidate_text(cfg, questions[h], answers[h])  # noqa: E731
+        groups.append((questions[j], [cand(pos)] + [cand(h) for h in negs]))
     return groups
 
 
