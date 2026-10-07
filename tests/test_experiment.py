@@ -247,17 +247,17 @@ def test_reranker_groups_use_same_answer_positives_and_different_answer_negative
     cfg = {**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "rerank_train_negs": 2}
     groups = E.reranker_groups(cfg, pool, Ctx())
     ans = dict(zip(pool["input"], pool["output"]))
-    assert groups and all(q != cands[0] for q, cands in groups)
-    for q, cands in groups:
+    assert groups and all(q != cands[0] for q, cands, _ in groups)
+    for q, cands, _ in groups:
         assert ans[cands[0]] == ans[q]                       # positive shares the answer
         assert all(ans[c] != ans[q] for c in cands[1:])       # negatives don't
         assert len(cands) == 3
-    assert "treat malaria" not in [q for q, _ in groups]     # unique answer: no positive, skipped
+    assert "treat malaria" not in [q for q, _, _ in groups]     # unique answer: no positive, skipped
 
 
 def test_rerank_train_wires_trained_model_into_rerank(monkeypatch):
     seen = {}
-    monkeypatch.setattr(E, "train_reranker", lambda cfg, pool, c: seen.setdefault("pool", len(pool)) and "/rr/trained")
+    monkeypatch.setattr(E, "train_rerankers", lambda cfg, pool, c: seen.setdefault("pool", len(pool)) and "/rr/trained")
 
     class FakeCE:
         def predict(self, pairs, **kw):
@@ -297,7 +297,7 @@ def test_embedder_triplets_pair_same_answers_and_respect_subset_filter():
 def test_embedder_train_feeds_the_trained_embedder_to_the_reranker(monkeypatch):
     seen = {}
     monkeypatch.setattr(E, "train_embedder", lambda cfg, pool, c: "/emb/trained")
-    monkeypatch.setattr(E, "train_reranker", lambda cfg, pool, c: seen.setdefault("emb", cfg["embedder"]) and "/rr/t")
+    monkeypatch.setattr(E, "train_rerankers", lambda cfg, pool, c: seen.setdefault("emb", cfg["embedder"]) and "/rr/t")
     ctx = Ctx()
     ctx.run_id = "r8"
     E.setup({"mode": "retrieval", "embedder_train": True, "rerank_train": True, "rerank_model": "base"},
@@ -308,8 +308,8 @@ def test_embedder_train_feeds_the_trained_embedder_to_the_reranker(monkeypatch):
 def test_rerank_on_both_shows_question_and_answer_in_training_and_inference():
     cfg = {**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "rerank_train_negs": 2, "rerank_on": "both", "rerank_answer_chars": 3}
     groups = E.reranker_groups(cfg, TRIP_POOL, Ctx())
-    assert groups and all(" || " in c for _, cands in groups for c in cands)
-    assert all(len(c.split(" || ")[1]) <= 3 for _, cands in groups for c in cands)
+    assert groups and all(" || " in c for _, cands, _ in groups for c in cands)
+    assert all(len(c.split(" || ")[1]) <= 3 for _, cands, _ in groups for c in cands)
     seen = []
 
     class SpyCE:
@@ -321,3 +321,45 @@ def test_rerank_on_both_shows_question_and_answer_in_training_and_inference():
     ctx.cache[("cross_encoder", "spy")] = SpyCE()
     E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "spy", "rerank_k": 2, "rerank_on": "both"}, EVAL, POOL, ctx)
     assert seen and all(" || " in c for c in seen)
+
+
+def test_graded_labels_give_near_duplicate_answers_high_targets():
+    pool = TRIP_POOL.copy()
+    pool.loc[pool["ID"] == "p5", "output"] = "net"          # "what causes malaria" shares no answer...
+    pool.loc[pool["ID"] == "p6", "output"] = "net please"   # ...but "malaria causes" has a near-copy of "net"
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "rerank_train_negs": 2, "rerank_train_graded": True}
+    ans = dict(zip(pool["input"], pool["output"].str.strip()))
+    groups = E.reranker_groups(cfg, pool, Ctx())
+    for q, cands, labels in groups:
+        assert labels[0] == 1.0 and len(labels) == len(cands)
+        for c, lab in zip(cands[1:], labels[1:]):
+            assert abs(lab - E.answer_overlap(ans[c], ans[q])) < 1e-9 and 0.0 <= lab < 1.0
+    assert any(lab > 0 for _, _, labels in groups for lab in labels[1:])  # some negative got partial credit
+    plain = E.reranker_groups({**cfg, "rerank_train_graded": False}, pool, Ctx())
+    assert all(labels[1:] == [0.0] * 2 for _, _, labels in plain)
+
+
+def test_answer_overlap_is_one_for_identical_and_zero_for_disjoint():
+    assert E.answer_overlap("use a bed net", "use a bed net") == 1.0
+    assert E.answer_overlap("use a bed net", "drink water") == 0.0
+
+
+def test_rerank_averages_scores_across_an_ensemble():
+    class CE:
+        def __init__(self, fav):
+            self.fav = fav
+
+        def predict(self, pairs, **kw):
+            return [1.0 if self.fav in cand else 0.0 for _, cand in pairs]
+
+    ctx = Ctx()
+    ctx.cache[("cross_encoder", "a")] = CE("cause")    # prefers p2 ("what causes malaria")
+    ctx.cache[("cross_encoder", "b")] = CE("prevent")  # prefers p0/p1
+    _, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": ["a", "b"], "rerank_k": 3}, EVAL, POOL, ctx)
+    assert meta["q1"]["rerank_score"] == 0.5  # every candidate averages to 0.5: one model each likes it
+
+
+def test_train_rerankers_trains_one_per_seed(monkeypatch):
+    monkeypatch.setattr(E, "train_reranker", lambda cfg, pool, c, seed=0: f"/rr/{seed}")
+    assert E.train_rerankers({**E.DEFAULT_CONFIG}, POOL, Ctx()) == "/rr/0"
+    assert E.train_rerankers({**E.DEFAULT_CONFIG, "rerank_ensemble": 3}, POOL, Ctx()) == ["/rr/0", "/rr/1", "/rr/2"]

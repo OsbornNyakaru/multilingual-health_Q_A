@@ -66,6 +66,9 @@ DEFAULT_CONFIG: dict = {
     "rerank_train_lr": 2e-5,
     "rerank_train_batch": 8,      # query groups per step (each = 1 positive + rerank_train_negs negatives)
     "rerank_train_max_len": 256,
+    "rerank_train_graded": False,  # targets = answer overlap with the gold (soft), not 1-positive/rest-negative
+    "rerank_train_tau": 0.1,       # temperature of the soft targets
+    "rerank_ensemble": 1,          # train K selectors (different seeds: data order + sampled negatives), average scores
     "select": "top1",            # top1 | vote: sum sim**vote_power over neighbours sharing an answer
     "vote_k": 50,
     "vote_power": 4.0,
@@ -244,13 +247,16 @@ def rerank(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, nn: dict, ct
     rerank_on="question" scores (eval question, neighbour's question): a paraphrase check.
     rerank_on="answer" scores (eval question, neighbour's answer): a relevance check.
     """
-    key = ("cross_encoder", cfg["rerank_model"])
-    if key not in ctx.cache:
-        import torch
-        from sentence_transformers import CrossEncoder
+    models = list(cfg["rerank_model"]) if isinstance(cfg["rerank_model"], (list, tuple)) else [cfg["rerank_model"]]
+    ces = []
+    for m in models:
+        key = ("cross_encoder", m)
+        if key not in ctx.cache:
+            import torch
+            from sentence_transformers import CrossEncoder
 
-        ctx.cache[key] = CrossEncoder(cfg["rerank_model"], max_length=512, device="cuda" if torch.cuda.is_available() else "cpu")
-    ce = ctx.cache[key]
+            ctx.cache[key] = CrossEncoder(m, max_length=512, device="cuda" if torch.cuda.is_available() else "cpu")
+        ces.append(ctx.cache[key])
     questions = dict(zip(eval_df[ID_COL].astype(str), eval_df[INPUT_COL].astype(str)))
     k = int(cfg["rerank_k"])
     pairs, owners = [], []
@@ -258,8 +264,11 @@ def rerank(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, nn: dict, ct
         for j, _ in hits[:k]:
             pairs.append((questions[i], candidate_text(cfg, pool_df[INPUT_COL].iloc[j], pool_df[OUTPUT_COL].iloc[j])))
             owners.append((i, j))
-    ctx.log(f"reranking {len(pairs):,} pairs with {cfg['rerank_model']} on {cfg['rerank_on']}")
-    scores = ce.predict(pairs, batch_size=int(cfg["rerank_batch"]), show_progress_bar=False)
+    ctx.log(f"reranking {len(pairs):,} pairs with {len(ces)} model(s) on {cfg['rerank_on']}")
+    import numpy as np
+
+    scores = np.mean([np.asarray(ce.predict(pairs, batch_size=int(cfg["rerank_batch"]), show_progress_bar=False), dtype=float)
+                      for ce in ces], axis=0)
     out: dict[str, list[tuple[int, float]]] = {i: [] for i in nn}
     for (i, j), sc in zip(owners, scores):
         out[i].append((j, float(sc)))
@@ -501,9 +510,27 @@ def _reranker_key(ctx, cfg: dict) -> tuple:
     return ("trained_reranker",) + _adapter_key(ctx, cfg)[1:]
 
 
-def reranker_groups(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> list[tuple[str, list[str]]]:
-    """(query, [positive, negative, ...]) groups from the pool alone. Rows whose answer no other pool row
-    shares have no positive and are skipped; negatives are retrieved neighbours with a different answer."""
+def answer_overlap(a: str, b: str, _cache: dict = {}) -> float:  # noqa: B006 (deliberate memo)
+    """(ROUGE-1 F + ROUGE-L F) / 2 with the competition's whitespace tokenizer: 1.0 = same answer."""
+    key = (a, b)
+    if key not in _cache:
+        from rouge_score import rouge_scorer
+
+        class _WS:
+            def tokenize(self, t):
+                return str(t).strip().split() if t else []
+
+        sc = _cache.setdefault("_scorer", rouge_scorer.RougeScorer(["rouge1", "rougeL"], tokenizer=_WS()))
+        r = sc.score(str(b), str(a))
+        _cache[key] = (r["rouge1"].fmeasure + r["rougeL"].fmeasure) / 2
+    return _cache[key]
+
+
+def reranker_groups(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> list[tuple[str, list[str], list[float]]]:
+    """(query, [positive, negative, ...], labels) groups from the pool alone. Rows whose answer no other pool
+    row shares have no positive and are skipped; negatives are retrieved neighbours with a different answer
+    (the top ones for seed 0, a random sample of the top 3x for other seeds). labels = 1 for the positive and
+    0 (or the answer overlap with the gold, when rerank_train_graded) for the negatives."""
     import random
 
     rng = random.Random(seed)
@@ -526,28 +553,39 @@ def reranker_groups(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> lis
         mates = [h for h in by_answer[answers[j]] if h != j]
         retrieved_mates = [h for h in hits if answers[h] == answers[j]]
         pos = retrieved_mates[0] if retrieved_mates else rng.choice(mates)
-        negs = [h for h in hits if answers[h] != answers[j]][:negs_wanted]
-        if len(negs) < negs_wanted:
+        pool_negs = [h for h in hits if answers[h] != answers[j]]
+        if len(pool_negs) < negs_wanted:
             continue
+        negs = pool_negs[:negs_wanted] if seed == 0 else rng.sample(pool_negs[: negs_wanted * 3], negs_wanted)
         cand = lambda h: candidate_text(cfg, questions[h], answers[h])  # noqa: E731
-        groups.append((questions[j], [cand(pos)] + [cand(h) for h in negs]))
+        graded = bool(cfg["rerank_train_graded"])
+        labels = [1.0] + [answer_overlap(answers[h], answers[j]) if graded else 0.0 for h in negs]
+        groups.append((questions[j], [cand(pos)] + [cand(h) for h in negs], labels))
     return groups
 
 
-def train_reranker(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
+def train_rerankers(cfg: dict, pool_df: pd.DataFrame, ctx):
+    """One selector, or a list of rerank_ensemble selectors trained with seeds 0..K-1."""
+    k = max(1, int(cfg["rerank_ensemble"]))
+    paths = [train_reranker(cfg, pool_df, ctx, seed=s) for s in range(k)]
+    return paths[0] if k == 1 else paths
+
+
+def train_reranker(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> str:
     """Fine-tune the cross-encoder in cfg['rerank_model'] on pool-only groups; returns its local directory."""
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_cosine_schedule_with_warmup
 
-    out = _work_dir(ctx, cfg) / "reranker"
+    name = "reranker" if seed == 0 else f"reranker_{seed}"
+    out = _work_dir(ctx, cfg) / name
     upload = getattr(ctx, "upload_folder", None)
     download = getattr(ctx, "download_folder", None)
     if (out / "config.json").exists():
         return str(out)
-    if download and download("reranker", out):
-        ctx.log("found a trained reranker for this run on HF; skipping training")
+    if download and download(name, out):
+        ctx.log(f"found a trained {name} for this run on HF; skipping training")
         return str(out)
-    groups = reranker_groups(cfg, pool_df, ctx)
+    groups = reranker_groups(cfg, pool_df, ctx, seed=seed)
     ctx.log(f"reranker training: {len(groups):,} query groups (1 positive + {cfg['rerank_train_negs']} negatives each)")
     base = resolve_artifact(cfg["rerank_model"], ctx, "reranker", "config.json")
     tok = AutoTokenizer.from_pretrained(base)
@@ -561,19 +599,25 @@ def train_reranker(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
     import random
 
     order = list(range(len(groups)))
-    random.Random(1).shuffle(order)
+    random.Random(1 + seed).shuffle(order)
+    torch.manual_seed(seed)
+    graded, tau = bool(cfg["rerank_train_graded"]), float(cfg["rerank_train_tau"])
     step = 0
     while step < steps:
         for b in range(0, len(order) - bs + 1, bs):
             if step >= steps or ctx.should_stop():
                 break
             batch = [groups[i] for i in order[b:b + bs]]
-            qs = [q for q, cands in batch for _ in cands]
-            cs = [c for _, cands in batch for c in cands]
+            qs = [q for q, cands, _ in batch for _ in cands]
+            cs = [c for _, cands, _ in batch for c in cands]
             enc = tok(qs, cs, truncation=True, max_length=int(cfg["rerank_train_max_len"]), padding=True, return_tensors="pt").to(dev)
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=dev == "cuda"):
                 logits = model(**enc).logits.view(len(batch), n_neg + 1).float()
-            loss = torch.nn.functional.cross_entropy(logits, torch.zeros(len(batch), dtype=torch.long, device=dev))
+            if graded:  # match the score distribution to softmax(labels / tau)
+                target = torch.softmax(torch.tensor([lab for _, _, lab in batch], device=dev) / tau, dim=-1)
+                loss = -(target * torch.log_softmax(logits, dim=-1)).sum(-1).mean()
+            else:
+                loss = torch.nn.functional.cross_entropy(logits, torch.zeros(len(batch), dtype=torch.long, device=dev))
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step(), sched.step(), opt.zero_grad()
@@ -585,8 +629,8 @@ def train_reranker(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
     model.save_pretrained(str(out))
     tok.save_pretrained(str(out))
     if upload:
-        upload(out, "reranker")
-        ctx.log("reranker uploaded")
+        upload(out, name)
+        ctx.log(f"{name} uploaded")
     del model, opt
     import gc
 
@@ -626,7 +670,7 @@ def setup(config: dict, sets: dict, ctx) -> None:
         ctx.cache[_embedder_key(ctx, cfg)] = train_embedder(cfg, sets[name][1], ctx)
         cfg["embedder"] = ctx.cache[_embedder_key(ctx, cfg)]  # the reranker/LoRA below train on its candidates
     if cfg["rerank_train"]:
-        ctx.cache[_reranker_key(ctx, cfg)] = train_reranker(cfg, sets[name][1], ctx)
+        ctx.cache[_reranker_key(ctx, cfg)] = train_rerankers(cfg, sets[name][1], ctx)
     if cfg["mode"] == "lora_rag":
         ctx.cache[_adapter_key(ctx, cfg)] = train_lora(cfg, sets[name][1], ctx)
 
@@ -779,9 +823,9 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     if cfg["rerank_train"]:
         key = _reranker_key(ctx, cfg)
         if key not in ctx.cache:  # older runner without the setup step: train on this set's pool
-            ctx.cache[key] = train_reranker(cfg, pool_df, ctx)
+            ctx.cache[key] = train_rerankers(cfg, pool_df, ctx)
         cfg["rerank_model"] = ctx.cache[key]
-    elif cfg["rerank_model"]:
+    elif cfg["rerank_model"] and not isinstance(cfg["rerank_model"], (list, tuple)):
         cfg["rerank_model"] = resolve_artifact(cfg["rerank_model"], ctx, "reranker", "config.json")
 
     needs_nn = mode in {"retrieval", "rag_few_shot", "router", "lora_rag"}
