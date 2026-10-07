@@ -6,7 +6,7 @@ a run is adopted per subset only if it wins by ≥ 0.003 on both held-out and va
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.42**, **val 0.4151** (8/8 subsets covered)
+composite test-mix: **held-out 0.4223**, **val 0.4155** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
@@ -14,7 +14,7 @@ composite test-mix: **held-out 0.42**, **val 0.4151** (8/8 subsets covered)
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
 | Lug_Uga | 14.3% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.4295 | 0.4149 |
-| Swa_Ken | 8.7% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.5637 | 0.5867 |
+| Swa_Ken | 8.7% | EXP-043 `exp043_ret_bgem3_rrq_sub5_nhall-vall_a810af` | 0.5897 | 0.5917 |
 | Eng_Ken | 6.4% | EXP-039 `exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df` | 0.5935 | 0.5835 |
 | Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.42**, **val 0.4151** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-043 | `exp043_ret_bgem3_rrq_sub5_nhall-vall_a810af` | 2026-10-07 05:21 | rerank_train_epochs | held_out=all, val=all | 0.5501 | 0.5440 | Swa_Ken | ok | learned selector trained 3 epochs instead of 1 (1 epoch took 3 minutes) |
 | EXP-042 | `exp042_rag_bgem3_qwen257bin_k3_sub1_ntall_c35f57` | 2026-10-07 05:08 | — | test=all |  |  | — | ok | test predictions for EXP-038 (Eng_Eth, fine-tuned Qwen adapter) |
 | EXP-041 | `exp041_ret_bgem3_rrq_sub5_ntall_e1a18d` | 2026-10-07 05:08 | — | test=all |  |  | — | ok | test predictions for EXP-039 (learned selector retrained on Train + Val, the test pool) |
 | EXP-040 | `exp040_ret_bgem3_hyb_rrq_sub5_nhall-vall_b949e3` | 2026-10-07 05:03 | hybrid_with | held_out=all, val=all | 0.5410 | 0.5441 | — | ok | EXP-039 with hybrid candidates (bge-m3 + char tf-idf) for better Luganda recall (73% at top-50 vs 88% possible) |
@@ -71,6 +72,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-043 | held_out | 0.6054 |  |  | 0.4266 | 0.5897 | 0.5871 |  | 0.3793 |
+| EXP-043 | val | 0.6001 |  |  | 0.4054 | 0.5917 | 0.5695 |  | 0.4593 |
 | EXP-040 | held_out | 0.5978 |  |  | 0.4057 | 0.5532 | 0.5958 |  | 0.4810 |
 | EXP-040 | val | 0.5963 |  |  | 0.4201 | 0.5741 | 0.5763 |  | 0.4665 |
 | EXP-039 | held_out | 0.6068 |  |  | 0.4295 | 0.5637 | 0.5935 |  | 0.4574 |

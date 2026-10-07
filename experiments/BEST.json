@@ -63,12 +63,12 @@
     "since": "2026-10-07T04:55:44+00:00"
   },
   "Swa_Ken": {
-    "run_id": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
-    "exp": "EXP-039",
+    "run_id": "exp043_ret_bgem3_rrq_sub5_nhall-vall_a810af",
+    "exp": "EXP-043",
     "scores": {
-      "held_out": 0.5637,
-      "val": 0.5867
+      "held_out": 0.5897,
+      "val": 0.5917
     },
-    "since": "2026-10-07T04:55:44+00:00"
+    "since": "2026-10-07T05:21:23+00:00"
   }
 }
