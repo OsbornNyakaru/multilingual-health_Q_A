@@ -24,6 +24,7 @@ Post-close practice run of Zindi's **Multilingual Health Question Answering in L
 - [[F-004-rules]] — open-source only, no paid APIs, seeds, unlimited practice submissions
 - [[repo-state]] — F-005 repo audit: `src/` package broken (missing `models` subpackage, 0.25/0.25/0.30/0.20 weights); working code = `autoresearch_nlp/`, molab notebook, retrieval scripts; RAG builder partial, LoRA partial, vLLM + router missing; EXP-004 was scored with the default (non-whitespace) tokenizer. 2026-10-01: tests exist, combined.py fixed to 0.37/0.37/0.26, stale files archived (see its addendum)
 - [[metric-replica]] — F-006 per-subset scorer (`evaluation/scorer.py`, 0.37/0.37/0.26, injectable judge); starter = whitespace ROUGE; EXP-004 re-scored whitespace = 0.3700 (not 0.3892), Amh_Eth 0.115 (0.012 was a tokenizer artifact)
+- [[winning-solutions]] — F-007 how 1st (selection-first + LightGBM ranker), a 2nd-style generation ensemble, and 11th place (single RAG LoRA) differ, and where we stand
 
 ## Open hypotheses
 Hand-maintained list of every `hypotheses/*.md` with `status: open` or `status: testing`. If the Dataview plugin is installed, the query below lists them automatically.
