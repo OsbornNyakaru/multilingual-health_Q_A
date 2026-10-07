@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4268**, **val 0.4222** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-049 | `exp049_ret_bgem3_rrq_sub2_ntall_7aa797` | 2026-10-07 06:21 | — | test=all |  |  | — | ok | test predictions for EXP-048 (Lug_Uga, Swa_Ken; retriever + selector retrained on Train + Val) |
 | EXP-048 | `exp048_ret_bgem3_rrq_sub5_nhall-vall_9294c3` | 2026-10-07 06:10 | — | held_out=all, val=all | 0.5613 | 0.5633 | Lug_Uga, Swa_Ken | ok | fine-tuned BGE-M3 retriever + learned selector (re-run of EXP-047 after the tokenizer fix); target: Luganda recall@50 73% -> ~85% |
 | EXP-047 | `exp047_ret_bgem3_rrq_sub5_nhall-vall_da9740` | 2026-10-07 05:59 | embedder_train | held_out=all, val=all |  |  | — | crash | fine-tuned BGE-M3 retriever (same-answer pairs + hard negatives, all subsets), learned selector retrained on its candidates; target: Luganda recall@50 73% -> ~85% |
 | EXP-046 | `exp046_ret_bgem3_rrq_sub1_ntall_0e2fd5` | 2026-10-07 05:59 | — | test=all |  |  | — | ok | test predictions for EXP-043 (Swa_Ken, 3-epoch selector retrained on Train + Val) |
