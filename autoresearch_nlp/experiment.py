@@ -54,7 +54,7 @@ DEFAULT_CONFIG: dict = {
     # generation (zero_shot, few_shot, rag_few_shot, router)
     "model_id": "Qwen/Qwen2.5-7B-Instruct",
     "precision": "auto",         # auto | bf16 | 4bit
-    "adapter": None,
+    "adapter": None,             # local path, or "run:<run_id>" = the adapter a lora_rag run uploaded
     "num_beams": 1,
     "infer_batch": 32,
     "max_input_tokens": 1024,
@@ -70,6 +70,9 @@ DEFAULT_CONFIG: dict = {
     # with THIS model's tokenizer (the old word-count bounds truncated ~94% of Amharic answers);
     # "fixed" uses LENGTH_BOUNDS as-is.
     "length_mode": "pool_p95",
+    "min_len_pct": 0,            # >0: min_new_tokens = this percentile of pool answer lengths (stops too-short answers)
+    "fallback_below_frac": 0.0,  # >0: a generation shorter than this fraction of the subset's median pool
+                                 # answer (in words) is replaced by the retrieved answer
     "checkpoint_every": 10,      # batches
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
@@ -281,7 +284,8 @@ def length_bounds(cfg: dict, tok, pool_df: pd.DataFrame) -> dict[str, dict]:
     for subset, grp in pool_df.groupby(SUBSET_COL):
         sample = grp[OUTPUT_COL].sample(min(500, len(grp)), random_state=0).tolist()
         lens = [len(x) for x in tok(sample, add_special_tokens=False)["input_ids"]]
-        out[str(subset)] = {"min_new_tokens": 1, "max_new_tokens": int(np.percentile(lens, 95)) + 8}
+        lo = int(np.percentile(lens, float(cfg["min_len_pct"]))) if float(cfg["min_len_pct"]) > 0 else 1
+        out[str(subset)] = {"min_new_tokens": max(1, lo), "max_new_tokens": int(np.percentile(lens, 95)) + 8}
     return out
 
 
@@ -326,6 +330,34 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
             ctx.save(answers)
         ctx.log(f"batch {b}/{len(batches)} ({subset})", progress=(b, len(batches)))
     ctx.save(answers)
+
+
+# ── adapters from earlier runs ───────────────────────────────────────────────
+
+
+def resolve_adapter(adapter, ctx):
+    """'run:<run_id>' -> local copy of that run's uploaded adapter (downloaded once); anything else unchanged."""
+    if not adapter or not str(adapter).startswith("run:"):
+        return adapter
+    import os
+    from pathlib import Path
+
+    rid = str(adapter)[4:]
+    local = Path.cwd() / "runner_work" / "adapters" / rid
+    if not (local / "adapter_config.json").exists():
+        from huggingface_hub import snapshot_download
+
+        repo = os.environ.get("HF_RUNS_REPO", "nyakaruosborn/afro-health-qa-runs")
+        ctx.log(f"downloading adapter of {rid}")
+        tmp = snapshot_download(repo, repo_type="dataset", allow_patterns=[f"runs/{rid}/adapter/*"])
+        src = Path(tmp) / "runs" / rid / "adapter"
+        if not (src / "adapter_config.json").exists():
+            raise FileNotFoundError(f"no adapter uploaded for run {rid}")
+        import shutil
+
+        local.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(src, local, dirs_exist_ok=True)
+    return str(local)
 
 
 # ── LoRA fine-tuning (mode lora_rag) ─────────────────────────────────────────
@@ -468,6 +500,22 @@ def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
 # ── entry point ──────────────────────────────────────────────────────────────
 
 
+def apply_fallback(cfg: dict, eval_df, pool_df, answers: dict, best_answer: dict, meta: dict, ctx) -> None:
+    """Replace generations far shorter than a typical answer with the retrieved answer."""
+    frac = float(cfg["fallback_below_frac"])
+    if frac <= 0 or not best_answer:
+        return
+    median_words = pool_df.groupby(SUBSET_COL)[OUTPUT_COL].apply(lambda x: x.str.split().str.len().median()).to_dict()
+    n = 0
+    for _, r in eval_df.iterrows():
+        i, sub = str(r[ID_COL]), str(r[SUBSET_COL])
+        if i in answers and i in best_answer and len(str(answers[i]).split()) < frac * median_words.get(sub, 0):
+            answers[i] = best_answer[i]
+            meta.setdefault(i, {})["fallback"] = True
+            n += 1
+    ctx.log(f"fallback to retrieval for {n:,} short generations (< {frac:.0%} of the subset's median length)")
+
+
 def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tuple[dict[str, str], dict[str, dict]]:
     cfg = {**DEFAULT_CONFIG, **(config or {})}
     unknown = set(config or {}) - set(DEFAULT_CONFIG)
@@ -478,6 +526,7 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     pool_df = pool_df.reset_index(drop=True)
     answers: dict[str, str] = dict(ctx.resume)
     meta: dict[str, dict] = {}
+    cfg["adapter"] = resolve_adapter(cfg["adapter"], ctx)
 
     needs_nn = mode in {"retrieval", "rag_few_shot", "router", "lora_rag"}
     if mode == "lora_rag":
@@ -530,6 +579,7 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
 
     if mode in GENERATIVE_MODES:
         generate(cfg, eval_df, pickers[mode], ctx, answers, pool_df)
+        apply_fallback(cfg, eval_df, pool_df, answers, best_answer, meta, ctx)
         return answers, meta
 
     if mode == "router":

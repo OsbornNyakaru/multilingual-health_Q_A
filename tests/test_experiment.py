@@ -180,3 +180,43 @@ def test_lora_rag_trains_inline_on_runners_without_setup(monkeypatch):
     a1, _ = E.run(cfg, EVAL, POOL, ctx)
     a2, _ = E.run(cfg, EVAL, POOL, ctx)  # second eval set reuses the adapter
     assert calls == [6] and set(a1.values()) == set(a2.values()) == {"/adapters/inline"}
+
+
+def test_fallback_replaces_short_generations_with_retrieval(monkeypatch):
+    # first eval row gets an empty generation, the others a long one
+    def fake_generate(cfg, rows, ex, c, answers, pool):
+        for n, i in enumerate(rows["ID"]):
+            answers[i] = "" if n == 0 else "word " * 20
+
+    monkeypatch.setattr(E, "generate", fake_generate)
+    cfg = {"mode": "rag_few_shot", "embedder": "tfidf-char", "few_shot_k": 2, "fallback_below_frac": 0.5}
+    answers, meta = E.run(cfg, EVAL, POOL, Ctx())
+    assert answers["q1"] == "use a bed net" and meta["q1"]["fallback"] is True
+    assert answers["q2"].startswith("word") and "fallback" not in meta["q2"]
+    off, _ = E.run({**cfg, "fallback_below_frac": 0.0}, EVAL, POOL, Ctx())
+    assert off["q1"] == ""
+
+
+def test_min_len_pct_sets_min_new_tokens():
+    class Tok:
+        def __call__(self, texts, add_special_tokens=False):
+            return {"input_ids": [t.split() for t in texts]}
+
+    pool = pd.DataFrame({"ID": [f"p{i}" for i in range(10)], "input": ["q"] * 10,
+                         "output": [" ".join(["w"] * (i + 1) * 10) for i in range(10)], "subset": ["Aka_Gha"] * 10})
+    cfg = {**E.DEFAULT_CONFIG}
+    assert E.length_bounds(cfg, Tok(), pool)["Aka_Gha"]["min_new_tokens"] == 1
+    b = E.length_bounds({**cfg, "min_len_pct": 50}, Tok(), pool)["Aka_Gha"]
+    assert b["min_new_tokens"] == 55 and b["max_new_tokens"] > b["min_new_tokens"]
+
+
+def test_resolve_adapter_passes_paths_through_and_fetches_runs(monkeypatch, tmp_path):
+    assert E.resolve_adapter(None, Ctx()) is None and E.resolve_adapter("/a/b", Ctx()) == "/a/b"
+    src = tmp_path / "hf" / "runs" / "r9" / "adapter"
+    src.mkdir(parents=True)
+    (src / "adapter_config.json").write_text("{}")
+    import huggingface_hub
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", lambda *a, **k: str(tmp_path / "hf"))
+    monkeypatch.chdir(tmp_path)
+    out = E.resolve_adapter("run:r9", Ctx())
+    assert out.endswith("runner_work/adapters/r9") and (tmp_path / "runner_work/adapters/r9/adapter_config.json").exists()
