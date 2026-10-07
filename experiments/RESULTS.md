@@ -64,6 +64,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-07 | `composite_20261007_0818.csv` | 0.6259 | 0.6317 | 0.5990 | 0.5493 | 0.7733 | 0.4151 | submission #3: learned answer selector (EXP-039) on Eng_Uga/Lug_Uga/Swa_Ken/Eng_Ken + fine-tuned Qwen on Eng_Eth. Private +0.030 |
 | 2026-10-07 | `composite_20261007_0704.csv` | 0.6142 | 0.6014 | 0.5871 | 0.5347 | 0.7660 | 0.391 | submission #2: #1 + Eng_Gha from fine-tuned Qwen (EXP-031/035). +0.022 public; judge 0.753 -> 0.766 |
 | 2026-10-06 | `probe_uppercase_20261006.csv` | 0.2098 | 0.2098 | 0.0171 | 0.0169 | 0.7586 |  | probe: same answers uppercased. ROUGE collapsed, so the grader is case-sensitive (no lowercasing): whitespace tokenizer confirmed (H-013). Not a real attempt. |
 | 2026-10-06 | `composite_20261006_1834.csv` | 0.5920 | 0.5816 | 0.5616 | 0.5096 | 0.7526 | 0.3747 | first submission: per-subset retrieval composite (EXP-008/009/012/013). LB rouge-only 0.3963 vs local whitespace 0.3747; default rouge tokenizer on Val gives 0.3952 |
