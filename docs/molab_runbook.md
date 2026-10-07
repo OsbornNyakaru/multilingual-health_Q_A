@@ -60,7 +60,7 @@ that's it. you don't type run names, pick models or copy scores: the spec carrie
 
 ## reading experiments/RESULTS.md
 
-- **current best (per subset)**: for each language/country, the run that scores best, with its held-out and val scores. a run only takes over a subset if it wins by ≥ 0.003 on **both** sets.
+- **current best (per subset)**: for each language/country, the run that scores best, with its held-out and val scores. a run takes over a subset if it wins by ≥ 0.003 on **val** and doesn't lose more than 0.003 on held-out.
 - **composite test-mix**: the overall score of that per-subset best, weighted by how much of the test set each subset makes up (eng_uga 28%, aka_gha 19%, eng_gha 19%, lug_uga 14%, swa_ken 9%, eng_ken 6%, amh_eth 2%, eng_eth 2%).
 - **runs**: every experiment, newest first, with what changed and which subsets it won.
 - scores are 0.37 × rouge-1 + 0.37 × rouge-l, so the maximum is 0.74 (the ai-judge part isn't measured locally).

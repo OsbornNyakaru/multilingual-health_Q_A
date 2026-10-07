@@ -9,9 +9,9 @@ links: ["[[H-011-closed-pool-vs-generative-router]]", "[[00_INDEX]]"]
 
 - run: `exp008_ret_tfidfchar_nhall-vall_402044` · git `134aa90` · status **ok** · 38.3 s on NVIDIA RTX PRO 6000 Blackwell Server Edition
 - parent: `exp007_ret_tfidfchar_nhall-vall_6d656b` · changed: select
-- config: `{"embedder": "tfidf-char", "select": "vote"}` (non-default keys)
+- config: `{"embedder": "tfidf-char", "select": "vote", "no_repeat_ngram": 3}` (non-default keys)
 - eval: {'held_out': 0, 'val': 0} · subsets: all
-- adopted for subsets: **Eng_Eth, Eng_Uga, Lug_Uga**
+- adopted for subsets: **Eng_Eth, Eng_Gha, Eng_Uga, Lug_Uga**
 
 **held_out**: combined 0.3177, test-mix 0.3053, R1 0.4546, RL 0.4041, n=2088
 

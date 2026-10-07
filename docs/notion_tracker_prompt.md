@@ -11,13 +11,13 @@ how the loop works (for the glossary and page intro)
 - each experiment is a spec with exactly one change compared with its parent run. it runs on a cloud gpu (molab) and is scored automatically.
 - every run is scored on two sets: held-out (2,088 training questions kept aside) and val (the host's 6,686-question validation set, the closer stand-in for the test set).
 - score = 0.37 × rouge-1 + 0.37 × rouge-l (max 0.74; the ai-judge part isn't measured locally). the summary number, test-mix, averages the 8 subsets weighted by their share of the test set: eng_uga 28.4%, aka_gha 18.8%, eng_gha 18.8%, lug_uga 14.3%, swa_ken 8.7%, eng_ken 6.4%, amh_eth 2.3%, eng_eth 2.3%.
-- a run is adopted per subset: it becomes that subset's best only if it beats the current best by ≥ 0.003 on both held-out and val. the composite = the best run for each subset.
+- a run is adopted per subset: it becomes that subset's best if it beats the current best by ≥ 0.003 on val and doesn't lose more than 0.003 on held-out. the composite = the best run for each subset.
 
 build:
 
 1. a page "afro health qa lab" with:
    - a callout "current best" holding the composite test-mix scores (held-out and val) and a table of the 8 subsets: subset, test share, best run, held-out, val.
-   - a toggle "rules": one change per run; adopted per subset at ≥ +0.003 on both sets; experiments/RESULTS.md is the source of truth; never submit to zindi without a composite improvement.
+   - a toggle "rules": one change per run; adopted per subset at ≥ +0.003 on val (held-out may not drop more than 0.003); experiments/RESULTS.md is the source of truth; never submit to zindi without a composite improvement.
    - a toggle "glossary": held-out, val, test-mix, subset, retrieval, embedder, answer vote, rerank, rag few-shot, router, lora, rouge-1, rouge-l, combined.
    - the databases below with their views embedded.
 

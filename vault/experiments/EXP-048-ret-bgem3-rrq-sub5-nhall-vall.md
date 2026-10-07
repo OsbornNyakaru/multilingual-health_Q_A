@@ -11,7 +11,7 @@ links: ["[[H-011-closed-pool-vs-generative-router]]", "[[00_INDEX]]"]
 - parent: `exp047_ret_bgem3_rrq_sub5_nhall-vall_da9740` · changed: —
 - config: `{"embedder_train": true, "rerank_model": "BAAI/bge-reranker-v2-m3", "rerank_k": 50, "rerank_train": true, "no_repeat_ngram": 3, "diag_k": 50}` (non-default keys)
 - eval: {'held_out': 0, 'val': 0} · subsets: ['Eng_Uga', 'Lug_Uga', 'Swa_Ken', 'Eng_Ken', 'Eng_Eth']
-- adopted for subsets: **Swa_Ken**
+- adopted for subsets: **Lug_Uga, Swa_Ken**
 
 **held_out**: combined 0.5502, test-mix 0.5613, R1 0.7517, RL 0.7354, n=1336
 

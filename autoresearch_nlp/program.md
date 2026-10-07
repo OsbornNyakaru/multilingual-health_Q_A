@@ -31,7 +31,7 @@ Predictions contain competition text, so they never go to GitHub (`experiments/r
   measured). The summary number is **test-mix**: the per-subset scores averaged with each subset's
   share of Test.csv as the weight (Eng_Uga 28%, Aka_Gha 19%, Eng_Gha 19%, Lug_Uga 14%, ...).
 - **Adoption is per subset.** A run becomes the best for a subset when it beats that subset's
-  current best by **≥ +0.003 on both sets**. Only full-set runs (`held_out=0, val=0`) are eligible;
+  current best by **≥ +0.003 on Val** and does not lose more than 0.003 on held-out (Val is larger and test-like; held-out only vetoes a clear regression). Only full-set runs (`held_out=0, val=0`) are eligible;
   smaller runs are screens. The composite (best run per subset) is the current best overall.
 - Noise: about ±0.005 on the full held-out. Differences under 0.003 are not real.
 
