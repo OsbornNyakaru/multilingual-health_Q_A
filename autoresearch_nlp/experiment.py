@@ -48,6 +48,15 @@ DEFAULT_CONFIG: dict = {
     "rerank_k": 20,
     "rerank_on": "question",     # question (paraphrase check) | answer (relevance check)
     "rerank_batch": 64,
+    # rerank_train: fine-tune the cross-encoder (rerank_model = its starting point) on the training pool:
+    # query = a training question; positive = another training question with the SAME answer; hard
+    # negatives = retrieved neighbours with a different answer. Listwise softmax loss.
+    "rerank_train": False,
+    "rerank_train_negs": 7,
+    "rerank_train_epochs": 1.0,
+    "rerank_train_lr": 2e-5,
+    "rerank_train_batch": 8,      # query groups per step (each = 1 positive + rerank_train_negs negatives)
+    "rerank_train_max_len": 256,
     "select": "top1",            # top1 | vote: sum sim**vote_power over neighbours sharing an answer
     "vote_k": 50,
     "vote_power": 4.0,
@@ -336,29 +345,134 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
 # ── adapters from earlier runs ───────────────────────────────────────────────
 
 
-def resolve_adapter(adapter, ctx):
-    """'run:<run_id>' -> local copy of that run's uploaded adapter (downloaded once); anything else unchanged."""
-    if not adapter or not str(adapter).startswith("run:"):
-        return adapter
+def resolve_artifact(ref, ctx, folder: str = "adapter", marker: str = "adapter_config.json"):
+    """'run:<run_id>' -> local copy of the <folder>/ that run uploaded (downloaded once); anything else unchanged."""
+    if not ref or not str(ref).startswith("run:"):
+        return ref
     import os
     from pathlib import Path
 
-    rid = str(adapter)[4:]
-    local = Path.cwd() / "runner_work" / "adapters" / rid
-    if not (local / "adapter_config.json").exists():
+    rid = str(ref)[4:]
+    local = Path.cwd() / "runner_work" / f"{folder}s" / rid
+    if not (local / marker).exists():
         from huggingface_hub import snapshot_download
 
         repo = os.environ.get("HF_RUNS_REPO", "nyakaruosborn/afro-health-qa-runs")
-        ctx.log(f"downloading adapter of {rid}")
-        tmp = snapshot_download(repo, repo_type="dataset", allow_patterns=[f"runs/{rid}/adapter/*"])
-        src = Path(tmp) / "runs" / rid / "adapter"
-        if not (src / "adapter_config.json").exists():
-            raise FileNotFoundError(f"no adapter uploaded for run {rid}")
+        ctx.log(f"downloading {folder} of {rid}")
+        tmp = snapshot_download(repo, repo_type="dataset", allow_patterns=[f"runs/{rid}/{folder}/*"])
+        src = Path(tmp) / "runs" / rid / folder
+        if not (src / marker).exists():
+            raise FileNotFoundError(f"no {folder} uploaded for run {rid}")
         import shutil
 
         local.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src, local, dirs_exist_ok=True)
     return str(local)
+
+
+def resolve_adapter(adapter, ctx):
+    return resolve_artifact(adapter, ctx, "adapter", "adapter_config.json")
+
+
+# ── reranker fine-tuning (rerank_train) ──────────────────────────────────────
+
+
+def _reranker_key(ctx, cfg: dict) -> tuple:
+    return ("trained_reranker",) + _adapter_key(ctx, cfg)[1:]
+
+
+def reranker_groups(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> list[tuple[str, list[str]]]:
+    """(query, [positive, negative, ...]) groups from the pool alone. Rows whose answer no other pool row
+    shares have no positive and are skipped; negatives are retrieved neighbours with a different answer."""
+    import random
+
+    rng = random.Random(seed)
+    pool = pool_df.reset_index(drop=True)
+    answers = pool[OUTPUT_COL].astype(str).str.strip().to_numpy()
+    questions = pool[INPUT_COL].astype(str).to_numpy()
+    ids = pool[ID_COL].astype(str).to_numpy()
+    by_answer: dict[str, list[int]] = {}
+    for j, a in enumerate(answers):
+        by_answer.setdefault(a, []).append(j)
+    shared = [j for j in range(len(pool)) if len(by_answer[answers[j]]) > 1]
+    if not shared:
+        return []
+    q_df = pool.iloc[shared]
+    negs_wanted = int(cfg["rerank_train_negs"])
+    nn = neighbours(cfg, q_df, pool, ctx, k=negs_wanted * 3 + 8)
+    groups = []
+    for j in shared:
+        hits = [h for h, _ in nn[ids[j]] if h != j]
+        mates = [h for h in by_answer[answers[j]] if h != j]
+        retrieved_mates = [h for h in hits if answers[h] == answers[j]]
+        pos = retrieved_mates[0] if retrieved_mates else rng.choice(mates)
+        negs = [h for h in hits if answers[h] != answers[j]][:negs_wanted]
+        if len(negs) < negs_wanted:
+            continue
+        groups.append((questions[j], [questions[pos]] + [questions[h] for h in negs]))
+    return groups
+
+
+def train_reranker(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
+    """Fine-tune the cross-encoder in cfg['rerank_model'] on pool-only groups; returns its local directory."""
+    import torch
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_cosine_schedule_with_warmup
+
+    out = _work_dir(ctx, cfg) / "reranker"
+    upload = getattr(ctx, "upload_folder", None)
+    download = getattr(ctx, "download_folder", None)
+    if (out / "config.json").exists():
+        return str(out)
+    if download and download("reranker", out):
+        ctx.log("found a trained reranker for this run on HF; skipping training")
+        return str(out)
+    groups = reranker_groups(cfg, pool_df, ctx)
+    ctx.log(f"reranker training: {len(groups):,} query groups (1 positive + {cfg['rerank_train_negs']} negatives each)")
+    base = resolve_artifact(cfg["rerank_model"], ctx, "reranker", "config.json")
+    tok = AutoTokenizer.from_pretrained(base)
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    model = AutoModelForSequenceClassification.from_pretrained(base, num_labels=1).to(dev)
+    model.train()
+    bs, n_neg = int(cfg["rerank_train_batch"]), int(cfg["rerank_train_negs"])
+    steps = int(len(groups) * float(cfg["rerank_train_epochs"]) / bs)
+    opt = torch.optim.AdamW(model.parameters(), lr=float(cfg["rerank_train_lr"]), weight_decay=0.01)
+    sched = get_cosine_schedule_with_warmup(opt, max(1, steps // 20), max(1, steps))
+    import random
+
+    order = list(range(len(groups)))
+    random.Random(1).shuffle(order)
+    step = 0
+    while step < steps:
+        for b in range(0, len(order) - bs + 1, bs):
+            if step >= steps or ctx.should_stop():
+                break
+            batch = [groups[i] for i in order[b:b + bs]]
+            qs = [q for q, cands in batch for _ in cands]
+            cs = [c for _, cands in batch for c in cands]
+            enc = tok(qs, cs, truncation=True, max_length=int(cfg["rerank_train_max_len"]), padding=True, return_tensors="pt").to(dev)
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=dev == "cuda"):
+                logits = model(**enc).logits.view(len(batch), n_neg + 1).float()
+            loss = torch.nn.functional.cross_entropy(logits, torch.zeros(len(batch), dtype=torch.long, device=dev))
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            opt.step(), sched.step(), opt.zero_grad()
+            step += 1
+            if step % 50 == 0:
+                ctx.log(f"reranker step {step}/{steps} loss {loss.item():.4f}")
+        random.Random(step).shuffle(order)
+    out.mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(str(out))
+    tok.save_pretrained(str(out))
+    if upload:
+        upload(out, "reranker")
+        ctx.log("reranker uploaded")
+    del model, opt
+    import gc
+
+    gc.collect()
+    if dev == "cuda":
+        torch.cuda.empty_cache()
+    return str(out)
 
 
 # ── LoRA fine-tuning (mode lora_rag) ─────────────────────────────────────────
@@ -383,11 +497,14 @@ def setup(config: dict, sets: dict, ctx) -> None:
     val's (Train), else test's (Train + Val). Eval rows are never in that pool.
     """
     cfg = {**DEFAULT_CONFIG, **(config or {})}
-    if cfg["mode"] != "lora_rag":
+    if cfg["mode"] != "lora_rag" and not cfg["rerank_train"]:
         return
     name = next(n for n in ("held_out", "val", "test") if n in sets)
     ctx.log(f"training on the {name} pool")
-    ctx.cache[_adapter_key(ctx, cfg)] = train_lora(cfg, sets[name][1], ctx)
+    if cfg["rerank_train"]:
+        ctx.cache[_reranker_key(ctx, cfg)] = train_reranker(cfg, sets[name][1], ctx)
+    if cfg["mode"] == "lora_rag":
+        ctx.cache[_adapter_key(ctx, cfg)] = train_lora(cfg, sets[name][1], ctx)
 
 
 def training_rows(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[str, str, list[tuple[str, str]], str]]:
@@ -528,6 +645,13 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     answers: dict[str, str] = dict(ctx.resume)
     meta: dict[str, dict] = {}
     cfg["adapter"] = resolve_adapter(cfg["adapter"], ctx)
+    if cfg["rerank_train"]:
+        key = _reranker_key(ctx, cfg)
+        if key not in ctx.cache:  # older runner without the setup step: train on this set's pool
+            ctx.cache[key] = train_reranker(cfg, pool_df, ctx)
+        cfg["rerank_model"] = ctx.cache[key]
+    elif cfg["rerank_model"]:
+        cfg["rerank_model"] = resolve_artifact(cfg["rerank_model"], ctx, "reranker", "config.json")
 
     needs_nn = mode in {"retrieval", "rag_few_shot", "router", "lora_rag"}
     if mode == "lora_rag":

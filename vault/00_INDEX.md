@@ -116,6 +116,10 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-035-rag-bgem3-qwen257bin-k3-sub1-ntall]] — test predictions for EXP-031 (Eng_Gha), reusing its adapter; pool = Train + Val (ok; won: none)
 
+- [[EXP-036-ret-bgem3-rrq-sub5-nhall-vall]] — DIAG: bge-m3 + rerank of top-50 (was 20), recording candidates for recall@k on the closed-pool subsets (ok; won: none)
+
+- [[EXP-037-ret-bgem3-rrq-vote-sub5-nhall-vall]] — answer-group scoring: sum reranker scores of all top-50 candidates that share an answer, instead of the single top question (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

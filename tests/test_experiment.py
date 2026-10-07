@@ -234,3 +234,41 @@ def test_diag_k_records_candidate_ids_before_and_after_rerank():
     assert len(ret) == 3 and set(ret) == set(cand) and cand[0] == "p2" and ret[0] != "p2"
     _, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char"}, EVAL, POOL, Ctx())
     assert "ret_ids" not in meta["q1"]
+
+
+def test_reranker_groups_use_same_answer_positives_and_different_answer_negatives():
+    pool = pd.DataFrame({
+        "ID": [f"p{i}" for i in range(8)],
+        "input": ["prevent malaria pregnancy", "avoid malaria when pregnant", "malaria prevention pregnant women",
+                  "hiv symptoms adults", "signs of hiv in adults", "what causes malaria", "malaria causes", "treat malaria"],
+        "output": ["net", "net", "net", "rash", "rash", "mosquito", "mosquito", "drugs"],
+        "subset": ["Eng_Uga"] * 8,
+    })
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "rerank_train_negs": 2}
+    groups = E.reranker_groups(cfg, pool, Ctx())
+    ans = dict(zip(pool["input"], pool["output"]))
+    assert groups and all(q != cands[0] for q, cands in groups)
+    for q, cands in groups:
+        assert ans[cands[0]] == ans[q]                       # positive shares the answer
+        assert all(ans[c] != ans[q] for c in cands[1:])       # negatives don't
+        assert len(cands) == 3
+    assert "treat malaria" not in [q for q, _ in groups]     # unique answer: no positive, skipped
+
+
+def test_rerank_train_wires_trained_model_into_rerank(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(E, "train_reranker", lambda cfg, pool, c: seen.setdefault("pool", len(pool)) and "/rr/trained")
+
+    class FakeCE:
+        def predict(self, pairs, **kw):
+            return [1.0 if "cause" in cand else 0.1 for _, cand in pairs]
+
+    ctx = Ctx()
+    ctx.run_id = "r7"
+    ctx.cache[("cross_encoder", "/rr/trained")] = FakeCE()
+    E.setup({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "base-ce", "rerank_train": True},
+            {"held_out": (EVAL, POOL)}, ctx)
+    assert ctx.cache[("trained_reranker", "r7")] == "/rr/trained" and seen["pool"] == 6
+    answers, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "base-ce", "rerank_train": True, "rerank_k": 3},
+                          EVAL, POOL, ctx)
+    assert answers["q1"] == "mosquito bites" and meta["q1"]["rerank_score"] == 1.0

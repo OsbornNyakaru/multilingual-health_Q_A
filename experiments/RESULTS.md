@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.3933**, **val 0.391** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-037 | `exp037_ret_bgem3_rrq_vote_sub5_nhall-vall_919c98` | 2026-10-07 04:14 | select, vote_power | held_out=all, val=all | 0.3703 | 0.3835 | — | ok | answer-group scoring: sum reranker scores of all top-50 candidates that share an answer, instead of the single top question |
+| EXP-036 | `exp036_ret_bgem3_rrq_sub5_nhall-vall_fef674` | 2026-10-07 04:10 | diag_k, rerank_k | held_out=all, val=all | 0.5102 | 0.4979 | — | ok | DIAG: bge-m3 + rerank of top-50 (was 20), recording candidates for recall@k on the closed-pool subsets |
 | EXP-035 | `exp035_rag_bgem3_qwen257bin_k3_sub1_ntall_956f60` | 2026-10-07 04:00 | adapter, mode | test=all |  |  | — | ok | test predictions for EXP-031 (Eng_Gha), reusing its adapter; pool = Train + Val |
 | EXP-034 | `exp034_rag_bgem3_afriquella_k3_sub1_nhall-vall_960555` | 2026-10-07 03:57 | fallback_below_frac | held_out=all, val=all | 0.1796 | 0.1761 | — | ok | Akan: EXP-033 + fall back to the retrieved answer when a generation is under half the typical length |
 | EXP-033 | `exp033_rag_bgem3_afriquella_k3_sub1_nhall-vall_944d2c` | 2026-10-07 03:31 | adapter, min_len_pct, mode | held_out=all, val=all | 0.1774 | 0.1740 | — | ok | Akan: reuse EXP-032's AfriqueLlama adapter (no retraining) with a minimum answer length (p10 of real answers); it stopped early on 32% of answers |
@@ -64,6 +66,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-037 | held_out | 0.4350 |  |  | 0.2700 | 0.3158 | 0.3633 |  | 0.4197 |
+| EXP-037 | val | 0.4585 |  |  | 0.2768 | 0.3227 | 0.3681 |  | 0.3937 |
+| EXP-036 | held_out | 0.5516 |  |  | 0.3879 | 0.5454 | 0.5770 |  | 0.4395 |
+| EXP-036 | val | 0.5515 |  |  | 0.3506 | 0.5453 | 0.5607 |  | 0.3968 |
 | EXP-034 | held_out |  | 0.1796 |  |  |  |  |  |  |
 | EXP-034 | val |  | 0.1761 |  |  |  |  |  |  |
 | EXP-033 | held_out |  | 0.1774 |  |  |  |  |  |  |
