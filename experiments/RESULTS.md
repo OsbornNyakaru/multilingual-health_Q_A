@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4254**, **val 0.4173** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-047 | `exp047_ret_bgem3_rrq_sub5_nhall-vall_da9740` | 2026-10-07 05:59 | embedder_train | held_out=all, val=all |  |  | — | crash | fine-tuned BGE-M3 retriever (same-answer pairs + hard negatives, all subsets), learned selector retrained on its candidates; target: Luganda recall@50 73% -> ~85% |
+| EXP-046 | `exp046_ret_bgem3_rrq_sub1_ntall_0e2fd5` | 2026-10-07 05:59 | — | test=all |  |  | — | ok | test predictions for EXP-043 (Swa_Ken, 3-epoch selector retrained on Train + Val) |
 | EXP-045 | `exp045_combine_agree_sub2_494619` | 2026-10-07 05:45 | combine | held_out=all, val=all | 0.6134 | 0.6064 | Eng_Ken, Eng_Uga | ok | agreement: learned selector (EXP-039) unless fine-tuned Qwen (EXP-038) names a stored answer in the selector's top-k (k tuned on held-out) |
 | EXP-044 | `exp044_rag_bgem3_qwen257bin_k3_sub2_ntall_35d725` | 2026-10-07 05:41 | — | test=all |  |  | — | ok | test predictions for EXP-038 on Eng_Uga + Eng_Ken (input to the agreement combiner) |
 | EXP-043 | `exp043_ret_bgem3_rrq_sub5_nhall-vall_a810af` | 2026-10-07 05:21 | rerank_train_epochs | held_out=all, val=all | 0.5501 | 0.5440 | Swa_Ken | ok | learned selector trained 3 epochs instead of 1 (1 epoch took 3 minutes) |

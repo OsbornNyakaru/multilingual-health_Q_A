@@ -136,6 +136,10 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-045-combine-agree-sub2]] — agreement: learned selector (EXP-039) unless fine-tuned Qwen (EXP-038) names a stored answer in the selector's top-k (k tuned on held-out) (ok; won: Eng_Ken, Eng_Uga)
 
+- [[EXP-046-ret-bgem3-rrq-sub1-ntall]] — test predictions for EXP-043 (Swa_Ken, 3-epoch selector retrained on Train + Val) (ok; won: none)
+
+- [[EXP-047-ret-bgem3-rrq-sub5-nhall-vall]] — fine-tuned BGE-M3 retriever (same-answer pairs + hard negatives, all subsets), learned selector retrained on its candidates; target: Luganda recall@50 73% -> ~85% (crash; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
