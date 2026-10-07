@@ -154,6 +154,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-054-ret-bgem3-rrb-sub5-nhall-vall]] — graded labels: the answer-aware selector learns soft targets = answer overlap with the gold (near-duplicate answers no longer taught as wrong) (ok; won: Eng_Ken)
 
+- [[EXP-055-ret-bgem3-rrb-sub5-nhall-vall]] — ensemble of 3 answer-aware selectors (seeds 0-2: different data order and sampled hard negatives), scores averaged (ok; won: Eng_Uga)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

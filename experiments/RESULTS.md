@@ -6,11 +6,11 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4404**, **val 0.4323** (8/8 subsets covered)
+composite test-mix: **held-out 0.44**, **val 0.4332** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-053 `exp053_combine_rescore_sub3_6aaa58` | 0.6299 | 0.6200 |
+| Eng_Uga | 28.4% | EXP-055 `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` | 0.6288 | 0.6231 |
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
 | Lug_Uga | 14.3% | EXP-051 `exp051_ret_bgem3_rrb_sub5_nhall-vall_86b264` | 0.4860 | 0.4862 |
@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4404**, **val 0.4323** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-055 | `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` | 2026-10-07 08:33 | rerank_ensemble | held_out=all, val=all | 0.5931 | 0.5803 | Eng_Uga | ok | ensemble of 3 answer-aware selectors (seeds 0-2: different data order and sampled hard negatives), scores averaged |
 | EXP-054 | `exp054_ret_bgem3_rrb_sub5_nhall-vall_984c50` | 2026-10-07 07:43 | rerank_train_graded | held_out=all, val=all | 0.5833 | 0.5795 | Eng_Ken | ok | graded labels: the answer-aware selector learns soft targets = answer overlap with the gold (near-duplicate answers no longer taught as wrong) |
 | EXP-053 | `exp053_combine_rescore_sub3_6aaa58` | 2026-10-07 07:17 | combine | held_out=all, val=all | 0.6244 | 0.6137 | Eng_Ken, Eng_Uga, Swa_Ken | ok | re-scoring (selector rank + retriever rank + question-answer overlap) on top of the answer-aware selector EXP-051 |
 | EXP-052 | `exp052_ret_bgem3_rrb_sub4_ntall_1f1723` | 2026-10-07 07:13 | — | test=all |  |  | — | ok | test predictions for EXP-051 (answer-aware selector; retriever + selector retrained on Train + Val) |
@@ -87,6 +88,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-055 | held_out | 0.6288 |  |  | 0.5121 | 0.6147 | 0.6209 |  | 0.4965 |
+| EXP-055 | val | 0.6231 |  |  | 0.4878 | 0.6098 | 0.5886 |  | 0.4902 |
 | EXP-054 | held_out | 0.6195 |  |  | 0.4936 | 0.6120 | 0.6164 |  | 0.4920 |
 | EXP-054 | val | 0.6212 |  |  | 0.4839 | 0.6079 | 0.5999 |  | 0.4924 |
 | EXP-053 | held_out | 0.6299 |  |  |  | 0.6122 | 0.6167 |  |  |
