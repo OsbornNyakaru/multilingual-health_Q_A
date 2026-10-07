@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.44**, **val 0.4332** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-056 | `exp056_lora_rag_qwen257bin_sub2_nhall-vall_729c43` | 2026-10-07 16:31 | lora_epochs | held_out=all, val=all | 0.2206 | 0.2189 | — | ok | full reference recipe: RAG-enriched LoRA on Qwen2.5-7B, 3 epochs (EXP-031 was 1 epoch); Aka_Gha + Eng_Gha held-out + Val |
 | EXP-055 | `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` | 2026-10-07 08:33 | rerank_ensemble | held_out=all, val=all | 0.5931 | 0.5803 | Eng_Uga | ok | ensemble of 3 answer-aware selectors (seeds 0-2: different data order and sampled hard negatives), scores averaged |
 | EXP-054 | `exp054_ret_bgem3_rrb_sub5_nhall-vall_984c50` | 2026-10-07 07:43 | rerank_train_graded | held_out=all, val=all | 0.5833 | 0.5795 | Eng_Ken | ok | graded labels: the answer-aware selector learns soft targets = answer overlap with the gold (near-duplicate answers no longer taught as wrong) |
 | EXP-053 | `exp053_combine_rescore_sub3_6aaa58` | 2026-10-07 07:17 | combine | held_out=all, val=all | 0.6244 | 0.6137 | Eng_Ken, Eng_Uga, Swa_Ken | ok | re-scoring (selector rank + retriever rank + question-answer overlap) on top of the answer-aware selector EXP-051 |
@@ -88,6 +89,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-056 | held_out |  | 0.1791 | 0.2621 |  |  |  |  |  |
+| EXP-056 | val |  | 0.1776 | 0.2603 |  |  |  |  |  |
 | EXP-055 | held_out | 0.6288 |  |  | 0.5121 | 0.6147 | 0.6209 |  | 0.4965 |
 | EXP-055 | val | 0.6231 |  |  | 0.4878 | 0.6098 | 0.5886 |  | 0.4902 |
 | EXP-054 | held_out | 0.6195 |  |  | 0.4936 | 0.6120 | 0.6164 |  | 0.4920 |

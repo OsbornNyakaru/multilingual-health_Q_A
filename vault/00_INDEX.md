@@ -157,6 +157,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-055-ret-bgem3-rrb-sub5-nhall-vall]] — ensemble of 3 answer-aware selectors (seeds 0-2: different data order and sampled hard negatives), scores averaged (ok; won: Eng_Uga)
 
+- [[EXP-056-lora-rag-qwen257bin-sub2-nhall-vall]] — full reference recipe: RAG-enriched LoRA on Qwen2.5-7B, 3 epochs (EXP-031 was 1 epoch); Aka_Gha + Eng_Gha held-out + Val (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
