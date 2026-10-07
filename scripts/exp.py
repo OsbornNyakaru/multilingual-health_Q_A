@@ -405,7 +405,9 @@ def cmd_pull(a) -> None:
             rid = spec["run_id"]
             out = RUNS_DIR / rid
             out.mkdir(parents=True, exist_ok=True)
-            for f in [f for f in files if f.startswith(f"runs/{rid}/")]:
+            # top-level files only: predictions, result.json, log. Adapters and training checkpoints
+            # (GBs, under adapter/ and train_ckpt/) stay on HF.
+            for f in [f for f in files if f.startswith(f"runs/{rid}/") and f.count("/") == 2]:
                 p = hf_hub_download(RUNS_REPO, f, repo_type="dataset", force_download=True)
                 (out / Path(f).name).write_bytes(Path(p).read_bytes())
             result = json.loads((out / "result.json").read_text())
