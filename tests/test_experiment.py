@@ -220,3 +220,17 @@ def test_resolve_adapter_passes_paths_through_and_fetches_runs(monkeypatch, tmp_
     monkeypatch.chdir(tmp_path)
     out = E.resolve_adapter("run:r9", Ctx())
     assert out.endswith("runner_work/adapters/r9") and (tmp_path / "runner_work/adapters/r9/adapter_config.json").exists()
+
+
+def test_diag_k_records_candidate_ids_before_and_after_rerank():
+    class FakeCE:
+        def predict(self, pairs, **kw):
+            return [1.0 if "cause" in cand else 0.1 for _, cand in pairs]
+
+    ctx = Ctx()
+    ctx.cache[("cross_encoder", "fake-ce")] = FakeCE()
+    _, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "fake-ce", "rerank_k": 3, "diag_k": 3}, EVAL, POOL, ctx)
+    ret, cand = meta["q1"]["ret_ids"].split("|"), meta["q1"]["cand_ids"].split("|")
+    assert len(ret) == 3 and set(ret) == set(cand) and cand[0] == "p2" and ret[0] != "p2"
+    _, meta = E.run({"mode": "retrieval", "embedder": "tfidf-char"}, EVAL, POOL, Ctx())
+    assert "ret_ids" not in meta["q1"]

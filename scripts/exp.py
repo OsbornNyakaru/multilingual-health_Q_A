@@ -246,6 +246,29 @@ def score_set(set_name: str, preds: pd.DataFrame) -> dict:
     }
 
 
+def recall_diag(preds: pd.DataFrame, set_name: str) -> dict:
+    """recall@k per subset: is the gold answer among the answers of the top-k candidates?
+
+    Uses the meta columns ret_ids (retrieval order) and cand_ids (after rerank) written when diag_k > 0.
+    """
+    cols = [c for c in ("ret_ids", "cand_ids") if c in preds.columns]
+    if not cols:
+        return {}
+    train = pd.read_csv(ROOT / "data" / "raw" / "Train.csv", dtype=str).fillna("")
+    ans = dict(zip(train["ID"], train["output"].str.strip()))
+    ref = pd.read_csv(REFS[set_name], dtype=str).fillna("")[["ID", "output"]]
+    df = preds.merge(ref, on="ID")
+    out = {}
+    for col in cols:
+        for s, g in df.groupby("subset"):
+            row = {}
+            for k in (1, 5, 20, 50):
+                hit = [gold.strip() in {ans.get(c) for c in str(ids).split("|")[:k]} for gold, ids in zip(g["output"], g[col])]
+                row[f"r@{k}"] = round(sum(hit) / max(1, len(hit)), 3)
+            out.setdefault(col, {})[s] = row
+    return out
+
+
 def decide(spec: dict, rec: dict, best: dict) -> list[str]:
     """Update best in place; return subsets this run won."""
     if rec["status"] != "ok" or spec.get("eval") != ELIGIBLE_EVAL:
@@ -418,7 +441,15 @@ def cmd_pull(a) -> None:
                 for set_name in spec["eval"]:
                     pf = out / f"{set_name}_preds.csv"
                     if set_name in REFS and pf.exists():
-                        rec["sets"][set_name] = score_set(set_name, pd.read_csv(pf, dtype=str).fillna(""))
+                        pdf = pd.read_csv(pf, dtype=str).fillna("")
+                        rec["sets"][set_name] = score_set(set_name, pdf)
+                        diag = recall_diag(pdf, set_name)
+                        if diag:
+                            rec["sets"][set_name]["recall"] = diag
+                            for col, per in diag.items():
+                                print(f"  {set_name} recall ({'retrieval' if col == 'ret_ids' else 'after rerank'}):")
+                                for sub, r in sorted(per.items()):
+                                    print(f"    {sub:8s} " + "  ".join(f"{k} {v:.0%}" for k, v in r.items()))
             best = load_best()
             rec["won"] = decide(spec, rec, best)
             BEST_JSON.write_text(json.dumps(best, indent=2) + "\n")

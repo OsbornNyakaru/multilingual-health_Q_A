@@ -74,6 +74,7 @@ DEFAULT_CONFIG: dict = {
     "fallback_below_frac": 0.0,  # >0: a generation shorter than this fraction of the subset's median pool
                                  # answer (in words) is replaced by the retrieved answer
     "checkpoint_every": 10,      # batches
+    "diag_k": 0,                 # >0: record each row's top-k candidate pool IDs (before + after rerank) for recall@k
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
     # Defaults = the 11th-place reference recipe.
@@ -541,13 +542,21 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
         k_nn = max(k_nn, int(cfg["vote_k"]))
     if needs_nn and cfg["rerank_model"]:
         k_nn = max(k_nn, int(cfg["rerank_k"]))
+    dk = int(cfg["diag_k"])
+    if needs_nn and dk:
+        k_nn = max(k_nn, dk)
     nn = neighbours(cfg, eval_df, pool_df, ctx, k=k_nn) if needs_nn else {}
+    pool_ids = pool_df[ID_COL].astype(str).to_numpy()
     for i, hits in nn.items():
-        meta[i] = {"sim": round(hits[0][1], 4), "nn_id": str(pool_df[ID_COL].iloc[hits[0][0]])}
+        meta[i] = {"sim": round(hits[0][1], 4), "nn_id": str(pool_ids[hits[0][0]])}
+        if dk:
+            meta[i]["ret_ids"] = "|".join(pool_ids[j] for j, _ in hits[:dk])
     if nn and cfg["rerank_model"]:
         nn = rerank(cfg, eval_df, pool_df, nn, ctx)
         for i, hits in nn.items():
-            meta[i].update(rerank_score=round(hits[0][1], 4), rerank_id=str(pool_df[ID_COL].iloc[hits[0][0]]))
+            meta[i].update(rerank_score=round(hits[0][1], 4), rerank_id=str(pool_ids[hits[0][0]]))
+            if dk:
+                meta[i]["cand_ids"] = "|".join(pool_ids[j] for j, _ in hits[:dk])
     best_answer: dict[str, str] = {}
     for i, hits in nn.items():
         if cfg["select"] == "vote":
