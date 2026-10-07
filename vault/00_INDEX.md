@@ -132,6 +132,10 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-043-ret-bgem3-rrq-sub5-nhall-vall]] — learned selector trained 3 epochs instead of 1 (1 epoch took 3 minutes) (ok; won: Swa_Ken)
 
+- [[EXP-044-rag-bgem3-qwen257bin-k3-sub2-ntall]] — test predictions for EXP-038 on Eng_Uga + Eng_Ken (input to the agreement combiner) (ok; won: none)
+
+- [[EXP-045-combine-agree-sub2]] — agreement: learned selector (EXP-039) unless fine-tuned Qwen (EXP-038) names a stored answer in the selector's top-k (k tuned on held-out) (ok; won: Eng_Ken, Eng_Uga)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

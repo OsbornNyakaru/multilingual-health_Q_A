@@ -1,0 +1,34 @@
+{
+  "exp": "EXP-045",
+  "hypothesis": "H-011",
+  "description": "agreement: learned selector (EXP-039) unless fine-tuned Qwen (EXP-038) names a stored answer in the selector's top-k (k tuned on held-out)",
+  "parent": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "agree",
+      "selector": "exp039_ret_bgem3_rrq_sub5_nhall-vall_e658df",
+      "gen": "exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e",
+      "k": {
+        "Eng_Uga": 3,
+        "Eng_Ken": 10
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Eng_Uga",
+    "Eng_Ken"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-07T05:45:28+00:00",
+  "created": "2026-10-07T05:45:28+00:00",
+  "git_sha": "0a8c54b0ede6733206a3bf19eaeb72162b37d9e7",
+  "run_id": "exp045_combine_agree_sub2_494619"
+}
