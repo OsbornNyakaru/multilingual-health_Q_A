@@ -159,6 +159,14 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-056-lora-rag-qwen257bin-sub2-nhall-vall]] — full reference recipe: RAG-enriched LoRA on Qwen2.5-7B, 3 epochs (EXP-031 was 1 epoch); Aka_Gha + Eng_Gha held-out + Val (ok; won: none)
 
+- [[EXP-057-ret-bgem3-rrb-sub4-ntall]] — test predictions for EXP-055 (3-selector ensemble; input to the learned final ranker) (ok; won: none)
+
+- [[EXP-058-ret-bgem3-rrb-sub4-ntall]] — test predictions for EXP-054 (graded-label selector; input to the learned final ranker) (crash; won: none)
+
+- [[EXP-059-rag-bgem3-qwen257bin-k3-sub2-ntall]] — test predictions for EXP-038 on Lug_Uga + Swa_Ken (generator feature for the learned final ranker) (ok; won: none)
+
+- [[EXP-060-combine-ltr-sub4]] — learned final ranker (gradient-boosted) over EXP-055 + EXP-051 candidates with retriever rank, question-answer overlap, sibling similarity, frequency, length and EXP-038 generator overlap; Val out-of-fold (ok; won: Eng_Ken, Lug_Uga, Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

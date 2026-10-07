@@ -6,16 +6,16 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.44**, **val 0.4332** (8/8 subsets covered)
+composite test-mix: **held-out 0.4454**, **val 0.4354** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-055 `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` | 0.6288 | 0.6231 |
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
-| Lug_Uga | 14.3% | EXP-051 `exp051_ret_bgem3_rrb_sub5_nhall-vall_86b264` | 0.4860 | 0.4862 |
-| Swa_Ken | 8.7% | EXP-053 `exp053_combine_rescore_sub3_6aaa58` | 0.6122 | 0.6074 |
-| Eng_Ken | 6.4% | EXP-054 `exp054_ret_bgem3_rrb_sub5_nhall-vall_984c50` | 0.6164 | 0.5999 |
+| Lug_Uga | 14.3% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.5104 | 0.4932 |
+| Swa_Ken | 8.7% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.6286 | 0.6161 |
+| Eng_Ken | 6.4% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.6232 | 0.6070 |
 | Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
 
@@ -23,6 +23,10 @@ composite test-mix: **held-out 0.44**, **val 0.4332** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-060 | `exp060_combine_ltr_sub4_eed26c` | 2026-10-07 17:40 | combine | held_out=all, val=all | 0.5991 | 0.5896 | Eng_Ken, Lug_Uga, Swa_Ken | ok | learned final ranker (gradient-boosted) over EXP-055 + EXP-051 candidates with retriever rank, question-answer overlap, sibling similarity, frequency, length and EXP-038 generator overlap; Val out-of-fold |
+| EXP-059 | `exp059_rag_bgem3_qwen257bin_k3_sub2_ntall_24605c` | 2026-10-07 17:15 | — | test=all |  |  | — | ok | test predictions for EXP-038 on Lug_Uga + Swa_Ken (generator feature for the learned final ranker) |
+| EXP-058 | `exp058_ret_bgem3_rrb_sub4_ntall_cc1c32` | 2026-10-07 17:08 | — | test=all |  |  | — | crash | test predictions for EXP-054 (graded-label selector; input to the learned final ranker) |
+| EXP-057 | `exp057_ret_bgem3_rrb_sub4_ntall_506623` | 2026-10-07 17:06 | — | test=all |  |  | — | ok | test predictions for EXP-055 (3-selector ensemble; input to the learned final ranker) |
 | EXP-056 | `exp056_lora_rag_qwen257bin_sub2_nhall-vall_729c43` | 2026-10-07 16:31 | lora_epochs | held_out=all, val=all | 0.2206 | 0.2189 | — | ok | full reference recipe: RAG-enriched LoRA on Qwen2.5-7B, 3 epochs (EXP-031 was 1 epoch); Aka_Gha + Eng_Gha held-out + Val |
 | EXP-055 | `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` | 2026-10-07 08:33 | rerank_ensemble | held_out=all, val=all | 0.5931 | 0.5803 | Eng_Uga | ok | ensemble of 3 answer-aware selectors (seeds 0-2: different data order and sampled hard negatives), scores averaged |
 | EXP-054 | `exp054_ret_bgem3_rrb_sub5_nhall-vall_984c50` | 2026-10-07 07:43 | rerank_train_graded | held_out=all, val=all | 0.5833 | 0.5795 | Eng_Ken | ok | graded labels: the answer-aware selector learns soft targets = answer overlap with the gold (near-duplicate answers no longer taught as wrong) |
@@ -89,6 +93,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-060 | held_out | 0.6292 |  |  | 0.5104 | 0.6286 | 0.6232 |  |  |
+| EXP-060 | val | 0.6260 |  |  | 0.4932 | 0.6161 | 0.6070 |  |  |
 | EXP-056 | held_out |  | 0.1791 | 0.2621 |  |  |  |  |  |
 | EXP-056 | val |  | 0.1776 | 0.2603 |  |  |  |  |  |
 | EXP-055 | held_out | 0.6288 |  |  | 0.5121 | 0.6147 | 0.6209 |  | 0.4965 |

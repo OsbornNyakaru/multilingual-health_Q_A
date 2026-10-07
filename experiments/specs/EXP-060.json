@@ -1,0 +1,34 @@
+{
+  "exp": "EXP-060",
+  "hypothesis": "H-011",
+  "description": "learned final ranker (gradient-boosted) over EXP-055 + EXP-051 candidates with retriever rank, question-answer overlap, sibling similarity, frequency, length and EXP-038 generator overlap; Val out-of-fold",
+  "parent": "exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "ltr",
+      "pickers": "EXP-055,EXP-051",
+      "gen": "EXP-038",
+      "top": 20,
+      "model": "HistGradientBoostingRegressor"
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Eng_Uga",
+    "Lug_Uga",
+    "Swa_Ken",
+    "Eng_Ken"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-07T17:40:03+00:00",
+  "created": "2026-10-07T17:40:03+00:00",
+  "git_sha": "c69a80c268385dc92725fb169749b10d020f55d3",
+  "run_id": "exp060_combine_ltr_sub4_eed26c"
+}
