@@ -54,21 +54,21 @@
     "since": "2026-10-07T05:45:28+00:00"
   },
   "Lug_Uga": {
-    "run_id": "exp048_ret_bgem3_rrq_sub5_nhall-vall_9294c3",
-    "exp": "EXP-048",
+    "run_id": "exp050_combine_rescore_sub2_d7c391",
+    "exp": "EXP-050",
     "scores": {
-      "held_out": 0.4297,
-      "val": 0.444
+      "held_out": 0.4461,
+      "val": 0.4641
     },
-    "since": "2026-10-07T06:10:35+00:00"
+    "since": "2026-10-07T06:38:49+00:00"
   },
   "Swa_Ken": {
-    "run_id": "exp048_ret_bgem3_rrq_sub5_nhall-vall_9294c3",
-    "exp": "EXP-048",
+    "run_id": "exp050_combine_rescore_sub2_d7c391",
+    "exp": "EXP-050",
     "scores": {
-      "held_out": 0.6049,
-      "val": 0.5994
+      "held_out": 0.6138,
+      "val": 0.6042
     },
-    "since": "2026-10-07T06:10:35+00:00"
+    "since": "2026-10-07T06:38:49+00:00"
   }
 }

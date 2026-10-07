@@ -144,6 +144,8 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-049-ret-bgem3-rrq-sub2-ntall]] — test predictions for EXP-048 (Lug_Uga, Swa_Ken; retriever + selector retrained on Train + Val) (ok; won: none)
 
+- [[EXP-050-combine-rescore-sub2]] — re-pick among the selector's top-20 answers with selector rank + retriever rank + question-to-answer word overlap (weights tuned on held-out) (ok; won: Lug_Uga, Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

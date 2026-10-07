@@ -3,9 +3,16 @@
     python scripts/combine.py agree --selector EXP-039 --gen EXP-038 --subsets Eng_Uga,Eng_Ken \\
         [--test-selector EXP-041 --test-gen EXP-044] --desc "..."
 
+    python scripts/combine.py rescore --base EXP-048 --subsets Lug_Uga,Swa_Ken [--test-base EXP-049] --desc "..."
+
 agree: keep the selector's answer, except when the generator's answer is one of the stored answers of
 the selector's top-k candidates (both methods point at the same canned answer). k is tuned per subset
-on held-out; Val is the check. The result is recorded as a normal run ("virtual": no GPU) with its own
+on held-out; Val is the check.
+
+rescore: over the selector's top-20 candidates grouped by answer, score each answer as
+    -log(1 + best selector rank) + a * -log(1 + best retriever rank) + b * (q_ans - max q_ans)
+where q_ans = word TF-IDF similarity between the new question and the candidate ANSWER text (the
+question-only selector never sees it). a, b tuned per subset on held-out; Val is the check. The result is recorded as a normal run ("virtual": no GPU) with its own
 EXP id, scored and adopted per subset by scripts/exp.py's rules, and usable by `exp.py submission`
 when test predictions of both components are given.
 """
@@ -80,23 +87,31 @@ def cmd_agree(a) -> None:
         report.append(f"{sub}: k={best_k} (held-out {scores[0]:.4f} -> {scores[best_k]:.4f})")
     print("tuned on held-out: " + "; ".join(report))
 
-    head = X.git("rev-parse", "HEAD")
-    n = X.next_exp_number()
-    cfg = {"combine": {"rule": "agree", "selector": sd.name, "gen": gd.name, "k": k_by_subset}}
-    key = json.dumps(cfg, sort_keys=True)
-    rid = f"exp{n:03d}_combine_agree_sub{len(subsets)}_{hashlib.sha256(key.encode()).hexdigest()[:6]}"
-    out = X.RUNS_DIR / rid
-    out.mkdir(parents=True, exist_ok=True)
-    for s in SETS:
-        combine_set(sel[s][sel[s]["subset"].isin(subsets)], gen[s], answer_of, k_by_subset).to_csv(out / f"{s}_preds.csv", index=False)
+    preds = {s: combine_set(sel[s][sel[s]["subset"].isin(subsets)], gen[s], answer_of, k_by_subset) for s in SETS}
+    test = None
     if a.test_selector and a.test_gen:
         ts = load(run_dir(a.test_selector), "test")
         tg = load(run_dir(a.test_gen), "test")
-        combine_set(ts[ts["subset"].isin(subsets)], tg, answer_of_test, k_by_subset).to_csv(out / "test_preds.csv", index=False)
-        print(f"test predictions combined from {a.test_selector} + {a.test_gen}")
+        test = combine_set(ts[ts["subset"].isin(subsets)], tg, answer_of_test, k_by_subset)
+    cfg = {"combine": {"rule": "agree", "selector": sd.name, "gen": gd.name, "k": k_by_subset}}
+    record_virtual(cfg, "agree", subsets, preds, test, sd.name, a.hyp, a.desc)
 
+
+def record_virtual(cfg: dict, rule: str, subsets: list, preds: dict, test, parent: str, hyp, desc) -> None:
+    """Save the combined predictions as a run and score/decide/record it like any pulled run."""
+    head = X.git("rev-parse", "HEAD")
+    n = X.next_exp_number()
+    key = json.dumps(cfg, sort_keys=True)
+    rid = f"exp{n:03d}_combine_{rule}_sub{len(subsets)}_{hashlib.sha256(key.encode()).hexdigest()[:6]}"
+    out = X.RUNS_DIR / rid
+    out.mkdir(parents=True, exist_ok=True)
+    for s, df in preds.items():
+        df.to_csv(out / f"{s}_preds.csv", index=False)
+    if test is not None:
+        test.to_csv(out / "test_preds.csv", index=False)
+        print("test predictions combined")
     spec = {
-        "exp": f"EXP-{n:03d}", "hypothesis": a.hyp, "description": a.desc, "parent": sd.name, "changed": ["combine"],
+        "exp": f"EXP-{n:03d}", "hypothesis": hyp, "description": desc, "parent": parent, "changed": ["combine"],
         "config": cfg, "eval": dict(X.ELIGIBLE_EVAL), "subsets": subsets, "max_minutes": 0, "virtual": True,
         "drafted": X.now(), "created": X.now(), "git_sha": head, "run_id": rid,
     }
@@ -116,6 +131,80 @@ def cmd_agree(a) -> None:
     print(f"{spec['exp']} {rid}: {per}  won: {rec['won'] or 'none'}")
 
 
+# ── rescore ──────────────────────────────────────────────────────────────────
+
+TOKEN = r"[^\s?.,!]+"
+
+
+def rescore_set(base: pd.DataFrame, queries: pd.DataFrame, pool: pd.DataFrame, weights: dict, top: int = 20) -> pd.DataFrame:
+    """Re-pick each row's answer among its top candidates (see module doc). weights = {subset: (a, b)}."""
+    import math
+
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
+    q_text = dict(zip(queries["ID"], queries["input"].astype(str)))
+    rows = []
+    for sub, g in base.groupby("subset"):
+        a_w, b_w = weights.get(sub, (0.0, 0.0))
+        P = pool[pool["subset"] == sub]
+        ans_of = dict(zip(P["ID"], P["output"].astype(str).str.strip()))
+        vec = TfidfVectorizer(analyzer="word", token_pattern=TOKEN, sublinear_tf=True).fit(
+            pd.concat([P["input"].astype(str), P["output"].astype(str).str.strip()]))
+        for _, r in g.iterrows():
+            cand = [c for c in str(r["cand_ids"]).split("|")[:top] if c in ans_of]
+            ret = {c: i for i, c in enumerate(str(r["ret_ids"]).split("|"))}
+            if not cand or (a_w == 0 and b_w == 0):
+                rows.append((r["ID"], sub, r["pred"]))
+                continue
+            best: dict[str, dict] = {}
+            for rank, c in enumerate(cand):
+                d = best.setdefault(ans_of[c], {"ce": rank, "ret": ret.get(c, 50)})
+                d["ret"] = min(d["ret"], ret.get(c, 50))
+            answers = list(best)
+            qa = (vec.transform([q_text[r["ID"]]]) @ vec.transform(answers).T).toarray()[0]
+            top_qa = qa.max()
+            score = {a: -math.log1p(best[a]["ce"]) + a_w * -math.log1p(best[a]["ret"]) + b_w * (qa[i] - top_qa)
+                     for i, a in enumerate(answers)}
+            rows.append((r["ID"], sub, max(score, key=score.get)))
+    return pd.DataFrame(rows, columns=["ID", "subset", "pred"])
+
+
+def cmd_rescore(a) -> None:
+    subsets = a.subsets.split(",")
+    root = X.ROOT / "data"
+    train = pd.read_csv(root / "raw" / "Train.csv", dtype=str).fillna("")
+    val = pd.read_csv(root / "raw" / "Val.csv", dtype=str).fillna("")
+    held = pd.read_csv(X.REFS["held_out"], dtype=str).fillna("")
+    work = pd.read_csv(X.ROOT / "autoresearch_nlp" / "data" / "processed" / "work_train.csv", dtype=str).fillna("")
+    ctx = {"held_out": (held, work), "val": (val, train)}
+    bd = run_dir(a.base)
+    base = {s: pd.read_csv(bd / f"{s}_preds.csv", dtype=str).fillna("") for s in SETS}
+    for s in SETS:
+        if "ret_ids" not in base[s] or "cand_ids" not in base[s]:
+            sys.exit(f"{a.base}: predictions need ret_ids and cand_ids (diag_k > 0 with a reranker)")
+    grid = [(x, y) for x in (0.0, 0.25, 0.5, 1.0) for y in (0.0, 1.0, 2.0, 4.0, 8.0)]
+    weights, report = {}, []
+    for sub in subsets:
+        b = base["held_out"][base["held_out"]["subset"] == sub]
+        q, pool = ctx["held_out"]
+        scores = {}
+        for w in grid:
+            m = rescore_set(b, q, pool, {sub: w}).merge(q[["ID", "output"]], on="ID")
+            scores[w] = X.prepare.score(m["pred"].tolist(), m["output"].tolist()).combined
+        w = max(scores, key=lambda w: (round(scores[w], 6), -w[0] - w[1]))
+        weights[sub] = w
+        report.append(f"{sub}: a={w[0]} b={w[1]} (held-out {scores[(0.0, 0.0)]:.4f} -> {scores[w]:.4f})")
+    print("tuned on held-out: " + "; ".join(report))
+    preds = {s: rescore_set(base[s][base[s]["subset"].isin(subsets)], *ctx[s], weights) for s in SETS}
+    test = None
+    if a.test_base:
+        tb = pd.read_csv(run_dir(a.test_base) / "test_preds.csv", dtype=str).fillna("")
+        tq = pd.read_csv(root / "raw" / "Test.csv", dtype=str).fillna("")
+        test = rescore_set(tb[tb["subset"].isin(subsets)], tq, pd.concat([train, val], ignore_index=True), weights)
+    cfg = {"combine": {"rule": "rescore", "base": bd.name, "weights": {k: list(v) for k, v in weights.items()}, "top": 20}}
+    record_virtual(cfg, "rescore", subsets, preds, test, bd.name, a.hyp, a.desc)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -128,8 +217,14 @@ def main() -> None:
     g.add_argument("--test-gen", help="EXP id with the generator's test predictions")
     g.add_argument("--hyp", default="H-011")
     g.add_argument("--desc", required=True)
+    r = sub.add_parser("rescore", help="re-pick answers with selector rank + retriever rank + question/answer overlap")
+    r.add_argument("--base", required=True, help="EXP id of a selector run with ret_ids and cand_ids")
+    r.add_argument("--subsets", required=True)
+    r.add_argument("--test-base", help="EXP id with the base run's test predictions")
+    r.add_argument("--hyp", default="H-011")
+    r.add_argument("--desc", required=True)
     a = ap.parse_args()
-    {"agree": cmd_agree}[a.cmd](a)
+    {"agree": cmd_agree, "rescore": cmd_rescore}[a.cmd](a)
 
 
 if __name__ == "__main__":

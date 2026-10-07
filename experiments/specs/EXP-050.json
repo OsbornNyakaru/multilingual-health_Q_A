@@ -1,0 +1,40 @@
+{
+  "exp": "EXP-050",
+  "hypothesis": "H-011",
+  "description": "re-pick among the selector's top-20 answers with selector rank + retriever rank + question-to-answer word overlap (weights tuned on held-out)",
+  "parent": "exp048_ret_bgem3_rrq_sub5_nhall-vall_9294c3",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "rescore",
+      "base": "exp048_ret_bgem3_rrq_sub5_nhall-vall_9294c3",
+      "weights": {
+        "Lug_Uga": [
+          0.25,
+          8.0
+        ],
+        "Swa_Ken": [
+          0.25,
+          4.0
+        ]
+      },
+      "top": 20
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Lug_Uga",
+    "Swa_Ken"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-07T06:38:49+00:00",
+  "created": "2026-10-07T06:38:49+00:00",
+  "git_sha": "b0c6f0645f8b33e5dd536cc86943d7c954edd3a7",
+  "run_id": "exp050_combine_rescore_sub2_d7c391"
+}
