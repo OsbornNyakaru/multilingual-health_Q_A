@@ -110,6 +110,12 @@ As of 2026-10-06: composite **held-out 0.3752 / Val 0.3747** test-mix (ROUGE-onl
 
 - [[EXP-032-lora-rag-afriquella-sub2-nhall-vall]] — same as EXP-031 with AfriqueLlama-8B as the base (for Akan) (ok; won: none)
 
+- [[EXP-033-rag-bgem3-afriquella-k3-sub1-nhall-vall]] — Akan: reuse EXP-032's AfriqueLlama adapter (no retraining) with a minimum answer length (p10 of real answers); it stopped early on 32% of answers (ok; won: none)
+
+- [[EXP-034-rag-bgem3-afriquella-k3-sub1-nhall-vall]] — Akan: EXP-033 + fall back to the retrieved answer when a generation is under half the typical length (ok; won: none)
+
+- [[EXP-035-rag-bgem3-qwen257bin-k3-sub1-ntall]] — test predictions for EXP-031 (Eng_Gha), reusing its adapter; pool = Train + Val (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
