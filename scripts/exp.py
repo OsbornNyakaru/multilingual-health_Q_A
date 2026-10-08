@@ -541,11 +541,14 @@ def cmd_submission(a) -> None:
         sys.exit("no test predictions for: " + "; ".join(missing)
                  + "\nqueue them with: exp.py new --from <run_id> --eval test=0 --desc 'test predictions', then submit + pull")
     preds = pd.concat(parts)
+    # Zindi's upload parser rejects quoted multi-line cells; whitespace ROUGE is unchanged by joining lines
+    preds["pred"] = preds["pred"].str.replace("[\r\n\u2028\u2029]+", " ", regex=True).str.strip()
     sub = prepare.build_submission(preds["ID"].tolist(), preds["pred"].tolist())
     prepare.validate_submission(sub, expected_ids=test["ID"].tolist())
     out = RUNS_DIR / "submissions" / f"composite_{datetime.now():%Y%m%d_%H%M}.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
     sub.to_csv(out, index=False)
+    assert sum(1 for _ in open(out, encoding="utf-8")) == len(sub) + 1, "submission has multi-line cells"
     print(f"wrote {out} ({len(sub)} rows). Upload it to Zindi; it is gitignored on purpose.")
 
 
