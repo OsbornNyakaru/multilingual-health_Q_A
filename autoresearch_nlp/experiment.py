@@ -441,13 +441,18 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
 VLLM_LORA_RANKS = (8, 16, 32, 64, 128, 256, 320, 512)
 
 
-def clean_env() -> dict:
+def clean_env(venv=None) -> dict:
     """The kernel's environment minus whatever points Python at the kernel's packages: molab sets
-    PYTHONPATH to its own (3.13) site-packages, which the vLLM venv would otherwise import (EXP-066)."""
+    PYTHONPATH to its own (3.13) site-packages, which the vLLM venv would otherwise import (EXP-066).
+    With venv, its bin/ goes first on PATH (vLLM's JIT kernels call `ninja` from there, EXP-074)."""
     import os
 
     drop = {"PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "PYTHONSTARTUP", "PYTHONUSERBASE"}
-    return {k: v for k, v in os.environ.items() if k not in drop}
+    env = {k: v for k, v in os.environ.items() if k not in drop}
+    if venv:
+        env["PATH"] = f"{venv}/bin:" + env.get("PATH", "")
+    env["VLLM_USE_FLASHINFER_SAMPLER"] = "0"  # its sampler JIT-compiles on first use; the torch sampler needs no build
+    return env
 
 
 def ensure_vllm(cfg: dict, ctx) -> str:
@@ -584,7 +589,8 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
 
     t0 = time.time()
     with open(log_path, "a", encoding="utf-8") as lf:
-        proc = subprocess.Popen([py, str(worker), str(job_path)], stdout=lf, stderr=subprocess.STDOUT, env=clean_env())
+        proc = subprocess.Popen([py, str(worker), str(job_path)], stdout=lf, stderr=subprocess.STDOUT,
+                                env=clean_env(Path(py).parent.parent))
         while proc.poll() is None:
             time.sleep(30)
             if collect():
@@ -598,7 +604,9 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
     collect()
     ctx.save(answers)
     if proc.returncode not in (0, None) and len(seen) < len(reqs) and not ctx.should_stop():
-        tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+        keys = [ln for ln in text.splitlines() if any(w in ln for w in ("backend", "LoRA", "Error", "error:", "memory"))]
+        tail = "\n".join(keys[-30:]) + "\n----\n" + text[-6000:]
         raise RuntimeError(f"vLLM worker exited with {proc.returncode}:\n{tail}")
     ctx.log(f"vLLM done: {len(seen):,}/{len(reqs):,} rows in {time.time() - t0:.0f}s")
 
