@@ -365,6 +365,8 @@ def sample_candidates(cfg: dict, tok, model, prompts: list[str], bounds: dict) -
         texts = tok.batch_decode(gen[:, enc["input_ids"].shape[1]:], skip_special_tokens=True)
         for k, txt in enumerate(texts):
             out[k // n].append(txt)
+        del gen
+        torch.cuda.empty_cache()  # each sampling call holds n x prompts KV caches; 31B models OOM'd at 32 (EXP-064)
     return out
 
 

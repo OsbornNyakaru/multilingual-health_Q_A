@@ -170,6 +170,12 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-062-combine-ltr-sub4]] — EXP-060 with LightGBM LambdaRank (graded relevance 0-10 from ROUGE overlap, ranked within each question) instead of the sklearn regressor; 1st place's ranker objective (ok; won: Eng_Ken, Eng_Uga, Swa_Ken)
 
+- [[EXP-061-lora-rag-gemma431bi-sub3-nhall-vall]] — 1st-place generator size: Gemma-4-31B QLoRA (4-bit, r64) with our RAG k=3 prompt, trained only on Aka_Gha/Eng_Gha/Amh_Eth, 1 epoch; generation on the bf16 base with the merged adapter (ok; won: Aka_Gha, Amh_Eth, Eng_Gha)
+
+- [[EXP-063-rag-bgem3-gemma431bi-k3-sub3-ntall]] — test predictions for EXP-061 (Gemma-4-31B LoRA adapter reused; pool = Train + Val) (ok; won: none)
+
+- [[EXP-064-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — MBR on EXP-061's adapter: greedy + 4 samples at each of T=0.7/1.0/1.3 (13 candidates), keep the ROUGE medoid; all candidates saved for cross-model MBR (crash; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

@@ -1,21 +1,21 @@
 {
   "Aka_Gha": {
-    "run_id": "exp012_ret_bgem3_nhall-vall_c5159b",
-    "exp": "EXP-012",
+    "run_id": "exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1",
+    "exp": "EXP-061",
     "scores": {
-      "held_out": 0.1838,
-      "val": 0.1735
+      "held_out": 0.2098,
+      "val": 0.1988
     },
-    "since": "2026-10-06T15:06:56+00:00"
+    "since": "2026-10-08T08:59:46+00:00"
   },
   "Amh_Eth": {
-    "run_id": "exp012_ret_bgem3_nhall-vall_c5159b",
-    "exp": "EXP-012",
+    "run_id": "exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1",
+    "exp": "EXP-061",
     "scores": {
-      "held_out": 0.1041,
-      "val": 0.1213
+      "held_out": 0.1516,
+      "val": 0.181
     },
-    "since": "2026-10-06T15:06:56+00:00"
+    "since": "2026-10-08T08:59:46+00:00"
   },
   "Eng_Eth": {
     "run_id": "exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e",
@@ -27,13 +27,13 @@
     "since": "2026-10-07T04:48:38+00:00"
   },
   "Eng_Gha": {
-    "run_id": "exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e",
-    "exp": "EXP-031",
+    "run_id": "exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1",
+    "exp": "EXP-061",
     "scores": {
-      "held_out": 0.2649,
-      "val": 0.2608
+      "held_out": 0.271,
+      "val": 0.2718
     },
-    "since": "2026-10-06T22:06:05+00:00"
+    "since": "2026-10-08T08:59:46+00:00"
   },
   "Eng_Ken": {
     "run_id": "exp062_combine_ltr_sub4_5f85f5",

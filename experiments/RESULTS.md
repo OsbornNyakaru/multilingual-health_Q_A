@@ -6,23 +6,26 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4462**, **val 0.4376** (8/8 subsets covered)
+composite test-mix: **held-out 0.4534**, **val 0.4458** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
-| Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
-| Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
+| Aka_Gha | 18.8% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.2098 | 0.1988 |
+| Eng_Gha | 18.8% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.2710 | 0.2718 |
 | Lug_Uga | 14.3% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.5104 | 0.4932 |
 | Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
 | Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
-| Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
+| Amh_Eth | 2.3% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.1516 | 0.1810 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
 
 ## runs (newest first)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-064 | `exp064_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_72c8c7` | 2026-10-08 09:57 | adapter, gen_sample_batch, gen_samples, mode | held_out=all, val=all |  |  | — | crash | MBR on EXP-061's adapter: greedy + 4 samples at each of T=0.7/1.0/1.3 (13 candidates), keep the ROUGE medoid; all candidates saved for cross-model MBR |
+| EXP-063 | `exp063_rag_bgem3_gemma431bi_k3_sub3_ntall_353827` | 2026-10-08 09:52 | adapter, mode | test=all |  |  | — | ok | test predictions for EXP-061 (Gemma-4-31B LoRA adapter reused; pool = Train + Val) |
+| EXP-061 | `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 2026-10-08 08:59 | infer_batch, lora_batch, lora_bits, lora_grad_acc, lora_save_steps, lora_train_subsets, model_id, precision | held_out=all, val=all | 0.2352 | 0.2321 | Aka_Gha, Amh_Eth, Eng_Gha | ok | 1st-place generator size: Gemma-4-31B QLoRA (4-bit, r64) with our RAG k=3 prompt, trained only on Aka_Gha/Eng_Gha/Amh_Eth, 1 epoch; generation on the bf16 base with the merged adapter |
 | EXP-062 | `exp062_combine_ltr_sub4_5f85f5` | 2026-10-08 04:32 | combine | held_out=all, val=all | 0.5948 | 0.5917 | Eng_Ken, Eng_Uga, Swa_Ken | ok | EXP-060 with LightGBM LambdaRank (graded relevance 0-10 from ROUGE overlap, ranked within each question) instead of the sklearn regressor; 1st place's ranker objective |
 | EXP-060 | `exp060_combine_ltr_sub4_eed26c` | 2026-10-07 17:40 | combine | held_out=all, val=all | 0.5991 | 0.5896 | Eng_Ken, Lug_Uga, Swa_Ken | ok | learned final ranker (gradient-boosted) over EXP-055 + EXP-051 candidates with retriever rank, question-answer overlap, sibling similarity, frequency, length and EXP-038 generator overlap; Val out-of-fold |
 | EXP-059 | `exp059_rag_bgem3_qwen257bin_k3_sub2_ntall_24605c` | 2026-10-07 17:15 | — | test=all |  |  | — | ok | test predictions for EXP-038 on Lug_Uga + Swa_Ken (generator feature for the learned final ranker) |
@@ -96,6 +99,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-061 | held_out |  | 0.2098 | 0.2710 |  |  |  | 0.1516 |  |
+| EXP-061 | val |  | 0.1988 | 0.2718 |  |  |  | 0.1810 |  |
 | EXP-062 | held_out | 0.6299 |  |  | 0.4877 | 0.6320 | 0.6270 |  |  |
 | EXP-062 | val | 0.6268 |  |  | 0.4922 | 0.6232 | 0.6152 |  |  |
 | EXP-060 | held_out | 0.6292 |  |  | 0.5104 | 0.6286 | 0.6232 |  |  |
