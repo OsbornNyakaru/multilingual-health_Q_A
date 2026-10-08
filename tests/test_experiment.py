@@ -394,3 +394,19 @@ def test_mbr_pick_returns_the_consensus_candidate():
     assert E.mbr_pick(cands) in (0, 2)
     assert E.mbr_pick(["only one"]) == 0
     assert E.mbr_pick(["a b", "x y", "a b", "a b c"]) in (0, 2)
+
+
+def test_merge_vllm_output_greedy_only_and_mbr():
+    ans, cands = E.merge_vllm_output({"greedy": " drink water ", "samples": []}, "Eng_Uga")
+    assert ans == cands[0] == E.postprocess(" drink water ", "Eng_Uga") and len(cands) == 1
+    rec = {"greedy": "zzz unrelated text", "samples": ["drink clean water and rest", "drink clean water and rest well", "rest and drink clean water"]}
+    ans, cands = E.merge_vllm_output(rec, "Eng_Uga")
+    assert len(cands) == 4 and ans.startswith("drink clean water")
+
+
+def test_generate_dispatches_to_vllm(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(E, "generate_vllm", lambda *a, **k: seen.setdefault("called", True))
+    cfg = {**E.DEFAULT_CONFIG, "gen_engine": "vllm"}
+    E.generate(cfg, pd.DataFrame(), None, Ctx(), {}, pd.DataFrame())
+    assert seen.get("called")

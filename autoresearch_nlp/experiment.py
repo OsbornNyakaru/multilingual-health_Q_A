@@ -87,6 +87,12 @@ DEFAULT_CONFIG: dict = {
     "gen_temps": [0.7, 1.0, 1.3],
     "gen_top_p": 0.95,
     "gen_sample_batch": 64,      # sequences per sampling call (prompts per call = this // gen_samples)
+    # "vllm": generate with vLLM in a subprocess (own venv, base + LoRA served directly); 5-10x faster than HF generate
+    "gen_engine": "hf",          # hf | vllm
+    "vllm_version": "0.31.0",
+    "vllm_mem": 0.85,            # gpu_memory_utilization (the kernel keeps the embedder on the GPU)
+    "vllm_chunk": 256,           # prompts per vLLM call; answers are checkpointed after each
+    "gen_seed": 0,
     "few_shot_k": 2,             # fixed examples per subset (few_shot) or neighbours (rag_few_shot)
     "few_shot_max_chars": 150,   # cap on fixed few-shot example answers
     "rag_max_chars": 400,        # cap on retrieved example answers in rag_few_shot
@@ -374,6 +380,8 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
              meta: dict | None = None) -> None:
     """Fill answers[ID] for every row not already present. examples_for(ID, subset) -> examples.
     With gen_samples > 0, the answer is the MBR medoid of greedy + sampled candidates (all kept in meta["cands"])."""
+    if cfg["gen_engine"] == "vllm":
+        return generate_vllm(cfg, rows, examples_for, ctx, answers, pool_df, meta)
     import torch
 
     tok, model = ctx.get_model(cfg["model_id"], cfg["precision"], cfg["adapter"])
@@ -426,6 +434,134 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
             ctx.save(answers)
         ctx.log(f"batch {b}/{len(batches)} ({subset})", progress=(b, len(batches)))
     ctx.save(answers)
+
+
+# ── vLLM generation (gen_engine="vllm") ──────────────────────────────────────
+
+VLLM_LORA_RANKS = (8, 16, 32, 64, 128, 256, 320, 512)
+
+
+def ensure_vllm(cfg: dict, ctx) -> str:
+    """Python of a venv holding vLLM (built once per kernel). Separate from the kernel so vLLM's
+    pinned torch never replaces the one the runner already imported."""
+    import subprocess
+    import sys
+    import time
+    from pathlib import Path
+
+    env = Path.cwd() / "runner_work" / f"vllm-{cfg['vllm_version']}"
+    py = env / "bin" / "python"
+    if (env / ".ok").exists():
+        return str(py)
+    t0 = time.time()
+    ctx.log(f"installing vLLM {cfg['vllm_version']} into {env}")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "uv"], check=True)
+    uv = [sys.executable, "-m", "uv"]
+    subprocess.run(uv + ["venv", "--seed", "--python", "3.12", str(env)], check=True)
+    r = subprocess.run(uv + ["pip", "install", "--python", str(py), "--torch-backend=auto", f"vllm=={cfg['vllm_version']}"],
+                       capture_output=True, text=True)
+    if r.returncode:
+        raise RuntimeError("vLLM install failed:\n" + (r.stdout + r.stderr)[-3000:])
+    v = subprocess.run([str(py), "-c", "import torch, vllm; print(vllm.__version__, torch.__version__, torch.version.cuda, torch.cuda.is_available())"],
+                       capture_output=True, text=True)
+    ctx.log(f"vLLM ready in {time.time() - t0:.0f}s: {v.stdout.strip() or v.stderr[-1500:]}")
+    if v.returncode:
+        raise RuntimeError("vLLM import failed:\n" + v.stderr[-3000:])
+    (env / ".ok").touch()
+    return str(py)
+
+
+def merge_vllm_output(rec: dict, subset: str) -> tuple[str, list[str]]:
+    """(answer, candidates) for one worker record: greedy alone, or the MBR medoid of greedy + samples."""
+    cands = [postprocess(x, subset) for x in [rec["greedy"]] + rec["samples"]]
+    return cands[mbr_pick(cands)], cands
+
+
+def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str, str], pool_df: pd.DataFrame,
+                  meta: dict | None = None) -> None:
+    import json
+    import subprocess
+    import time
+    from pathlib import Path
+
+    from transformers import AutoTokenizer
+
+    todo = rows[~rows[ID_COL].astype(str).isin(answers.keys())].reset_index(drop=True)
+    if todo.empty:
+        return
+    if hasattr(ctx, "free_model"):
+        ctx.free_model()  # vLLM needs the GPU memory an HF model would hold
+    tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
+    bounds_by_subset = length_bounds(cfg, tok, pool_df)
+    ctx.log("max_new_tokens per subset: " + ", ".join(f"{k}={v['max_new_tokens']}" for k, v in sorted(bounds_by_subset.items())))
+    subset_of = dict(zip(todo[ID_COL].astype(str), todo[SUBSET_COL].astype(str)))
+    reqs = []
+    for _, r in todo.iterrows():
+        i, subset = str(r[ID_COL]), str(r[SUBSET_COL])
+        prompt = render_prompt(tok, build_messages(str(r[INPUT_COL]), subset, examples_for(i, subset)))
+        ids = tok(prompt, truncation=True, max_length=int(cfg["max_input_tokens"]))["input_ids"]  # same ids as the HF path
+        b = bounds_by_subset.get(subset, DEFAULT_BOUNDS)
+        reqs.append({"id": i, "ids": ids, "max_tokens": b["max_new_tokens"], "min_tokens": b["min_new_tokens"]})
+
+    adapter, rank = resolve_adapter(cfg["adapter"], ctx), 0
+    if adapter:
+        r_ = int(json.load(open(Path(adapter) / "adapter_config.json"))["r"])
+        rank = next(x for x in VLLM_LORA_RANKS if x >= r_)
+    py = ensure_vllm(cfg, ctx)
+    work = Path(_work_dir(ctx, cfg))
+    work.mkdir(parents=True, exist_ok=True)
+    out, log_path, job_path = work / "vllm_out.jsonl", work / "vllm_log.txt", work / "vllm_job.json"
+    max_len = max(len(r["ids"]) for r in reqs) + max(r["max_tokens"] for r in reqs) + 16
+    job = {"model": cfg["model_id"], "adapter": adapter, "lora_rank": rank, "max_model_len": max_len,
+           "mem": float(cfg["vllm_mem"]), "temps": list(cfg["gen_temps"]), "n": int(cfg["gen_samples"]),
+           "top_p": float(cfg["gen_top_p"]), "seed": int(cfg["gen_seed"]), "chunk": int(cfg["vllm_chunk"]),
+           "requests": reqs, "out": str(out)}
+    job_path.write_text(json.dumps(job), encoding="utf-8")
+    ctx.log(f"vLLM: {len(reqs):,} rows, {1 + len(cfg['gen_temps']) * int(cfg['gen_samples']) if int(cfg['gen_samples']) else 1} "
+            f"candidates each, max_model_len {max_len}, LoRA rank {rank or '-'}")
+
+    worker = Path(__file__).with_name("vllm_worker.py")
+    seen: set[str] = set()
+
+    def collect() -> int:
+        if not out.exists():
+            return 0
+        new = 0
+        with open(out, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                i = rec["id"]
+                if i in seen or i not in subset_of:
+                    continue
+                seen.add(i)
+                ans, cands = merge_vllm_output(rec, subset_of[i])
+                answers[i] = ans
+                if meta is not None and int(cfg["gen_samples"]) > 0:
+                    meta.setdefault(i, {})["cands"] = json.dumps(cands, ensure_ascii=False)
+                new += 1
+        return new
+
+    t0 = time.time()
+    with open(log_path, "a", encoding="utf-8") as lf:
+        proc = subprocess.Popen([py, str(worker), str(job_path)], stdout=lf, stderr=subprocess.STDOUT)
+        while proc.poll() is None:
+            time.sleep(30)
+            if collect():
+                ctx.save(answers)
+                ctx.log(f"vLLM {len(seen):,}/{len(reqs):,} rows ({time.time() - t0:.0f}s)", progress=(len(seen), len(reqs)))
+            if ctx.should_stop():
+                proc.terminate()
+                proc.wait(timeout=120)
+                ctx.log("time budget reached; stopped vLLM")
+                break
+    collect()
+    ctx.save(answers)
+    if proc.returncode not in (0, None) and len(seen) < len(reqs) and not ctx.should_stop():
+        tail = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
+        raise RuntimeError(f"vLLM worker exited with {proc.returncode}:\n{tail}")
+    ctx.log(f"vLLM done: {len(seen):,}/{len(reqs):,} rows in {time.time() - t0:.0f}s")
 
 
 # ── adapters from earlier runs ───────────────────────────────────────────────
