@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4534**, **val 0.4458** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-067 | `exp067_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_de17f7` | 2026-10-08 18:15 | gen_engine | held_out=all, val=all |  |  | — | crash | EXP-065 (13-candidate MBR on EXP-061's adapter) on all held-out + Val rows, generated with vLLM |
+| EXP-066 | `exp066_rag_bgem3_gemma431bi_k3_sub3_nv150_c76f20` | 2026-10-08 18:15 | gen_engine | val=150 |  |  | — | crash | vLLM smoke test: EXP-065's 13-candidate MBR on 150 Val rows, served by vLLM (base + LoRA) instead of HF generate |
 | EXP-064 | `exp064_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_72c8c7` | 2026-10-08 09:57 | adapter, gen_sample_batch, gen_samples, mode | held_out=all, val=all |  |  | — | crash | MBR on EXP-061's adapter: greedy + 4 samples at each of T=0.7/1.0/1.3 (13 candidates), keep the ROUGE medoid; all candidates saved for cross-model MBR |
 | EXP-063 | `exp063_rag_bgem3_gemma431bi_k3_sub3_ntall_353827` | 2026-10-08 09:52 | adapter, mode | test=all |  |  | — | ok | test predictions for EXP-061 (Gemma-4-31B LoRA adapter reused; pool = Train + Val) |
 | EXP-061 | `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 2026-10-08 08:59 | infer_batch, lora_batch, lora_bits, lora_grad_acc, lora_save_steps, lora_train_subsets, model_id, precision | held_out=all, val=all | 0.2352 | 0.2321 | Aka_Gha, Amh_Eth, Eng_Gha | ok | 1st-place generator size: Gemma-4-31B QLoRA (4-bit, r64) with our RAG k=3 prompt, trained only on Aka_Gha/Eng_Gha/Amh_Eth, 1 epoch; generation on the bf16 base with the merged adapter |

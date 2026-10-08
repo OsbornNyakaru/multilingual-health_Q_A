@@ -441,6 +441,15 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
 VLLM_LORA_RANKS = (8, 16, 32, 64, 128, 256, 320, 512)
 
 
+def clean_env() -> dict:
+    """The kernel's environment minus whatever points Python at the kernel's packages: molab sets
+    PYTHONPATH to its own (3.13) site-packages, which the vLLM venv would otherwise import (EXP-066)."""
+    import os
+
+    drop = {"PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "PYTHONSTARTUP", "PYTHONUSERBASE"}
+    return {k: v for k, v in os.environ.items() if k not in drop}
+
+
 def ensure_vllm(cfg: dict, ctx) -> str:
     """Python of a venv holding vLLM (built once per kernel). Separate from the kernel so vLLM's
     pinned torch never replaces the one the runner already imported."""
@@ -453,17 +462,21 @@ def ensure_vllm(cfg: dict, ctx) -> str:
     py = env / "bin" / "python"
     if (env / ".ok").exists():
         return str(py)
+    if env.exists():  # a failed earlier attempt: start over
+        import shutil
+
+        shutil.rmtree(env)
     t0 = time.time()
     ctx.log(f"installing vLLM {cfg['vllm_version']} into {env}")
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "uv"], check=True)
     uv = [sys.executable, "-m", "uv"]
     subprocess.run(uv + ["venv", "--seed", "--python", "3.12", str(env)], check=True)
     r = subprocess.run(uv + ["pip", "install", "--python", str(py), "--torch-backend=auto", f"vllm=={cfg['vllm_version']}"],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, env=clean_env())
     if r.returncode:
         raise RuntimeError("vLLM install failed:\n" + (r.stdout + r.stderr)[-3000:])
-    v = subprocess.run([str(py), "-c", "import torch, vllm; print(vllm.__version__, torch.__version__, torch.version.cuda, torch.cuda.is_available())"],
-                       capture_output=True, text=True)
+    v = subprocess.run([str(py), "-I", "-c", "import torch, vllm; print(vllm.__version__, torch.__version__, torch.version.cuda, torch.cuda.is_available())"],
+                       capture_output=True, text=True, env=clean_env())
     ctx.log(f"vLLM ready in {time.time() - t0:.0f}s: {v.stdout.strip() or v.stderr[-1500:]}")
     if v.returncode:
         raise RuntimeError("vLLM import failed:\n" + v.stderr[-3000:])
@@ -545,7 +558,7 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
 
     t0 = time.time()
     with open(log_path, "a", encoding="utf-8") as lf:
-        proc = subprocess.Popen([py, str(worker), str(job_path)], stdout=lf, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen([py, str(worker), str(job_path)], stdout=lf, stderr=subprocess.STDOUT, env=clean_env())
         while proc.poll() is None:
             time.sleep(30)
             if collect():

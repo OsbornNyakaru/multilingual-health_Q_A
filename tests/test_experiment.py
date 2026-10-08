@@ -410,3 +410,10 @@ def test_generate_dispatches_to_vllm(monkeypatch):
     cfg = {**E.DEFAULT_CONFIG, "gen_engine": "vllm"}
     E.generate(cfg, pd.DataFrame(), None, Ctx(), {}, pd.DataFrame())
     assert seen.get("called")
+
+
+def test_clean_env_drops_kernel_python_paths(monkeypatch):
+    monkeypatch.setenv("PYTHONPATH", "/tmp/uv-venv/lib/python3.13/site-packages")
+    monkeypatch.setenv("HF_HOME", "/cache")
+    env = E.clean_env()
+    assert "PYTHONPATH" not in env and env["HF_HOME"] == "/cache"
