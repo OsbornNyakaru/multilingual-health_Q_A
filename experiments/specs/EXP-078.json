@@ -94,5 +94,8 @@
     "Eng_Gha"
   ],
   "max_minutes": 180.0,
-  "drafted": "2026-10-08T21:05:22+00:00"
+  "drafted": "2026-10-08T21:05:22+00:00",
+  "git_sha": "9aee5d01b3d038087a4da2ae3286467b4053e467",
+  "created": "2026-10-08T21:05:28+00:00",
+  "run_id": "exp078_rag_bgem3_gemma431bi_k3_sub2_ntall_9a412a"
 }
