@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-078 | `exp078_rag_bgem3_gemma431bi_k3_sub2_ntall_9a412a` | 2026-10-08 21:47 | — | test=all |  |  | — | ok | EXP-077 test predictions (Aka_Gha, Eng_Gha): 13-candidate MBR via vLLM on EXP-061's adapter |
 | EXP-077 | `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 2026-10-08 21:03 | — | held_out=all, val=all | 0.2424 | 0.2426 | Aka_Gha, Eng_Gha | ok | 13-candidate MBR on EXP-061's adapter, all held-out + Val, via vLLM (sampler fix) |
 | EXP-076 | `exp076_rag_bgem3_gemma431bi_k3_sub3_nv150_3429fd` | 2026-10-08 19:10 | — | val=150 |  | 0.2618 | — | ok | vLLM smoke test with the FlashInfer sampler off (its JIT build needed ninja, EXP-074) |
 | EXP-075 | `exp075_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_197dc2` | 2026-10-08 19:01 | — | held_out=all, val=all |  |  | — | crash | 13-candidate MBR on EXP-061's adapter, all held-out + Val, via vLLM (after the kernel restart) |
