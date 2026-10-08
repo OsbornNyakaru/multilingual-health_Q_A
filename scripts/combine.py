@@ -5,6 +5,8 @@
 
     python scripts/combine.py rescore --base EXP-048 --subsets Lug_Uga,Swa_Ken [--test-base EXP-049] --desc "..."
 
+    python scripts/combine.py pool --gen EXP-079 --subsets Eng_Uga,Lug_Uga [--test-gen EXP-080] --desc "..."
+
 agree: keep the selector's answer, except when the generator's answer is one of the stored answers of
 the selector's top-k candidates (both methods point at the same canned answer). k is tuned per subset
 on held-out; Val is the check.
@@ -135,6 +137,94 @@ def record_virtual(cfg: dict, rule: str, subsets: list, preds: dict, test, paren
 
 TOKEN = r"[^\s?.,!]+"
 
+# ── pool ─────────────────────────────────────────────────────────────────────
+
+POOL_WEIGHTS = (0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 8.0, float("inf"))
+
+
+def overlap_matrix(items: list[str]) -> list[list[float]]:
+    n = len(items)
+    m = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            m[i][j] = m[j][i] = X.experiment.answer_overlap(items[i], items[j])
+    return m
+
+
+def pool_pick(m: list[list[float]], w: float) -> int:
+    """Index into [base] + generated candidates: the MBR medoid when the base answer's votes count w times
+    (w = inf keeps the base). m = overlap_matrix([base] + cands)."""
+    if w == float("inf") or len(m) <= 1:
+        return 0
+    wt = [w] + [1.0] * (len(m) - 1)
+    return max(range(len(m)), key=lambda i: (sum(wt[j] * m[i][j] for j in range(len(m)) if j != i), -i))
+
+
+def best_preds(subset: str, set_name: str) -> pd.DataFrame:
+    """The current best run's predictions for one subset (test: the run itself, else its test children)."""
+    b = X.load_best()[subset]["run_id"]
+    rids = [b]
+    if set_name == "test":
+        rids += [r["run_id"] for r in reversed(X.load_records())
+                 if r["status"] == "ok" and "test" in (r.get("eval") or {}) and r.get("parent") == b]
+    for rid in rids:
+        f = X.RUNS_DIR / rid / f"{set_name}_preds.csv"
+        if f.exists():
+            p = pd.read_csv(f, dtype=str).fillna("")
+            if (p["subset"] == subset).any():
+                return p[p["subset"] == subset][["ID", "subset", "pred"]]
+    sys.exit(f"{subset}: no {set_name} predictions for best run {b}")
+
+
+def pool_rows(base: pd.DataFrame, gen: pd.DataFrame) -> pd.DataFrame:
+    """base rows + their overlap matrices over [base answer] + generated candidates."""
+    g = gen[["ID", "pred"] + (["cands"] if "cands" in gen else [])].rename(columns={"pred": "gen"})
+    m = base.merge(g, on="ID", how="left").fillna("")
+    items = []
+    for b, gp, c in zip(m["pred"], m["gen"], m["cands"] if "cands" in m else [""] * len(m)):
+        cands = json.loads(c) if c else ([gp] if gp else [])
+        items.append([b] + cands)
+    m["items"] = items
+    m["mat"] = [overlap_matrix(it) for it in items]
+    return m
+
+
+def pool_apply(m: pd.DataFrame, w_by_subset: dict) -> pd.DataFrame:
+    out = m[["ID", "subset"]].copy()
+    idx = [pool_pick(mat, w_by_subset.get(s, float("inf"))) for mat, s in zip(m["mat"], m["subset"])]
+    out["pred"] = [it[i] for it, i in zip(m["items"], idx)]
+    out["source"] = ["base" if i == 0 else "gen" for i in idx]
+    return out
+
+
+def cmd_pool(a) -> None:
+    subsets = a.subsets.split(",")
+    gd = run_dir(a.gen)
+    gen = {s: pd.read_csv(gd / f"{s}_preds.csv", dtype=str).fillna("") for s in SETS}
+    rows = {s: pool_rows(pd.concat([best_preds(sub, s) for sub in subsets]), gen[s]) for s in SETS}
+    refs = {s: pd.read_csv(X.REFS[s], dtype=str).fillna("")[["ID", "output"]] for s in SETS}
+
+    def score(s, sub, w):
+        r = rows[s][rows[s]["subset"] == sub]
+        p = pool_apply(r, {sub: w}).merge(refs[s], on="ID")
+        return X.prepare.score(p["pred"].tolist(), p["output"].tolist()).combined
+
+    w_by, report = {}, []
+    for sub in subsets:
+        sc = {w: score("held_out", sub, w) for w in POOL_WEIGHTS}
+        w = max(sc, key=lambda w: (round(sc[w], 6), w))  # ties: trust the base more
+        w_by[sub] = w
+        report.append(f"{sub}: w={w} held-out {sc[float('inf')]:.4f} -> {sc[w]:.4f}, val {score('val', sub, float('inf')):.4f} -> {score('val', sub, w):.4f}")
+    print("tuned on held-out:\n  " + "\n  ".join(report))
+    preds = {s: pool_apply(rows[s], w_by) for s in SETS}
+    test = None
+    if a.test_gen:
+        tg = pd.read_csv(run_dir(a.test_gen) / "test_preds.csv", dtype=str).fillna("")
+        test = pool_apply(pool_rows(pd.concat([best_preds(sub, "test") for sub in subsets]), tg), w_by)
+    cfg = {"combine": {"rule": "pool", "gen": gd.name, "base": {sub: X.load_best()[sub]["run_id"] for sub in subsets},
+                       "w": {k: (None if v == float("inf") else v) for k, v in w_by.items()}}}
+    record_virtual(cfg, "pool", subsets, preds, test, gd.name, a.hyp, a.desc)
+
 
 def rescore_set(base: pd.DataFrame, queries: pd.DataFrame, pool: pd.DataFrame, weights: dict, top: int = 20) -> pd.DataFrame:
     """Re-pick each row's answer among its top candidates (see module doc). weights = {subset: (a, b)}."""
@@ -223,8 +313,14 @@ def main() -> None:
     r.add_argument("--test-base", help="EXP id with the base run's test predictions")
     r.add_argument("--hyp", default="H-011")
     r.add_argument("--desc", required=True)
+    p = sub.add_parser("pool", help="MBR over the best run's answer (weighted) + a generation run's candidates")
+    p.add_argument("--gen", required=True, help="EXP id of a generation run with cands (gen_samples > 0)")
+    p.add_argument("--subsets", required=True)
+    p.add_argument("--test-gen", help="EXP id with the generator's test predictions")
+    p.add_argument("--hyp", default="H-014")
+    p.add_argument("--desc", required=True)
     a = ap.parse_args()
-    {"agree": cmd_agree, "rescore": cmd_rescore}[a.cmd](a)
+    {"agree": cmd_agree, "rescore": cmd_rescore, "pool": cmd_pool}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -38,3 +38,21 @@ def test_rescore_prefers_the_answer_that_matches_the_question():
     assert off["pred"].iloc[0] == "okufumbiriganwa n'oyo alina siriimu"  # weights off: selector top-1 kept
     on = C.rescore_set(base, q, pool, {"Lug_Uga": (0.0, 8.0)})
     assert on["pred"].iloc[0] == "okusiigibwa siriimu kuba nga"          # answer overlap overrides rank 2 vs 1
+
+
+def test_pool_pick_weights_the_base_answer():
+    base = "take the full course of antibiotics"
+    cands = ["drink clean water and rest", "drink clean water and rest well", "rest and drink clean water"]
+    m = C.overlap_matrix([base] + cands)
+    assert C.pool_pick(m, float("inf")) == 0           # inf keeps the base
+    assert C.pool_pick(m, 0.0) in (1, 2, 3)            # no weight: the generated consensus wins
+    assert C.pool_pick(C.overlap_matrix([base]), 1.0) == 0  # no candidates
+
+
+def test_pool_apply_falls_back_to_greedy_without_cands():
+    import pandas as pd
+
+    base = pd.DataFrame({"ID": ["a"], "subset": ["Eng_Uga"], "pred": ["x y z"]})
+    gen = pd.DataFrame({"ID": ["a"], "pred": ["x y z w"]})
+    out = C.pool_apply(C.pool_rows(base, gen), {"Eng_Uga": 0.0})
+    assert out["pred"].iloc[0] in ("x y z", "x y z w") and len(out) == 1
