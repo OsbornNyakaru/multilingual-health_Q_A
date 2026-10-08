@@ -387,3 +387,10 @@ def test_train_rerankers_trains_one_per_seed(monkeypatch):
     monkeypatch.setattr(E, "train_reranker", lambda cfg, pool, c, seed=0: f"/rr/{seed}")
     assert E.train_rerankers({**E.DEFAULT_CONFIG}, POOL, Ctx()) == "/rr/0"
     assert E.train_rerankers({**E.DEFAULT_CONFIG, "rerank_ensemble": 3}, POOL, Ctx()) == ["/rr/0", "/rr/1", "/rr/2"]
+
+
+def test_mbr_pick_returns_the_consensus_candidate():
+    cands = ["drink clean water and rest", "zzz unrelated text", "drink clean water and rest well", "rest and drink clean water"]
+    assert E.mbr_pick(cands) in (0, 2)
+    assert E.mbr_pick(["only one"]) == 0
+    assert E.mbr_pick(["a b", "x y", "a b", "a b c"]) in (0, 2)

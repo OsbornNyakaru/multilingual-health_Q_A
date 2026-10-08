@@ -81,6 +81,12 @@ DEFAULT_CONFIG: dict = {
     "max_input_tokens": 1024,
     "no_repeat_ngram": 0,         # 3 pushed Qwen into Chinese and garbled Akan (EXP-020/021)
     "length_penalty": 1.0,
+    # MBR: besides the greedy answer, sample gen_samples answers at each of gen_temps and keep the medoid
+    # (the candidate with the highest summed ROUGE-1/L to all the others; 1st place's selection rule)
+    "gen_samples": 0,            # per temperature; 0 = greedy only
+    "gen_temps": [0.7, 1.0, 1.3],
+    "gen_top_p": 0.95,
+    "gen_sample_batch": 64,      # sequences per sampling call (prompts per call = this // gen_samples)
     "few_shot_k": 2,             # fixed examples per subset (few_shot) or neighbours (rag_few_shot)
     "few_shot_max_chars": 150,   # cap on fixed few-shot example answers
     "rag_max_chars": 400,        # cap on retrieved example answers in rag_few_shot
@@ -329,8 +335,43 @@ def length_bounds(cfg: dict, tok, pool_df: pd.DataFrame) -> dict[str, dict]:
     return out
 
 
-def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str, str], pool_df: pd.DataFrame) -> None:
-    """Fill answers[ID] for every row not already present. examples_for(ID, subset) -> examples."""
+def mbr_pick(cands: list[str]) -> int:
+    """Index of the medoid: the candidate with the highest summed answer_overlap to all the others."""
+    if len(cands) <= 2:
+        return 0
+    best, best_i = -1.0, 0
+    for i, a in enumerate(cands):
+        u = sum(answer_overlap(a, b) for j, b in enumerate(cands) if j != i)
+        if u > best:
+            best, best_i = u, i
+    return best_i
+
+
+def sample_candidates(cfg: dict, tok, model, prompts: list[str], bounds: dict) -> list[list[str]]:
+    """gen_samples sampled answers per prompt at each of gen_temps (raw text, before postprocess)."""
+    import torch
+
+    n = int(cfg["gen_samples"])
+    out: list[list[str]] = [[] for _ in prompts]
+    enc = tok(prompts, return_tensors="pt", padding=True, truncation=True, max_length=int(cfg["max_input_tokens"])).to(model.device)
+    for t in cfg["gen_temps"]:
+        with torch.inference_mode():
+            gen = model.generate(
+                **enc, do_sample=True, temperature=float(t), top_p=float(cfg["gen_top_p"]), top_k=0,
+                num_return_sequences=n, num_beams=1,
+                min_new_tokens=bounds["min_new_tokens"], max_new_tokens=bounds["max_new_tokens"],
+                pad_token_id=tok.pad_token_id, eos_token_id=tok.eos_token_id,
+            )
+        texts = tok.batch_decode(gen[:, enc["input_ids"].shape[1]:], skip_special_tokens=True)
+        for k, txt in enumerate(texts):
+            out[k // n].append(txt)
+    return out
+
+
+def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str, str], pool_df: pd.DataFrame,
+             meta: dict | None = None) -> None:
+    """Fill answers[ID] for every row not already present. examples_for(ID, subset) -> examples.
+    With gen_samples > 0, the answer is the MBR medoid of greedy + sampled candidates (all kept in meta["cands"])."""
     import torch
 
     tok, model = ctx.get_model(cfg["model_id"], cfg["precision"], cfg["adapter"])
@@ -364,8 +405,21 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
                 pad_token_id=tok.pad_token_id, eos_token_id=tok.eos_token_id,
             )
         texts = tok.batch_decode(gen[:, enc["input_ids"].shape[1]:], skip_special_tokens=True)
-        for i, t in zip(ids, texts):
-            answers[i] = postprocess(t, subset)
+        if int(cfg["gen_samples"]) > 0:
+            import json
+
+            per_call = max(1, int(cfg["gen_sample_batch"]) // int(cfg["gen_samples"]))
+            sampled = []
+            for s0 in range(0, len(ids), per_call):
+                sampled += sample_candidates(cfg, tok, model, [prompts[i] for i in ids[s0 : s0 + per_call]], bounds)
+            for i, g, smp in zip(ids, texts, sampled):
+                cands = [postprocess(x, subset) for x in [g] + smp]
+                answers[i] = cands[mbr_pick(cands)]
+                if meta is not None:
+                    meta.setdefault(i, {})["cands"] = json.dumps(cands, ensure_ascii=False)
+        else:
+            for i, t in zip(ids, texts):
+                answers[i] = postprocess(t, subset)
         if b % every == 0:
             ctx.save(answers)
         ctx.log(f"batch {b}/{len(batches)} ({subset})", progress=(b, len(batches)))
@@ -914,7 +968,10 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     }
 
     if mode in GENERATIVE_MODES:
-        generate(cfg, eval_df, pickers[mode], ctx, answers, pool_df)
+        if int(cfg["gen_samples"]) > 0:
+            generate(cfg, eval_df, pickers[mode], ctx, answers, pool_df, meta=meta)
+        else:
+            generate(cfg, eval_df, pickers[mode], ctx, answers, pool_df)
         apply_fallback(cfg, eval_df, pool_df, answers, best_answer, meta, ctx)
         return answers, meta
 
