@@ -36,22 +36,22 @@
     "since": "2026-10-06T22:06:05+00:00"
   },
   "Eng_Ken": {
-    "run_id": "exp060_combine_ltr_sub4_eed26c",
-    "exp": "EXP-060",
+    "run_id": "exp062_combine_ltr_sub4_5f85f5",
+    "exp": "EXP-062",
     "scores": {
-      "held_out": 0.6232,
-      "val": 0.607
+      "held_out": 0.627,
+      "val": 0.6152
     },
-    "since": "2026-10-07T17:40:03+00:00"
+    "since": "2026-10-08T04:32:27+00:00"
   },
   "Eng_Uga": {
-    "run_id": "exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57",
-    "exp": "EXP-055",
+    "run_id": "exp062_combine_ltr_sub4_5f85f5",
+    "exp": "EXP-062",
     "scores": {
-      "held_out": 0.6288,
-      "val": 0.6231
+      "held_out": 0.6299,
+      "val": 0.6268
     },
-    "since": "2026-10-07T08:33:17+00:00"
+    "since": "2026-10-08T04:32:27+00:00"
   },
   "Lug_Uga": {
     "run_id": "exp060_combine_ltr_sub4_eed26c",
@@ -63,12 +63,12 @@
     "since": "2026-10-07T17:40:03+00:00"
   },
   "Swa_Ken": {
-    "run_id": "exp060_combine_ltr_sub4_eed26c",
-    "exp": "EXP-060",
+    "run_id": "exp062_combine_ltr_sub4_5f85f5",
+    "exp": "EXP-062",
     "scores": {
-      "held_out": 0.6286,
-      "val": 0.6161
+      "held_out": 0.632,
+      "val": 0.6232
     },
-    "since": "2026-10-07T17:40:03+00:00"
+    "since": "2026-10-08T04:32:27+00:00"
   }
 }

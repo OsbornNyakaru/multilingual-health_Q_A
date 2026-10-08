@@ -6,16 +6,16 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4454**, **val 0.4354** (8/8 subsets covered)
+composite test-mix: **held-out 0.4462**, **val 0.4376** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-055 `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` | 0.6288 | 0.6231 |
+| Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
 | Aka_Gha | 18.8% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1838 | 0.1735 |
 | Eng_Gha | 18.8% | EXP-031 `exp031_lora_rag_qwen257bin_sub2_nhall-vall_5c414e` | 0.2649 | 0.2608 |
 | Lug_Uga | 14.3% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.5104 | 0.4932 |
-| Swa_Ken | 8.7% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.6286 | 0.6161 |
-| Eng_Ken | 6.4% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.6232 | 0.6070 |
+| Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
+| Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
 | Amh_Eth | 2.3% | EXP-012 `exp012_ret_bgem3_nhall-vall_c5159b` | 0.1041 | 0.1213 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
 
@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4454**, **val 0.4354** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-062 | `exp062_combine_ltr_sub4_5f85f5` | 2026-10-08 04:32 | combine | held_out=all, val=all | 0.5948 | 0.5917 | Eng_Ken, Eng_Uga, Swa_Ken | ok | EXP-060 with LightGBM LambdaRank (graded relevance 0-10 from ROUGE overlap, ranked within each question) instead of the sklearn regressor; 1st place's ranker objective |
 | EXP-060 | `exp060_combine_ltr_sub4_eed26c` | 2026-10-07 17:40 | combine | held_out=all, val=all | 0.5991 | 0.5896 | Eng_Ken, Lug_Uga, Swa_Ken | ok | learned final ranker (gradient-boosted) over EXP-055 + EXP-051 candidates with retriever rank, question-answer overlap, sibling similarity, frequency, length and EXP-038 generator overlap; Val out-of-fold |
 | EXP-059 | `exp059_rag_bgem3_qwen257bin_k3_sub2_ntall_24605c` | 2026-10-07 17:15 | — | test=all |  |  | — | ok | test predictions for EXP-038 on Lug_Uga + Swa_Ken (generator feature for the learned final ranker) |
 | EXP-058 | `exp058_ret_bgem3_rrb_sub4_ntall_cc1c32` | 2026-10-07 17:08 | — | test=all |  |  | — | crash | test predictions for EXP-054 (graded-label selector; input to the learned final ranker) |
@@ -94,6 +95,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-062 | held_out | 0.6299 |  |  | 0.4877 | 0.6320 | 0.6270 |  |  |
+| EXP-062 | val | 0.6268 |  |  | 0.4922 | 0.6232 | 0.6152 |  |  |
 | EXP-060 | held_out | 0.6292 |  |  | 0.5104 | 0.6286 | 0.6232 |  |  |
 | EXP-060 | val | 0.6260 |  |  | 0.4932 | 0.6161 | 0.6070 |  |  |
 | EXP-056 | held_out |  | 0.1791 | 0.2621 |  |  |  |  |  |

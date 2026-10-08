@@ -1,0 +1,34 @@
+{
+  "exp": "EXP-062",
+  "hypothesis": "H-011",
+  "description": "EXP-060 with LightGBM LambdaRank (graded relevance 0-10 from ROUGE overlap, ranked within each question) instead of the sklearn regressor; 1st place's ranker objective",
+  "parent": "exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "ltr",
+      "pickers": "EXP-055,EXP-051",
+      "gen": "EXP-038",
+      "top": 20,
+      "model": "LGBMRanker(lambdarank)"
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Eng_Uga",
+    "Lug_Uga",
+    "Swa_Ken",
+    "Eng_Ken"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-08T04:32:27+00:00",
+  "created": "2026-10-08T04:32:27+00:00",
+  "git_sha": "b594801480dd0b8b89ac887bec66979579d6208b",
+  "run_id": "exp062_combine_ltr_sub4_5f85f5"
+}

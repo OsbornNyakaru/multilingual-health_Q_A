@@ -116,7 +116,19 @@ def feature_cols(df: pd.DataFrame) -> list[str]:
     return sorted(c for c in df.columns if c.startswith("logrank_")) + FEATURES_FIXED
 
 
+KIND = "hgb"  # hgb = sklearn regressor on the overlap label; lambdarank = LightGBM ranker within each question
+
+
 def fit(df: pd.DataFrame):
+    if KIND == "lambdarank":
+        from lightgbm import LGBMRanker
+
+        d = df.sort_values("ID", kind="stable")
+        rel = (d["label"] * 10).round().astype(int)  # graded relevance 0..10 from the ROUGE overlap
+        m = LGBMRanker(objective="lambdarank", n_estimators=300, learning_rate=0.05, num_leaves=31, min_child_samples=20,
+                       reg_lambda=1.0, random_state=0, verbose=-1)
+        return m.fit(d[feature_cols(d)], rel, group=d.groupby("ID", sort=True).size().to_numpy(),
+                     categorical_feature=["subset_code"])
     from sklearn.ensemble import HistGradientBoostingRegressor
 
     m = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05, max_leaf_nodes=31, l2_regularization=1.0,
@@ -191,7 +203,8 @@ def cmd_record(a) -> None:
         missing = set(q[q["subset"].isin(subsets)]["ID"]) - set(test["ID"])
         if missing:
             sys.exit(f"test predictions missing for {len(missing)} questions; check --test-map")
-    cfg = {"combine": {"rule": "ltr", "pickers": a.pickers, "gen": a.gen, "top": TOP, "model": "HistGradientBoostingRegressor"}}
+    model = {"hgb": "HistGradientBoostingRegressor", "lambdarank": "LGBMRanker(lambdarank)"}[KIND]
+    cfg = {"combine": {"rule": "ltr", "pickers": a.pickers, "gen": a.gen, "top": TOP, "model": model}}
     C.record_virtual(cfg, "ltr", subsets, preds, test, C.run_dir(a.pickers.split(",")[0]).name, a.hyp, a.desc)
 
 
@@ -204,10 +217,13 @@ def main() -> None:
         p.add_argument("--gen", help="EXP id of a generation run on the same subsets")
         p.add_argument("--subsets", required=True)
         p.add_argument("--hyp", default="H-011")
+        p.add_argument("--model", choices=["hgb", "lambdarank"], default="hgb")
         if name == "record":
             p.add_argument("--test-map", help="'EXP-055=EXP-0aa;EXP-051=EXP-052;EXP-038=EXP-044+EXP-042'")
             p.add_argument("--desc", required=True)
     a = ap.parse_args()
+    global KIND
+    KIND = a.model
     {"eval": cmd_eval, "record": cmd_record}[a.cmd](a)
 
 

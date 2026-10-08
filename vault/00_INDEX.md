@@ -168,6 +168,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-060-combine-ltr-sub4]] — learned final ranker (gradient-boosted) over EXP-055 + EXP-051 candidates with retriever rank, question-answer overlap, sibling similarity, frequency, length and EXP-038 generator overlap; Val out-of-fold (ok; won: Eng_Ken, Lug_Uga, Swa_Ken)
 
+- [[EXP-062-combine-ltr-sub4]] — EXP-060 with LightGBM LambdaRank (graded relevance 0-10 from ROUGE overlap, ranked within each question) instead of the sklearn regressor; 1st place's ranker objective (ok; won: Eng_Ken, Eng_Uga, Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
