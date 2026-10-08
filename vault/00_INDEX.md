@@ -198,6 +198,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-076-rag-bgem3-gemma431bi-k3-sub3-nv150]] — vLLM smoke test with the FlashInfer sampler off (its JIT build needed ninja, EXP-074) (ok; won: none)
 
+- [[EXP-077-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — 13-candidate MBR on EXP-061's adapter, all held-out + Val, via vLLM (sampler fix) (ok; won: Aka_Gha, Eng_Gha)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

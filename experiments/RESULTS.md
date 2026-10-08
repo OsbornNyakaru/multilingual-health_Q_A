@@ -6,13 +6,13 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4534**, **val 0.4458** (8/8 subsets covered)
+composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
-| Aka_Gha | 18.8% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.2098 | 0.1988 |
-| Eng_Gha | 18.8% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.2710 | 0.2718 |
+| Aka_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2216 | 0.2162 |
+| Eng_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2741 | 0.2770 |
 | Lug_Uga | 14.3% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.5104 | 0.4932 |
 | Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
 | Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4534**, **val 0.4458** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-077 | `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 2026-10-08 21:03 | — | held_out=all, val=all | 0.2424 | 0.2426 | Aka_Gha, Eng_Gha | ok | 13-candidate MBR on EXP-061's adapter, all held-out + Val, via vLLM (sampler fix) |
 | EXP-076 | `exp076_rag_bgem3_gemma431bi_k3_sub3_nv150_3429fd` | 2026-10-08 19:10 | — | val=150 |  | 0.2618 | — | ok | vLLM smoke test with the FlashInfer sampler off (its JIT build needed ninja, EXP-074) |
 | EXP-075 | `exp075_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_197dc2` | 2026-10-08 19:01 | — | held_out=all, val=all |  |  | — | crash | 13-candidate MBR on EXP-061's adapter, all held-out + Val, via vLLM (after the kernel restart) |
 | EXP-074 | `exp074_rag_bgem3_gemma431bi_k3_sub3_nv150_55e631` | 2026-10-08 18:58 | — | val=150 |  |  | — | crash | vLLM smoke test after the kernel restart: 13-candidate MBR on 150 Val rows |
@@ -111,6 +112,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-077 | held_out |  | 0.2216 | 0.2741 |  |  |  | 0.1546 |  |
+| EXP-077 | val |  | 0.2162 | 0.2770 |  |  |  | 0.1789 |  |
 | EXP-076 | val |  | 0.2333 | 0.2954 |  |  |  | 0.2218 |  |
 | EXP-061 | held_out |  | 0.2098 | 0.2710 |  |  |  | 0.1516 |  |
 | EXP-061 | val |  | 0.1988 | 0.2718 |  |  |  | 0.1810 |  |
