@@ -184,6 +184,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-069-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — EXP-067 rerun with the clean-environment fix: 13-candidate MBR on all held-out + Val rows via vLLM (crash; won: none)
 
+- [[EXP-070-rag-bgem3-gemma431bi-k3-sub3-nv150]] — EXP-068 rerun: free the kernel's GPU memory before vLLM starts (a stopped run's model held 73 GB) (crash; won: none)
+
+- [[EXP-071-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — EXP-069 rerun with the GPU-release fix: 13-candidate MBR on all held-out + Val via vLLM (crash; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
