@@ -81,6 +81,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-08 | `composite_20261007_2040.csv` | 0.6708 | 0.6600 | 0.6444 | 0.5979 | 0.8123 | 0.4354 | submission #7: learned final ranker (EXP-060) on Lug_Uga/Swa_Ken/Eng_Ken + EXP-055 ensemble on Eng_Uga |
 | 2026-10-07 | `composite_20261007_1017.csv` | 0.6654 | 0.6516 | 0.6409 | 0.5940 | 0.8020 | 0.432 | submission #6: answer-aware selector (EXP-051) on Lug_Uga/Eng_Uga + rescore (EXP-053) on Eng_Uga/Eng_Ken/Swa_Ken |
 | 2026-10-07 | `composite_20261007_0921.csv` | 0.6467 | 0.6405 | 0.6213 | 0.5721 | 0.7890 | 0.4222 | submission #5: #4 + fine-tuned retriever + selector (EXP-048) on Lug_Uga and Swa_Ken |
 | 2026-10-07 | `composite_20261007_0900.csv` | 0.6313 | 0.6365 | 0.6040 | 0.5544 | 0.7797 | 0.4173 | submission #4: #3 + selector/Qwen agreement on Eng_Uga/Eng_Ken (EXP-045) + 3-epoch selector on Swa_Ken (EXP-043) |
