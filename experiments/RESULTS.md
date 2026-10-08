@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4534**, **val 0.4458** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-073 | `exp073_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_b384d0` | 2026-10-08 18:21 | — | held_out=all, val=all |  |  | — | crash | EXP-071 rerun after a kernel restart: 13-candidate MBR on all held-out + Val via vLLM |
+| EXP-072 | `exp072_rag_bgem3_gemma431bi_k3_sub3_nv150_a47e5a` | 2026-10-08 18:21 | — | val=150 |  |  | — | crash | EXP-070 rerun after a kernel restart (GPU was held by the stopped EXP-065 model) |
 | EXP-071 | `exp071_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_6ce1fb` | 2026-10-08 18:20 | — | held_out=all, val=all |  |  | — | crash | EXP-069 rerun with the GPU-release fix: 13-candidate MBR on all held-out + Val via vLLM |
 | EXP-070 | `exp070_rag_bgem3_gemma431bi_k3_sub3_nv150_864ac2` | 2026-10-08 18:20 | — | val=150 |  |  | — | crash | EXP-068 rerun: free the kernel's GPU memory before vLLM starts (a stopped run's model held 73 GB) |
 | EXP-069 | `exp069_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_8862fb` | 2026-10-08 18:18 | — | held_out=all, val=all |  |  | — | crash | EXP-067 rerun with the clean-environment fix: 13-candidate MBR on all held-out + Val rows via vLLM |
