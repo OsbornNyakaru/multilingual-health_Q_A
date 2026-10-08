@@ -180,6 +180,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-067-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — EXP-065 (13-candidate MBR on EXP-061's adapter) on all held-out + Val rows, generated with vLLM (crash; won: none)
 
+- [[EXP-068-rag-bgem3-gemma431bi-k3-sub3-nv150]] — EXP-066 rerun: vLLM subprocess now starts with a clean environment (molab's PYTHONPATH broke the import) (crash; won: none)
+
+- [[EXP-069-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — EXP-067 rerun with the clean-environment fix: 13-candidate MBR on all held-out + Val rows via vLLM (crash; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

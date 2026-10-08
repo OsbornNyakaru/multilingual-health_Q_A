@@ -484,6 +484,33 @@ def ensure_vllm(cfg: dict, ctx) -> str:
     return str(py)
 
 
+def free_gpu_for_vllm(cfg: dict, ctx) -> float:
+    """Release what the kernel holds on the GPU and return the gpu_memory_utilization vLLM can ask for.
+    An interrupted run can leave its HF model alive through the saved traceback (EXP-068: 21 of 95 GB free)."""
+    import gc
+    import sys
+
+    if hasattr(ctx, "free_model"):
+        ctx.free_model()
+    for name in ("last_traceback", "last_value", "last_exc", "last_type"):
+        if hasattr(sys, name):
+            setattr(sys, name, None)
+    gc.collect()
+    try:
+        import torch
+
+        torch.cuda.empty_cache()
+        free, total = torch.cuda.mem_get_info()
+    except Exception:
+        return float(cfg["vllm_mem"])
+    mem = min(float(cfg["vllm_mem"]), free / total - 0.03)
+    ctx.log(f"GPU before vLLM: {free / 2**30:.1f} of {total / 2**30:.1f} GiB free -> gpu_memory_utilization {mem:.2f}")
+    if mem < 0.75:
+        raise RuntimeError(f"only {free / 2**30:.1f} GiB of GPU memory free for vLLM; something in the kernel still "
+                           "holds a model. Restart the molab kernel and press Run queue.")
+    return mem
+
+
 def merge_vllm_output(rec: dict, subset: str) -> tuple[str, list[str]]:
     """(answer, candidates) for one worker record: greedy alone, or the MBR medoid of greedy + samples."""
     cands = [postprocess(x, subset) for x in [rec["greedy"]] + rec["samples"]]
@@ -502,8 +529,7 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
     todo = rows[~rows[ID_COL].astype(str).isin(answers.keys())].reset_index(drop=True)
     if todo.empty:
         return
-    if hasattr(ctx, "free_model"):
-        ctx.free_model()  # vLLM needs the GPU memory an HF model would hold
+    mem = free_gpu_for_vllm(cfg, ctx)
     tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
     bounds_by_subset = length_bounds(cfg, tok, pool_df)
     ctx.log("max_new_tokens per subset: " + ", ".join(f"{k}={v['max_new_tokens']}" for k, v in sorted(bounds_by_subset.items())))
@@ -526,7 +552,7 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
     out, log_path, job_path = work / "vllm_out.jsonl", work / "vllm_log.txt", work / "vllm_job.json"
     max_len = max(len(r["ids"]) for r in reqs) + max(r["max_tokens"] for r in reqs) + 16
     job = {"model": cfg["model_id"], "adapter": adapter, "lora_rank": rank, "max_model_len": max_len,
-           "mem": float(cfg["vllm_mem"]), "temps": list(cfg["gen_temps"]), "n": int(cfg["gen_samples"]),
+           "mem": mem, "temps": list(cfg["gen_temps"]), "n": int(cfg["gen_samples"]),
            "top_p": float(cfg["gen_top_p"]), "seed": int(cfg["gen_seed"]), "chunk": int(cfg["vllm_chunk"]),
            "requests": reqs, "out": str(out)}
     job_path.write_text(json.dumps(job), encoding="utf-8")

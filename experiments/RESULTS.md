@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4534**, **val 0.4458** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-069 | `exp069_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_8862fb` | 2026-10-08 18:18 | — | held_out=all, val=all |  |  | — | crash | EXP-067 rerun with the clean-environment fix: 13-candidate MBR on all held-out + Val rows via vLLM |
+| EXP-068 | `exp068_rag_bgem3_gemma431bi_k3_sub3_nv150_26df01` | 2026-10-08 18:17 | — | val=150 |  |  | — | crash | EXP-066 rerun: vLLM subprocess now starts with a clean environment (molab's PYTHONPATH broke the import) |
 | EXP-067 | `exp067_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_de17f7` | 2026-10-08 18:15 | gen_engine | held_out=all, val=all |  |  | — | crash | EXP-065 (13-candidate MBR on EXP-061's adapter) on all held-out + Val rows, generated with vLLM |
 | EXP-066 | `exp066_rag_bgem3_gemma431bi_k3_sub3_nv150_c76f20` | 2026-10-08 18:15 | gen_engine | val=150 |  |  | — | crash | vLLM smoke test: EXP-065's 13-candidate MBR on 150 Val rows, served by vLLM (base + LoRA) instead of HF generate |
 | EXP-064 | `exp064_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_72c8c7` | 2026-10-08 09:57 | adapter, gen_sample_batch, gen_samples, mode | held_out=all, val=all |  |  | — | crash | MBR on EXP-061's adapter: greedy + 4 samples at each of T=0.7/1.0/1.3 (13 candidates), keep the ROUGE medoid; all candidates saved for cross-model MBR |
