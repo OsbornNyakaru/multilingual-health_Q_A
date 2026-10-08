@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-081 | `exp081_combine_pool_sub5_80a5ef` | 2026-10-08 23:46 | combine | held_out=all, val=all | 0.5981 | 0.5876 | — | ok | pool: best run's answer (weight w) + EXP-079's 13 Gemma candidates |
+| EXP-079 | `exp079_rag_bgem3_gemma431bi_k3_sub5_nhall-vall_94b2de` | 2026-10-08 23:37 | — | held_out=all, val=all | 0.3429 | 0.3368 | — | ok | 13-candidate Gemma (EXP-061 adapter, vLLM) on the five retrieval subsets: candidates to pool with the ranker's pick |
 | EXP-078 | `exp078_rag_bgem3_gemma431bi_k3_sub2_ntall_9a412a` | 2026-10-08 21:47 | — | test=all |  |  | — | ok | EXP-077 test predictions (Aka_Gha, Eng_Gha): 13-candidate MBR via vLLM on EXP-061's adapter |
 | EXP-077 | `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 2026-10-08 21:03 | — | held_out=all, val=all | 0.2424 | 0.2426 | Aka_Gha, Eng_Gha | ok | 13-candidate MBR on EXP-061's adapter, all held-out + Val, via vLLM (sampler fix) |
 | EXP-076 | `exp076_rag_bgem3_gemma431bi_k3_sub3_nv150_3429fd` | 2026-10-08 19:10 | — | val=150 |  | 0.2618 | — | ok | vLLM smoke test with the FlashInfer sampler off (its JIT build needed ninja, EXP-074) |
@@ -114,6 +116,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-081 | held_out | 0.6299 |  |  | 0.5104 | 0.6320 | 0.6270 |  | 0.5409 |
+| EXP-081 | val | 0.6268 |  |  | 0.4932 | 0.6232 | 0.6152 |  | 0.4777 |
+| EXP-079 | held_out | 0.4054 |  |  | 0.2044 | 0.3386 | 0.3383 |  | 0.4616 |
+| EXP-079 | val | 0.3922 |  |  | 0.1977 | 0.3509 | 0.3538 |  | 0.4166 |
 | EXP-077 | held_out |  | 0.2216 | 0.2741 |  |  |  | 0.1546 |  |
 | EXP-077 | val |  | 0.2162 | 0.2770 |  |  |  | 0.1789 |  |
 | EXP-076 | val |  | 0.2333 | 0.2954 |  |  |  | 0.2218 |  |

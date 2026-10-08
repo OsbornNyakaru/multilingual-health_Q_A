@@ -202,6 +202,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-078-rag-bgem3-gemma431bi-k3-sub2-ntall]] — EXP-077 test predictions (Aka_Gha, Eng_Gha): 13-candidate MBR via vLLM on EXP-061's adapter (ok; won: none)
 
+- [[EXP-079-rag-bgem3-gemma431bi-k3-sub5-nhall-vall]] — 13-candidate Gemma (EXP-061 adapter, vLLM) on the five retrieval subsets: candidates to pool with the ranker's pick (ok; won: none)
+
+- [[EXP-081-combine-pool-sub5]] — pool: best run's answer (weight w) + EXP-079's 13 Gemma candidates (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
