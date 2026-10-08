@@ -85,6 +85,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-08 | `composite_20261008_1600.csv` | 0.6860 | 0.6729 | 0.6624 | 0.6196 | 0.8139 | 0.4458 | submission #9: Gemma-4-31B QLoRA (EXP-061, test EXP-063) on Aka_Gha/Eng_Gha/Amh_Eth |
 | 2026-10-08 | `composite_20261008_0733.csv` | 0.6790 | 0.6651 | 0.6545 | 0.6082 | 0.8145 | 0.4376 | submission #8: LightGBM LambdaRank final ranker (EXP-062) on Eng_Uga/Swa_Ken/Eng_Ken; EXP-060 on Lug_Uga |
 | 2026-10-08 | `composite_20261007_2040.csv` | 0.6708 | 0.6600 | 0.6444 | 0.5979 | 0.8123 | 0.4354 | submission #7: learned final ranker (EXP-060) on Lug_Uga/Swa_Ken/Eng_Ken + EXP-055 ensemble on Eng_Uga |
 | 2026-10-07 | `composite_20261007_1017.csv` | 0.6654 | 0.6516 | 0.6409 | 0.5940 | 0.8020 | 0.432 | submission #6: answer-aware selector (EXP-051) on Lug_Uga/Eng_Uga + rescore (EXP-053) on Eng_Uga/Eng_Ken/Swa_Ken |
