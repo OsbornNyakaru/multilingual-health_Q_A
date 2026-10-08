@@ -97,5 +97,8 @@
     "Eng_Eth"
   ],
   "max_minutes": 240.0,
-  "drafted": "2026-10-08T21:55:24+00:00"
+  "drafted": "2026-10-08T21:55:24+00:00",
+  "git_sha": "c7beaab4bea475f81ddd9d8e623aa5d1279999cf",
+  "created": "2026-10-08T21:55:31+00:00",
+  "run_id": "exp080_rag_bgem3_gemma431bi_k3_sub5_ntall_d1bc57"
 }
