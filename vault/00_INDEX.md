@@ -176,6 +176,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-064-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — MBR on EXP-061's adapter: greedy + 4 samples at each of T=0.7/1.0/1.3 (13 candidates), keep the ROUGE medoid; all candidates saved for cross-model MBR (crash; won: none)
 
+- [[EXP-066-rag-bgem3-gemma431bi-k3-sub3-nv150]] — vLLM smoke test: EXP-065's 13-candidate MBR on 150 Val rows, served by vLLM (base + LoRA) instead of HF generate (crash; won: none)
+
+- [[EXP-067-rag-bgem3-gemma431bi-k3-sub3-nhall-vall]] — EXP-065 (13-candidate MBR on EXP-061's adapter) on all held-out + Val rows, generated with vLLM (crash; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
