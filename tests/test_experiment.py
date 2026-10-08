@@ -152,6 +152,30 @@ def test_training_rows_exclude_self_and_stay_in_subset():
         assert all(eq in same for eq, _ in ex) and 1 <= len(ex) <= 2
 
 
+def test_training_rows_respect_lora_train_subsets():
+    keep = sorted(POOL.subset.unique())[:1]
+    rows = E.training_rows({**E.DEFAULT_CONFIG, "embedder": "tfidf-char", "few_shot_k": 1, "lora_train_subsets": keep}, POOL, Ctx())
+    assert rows and {sub for *_, sub in rows} == set(keep)
+    assert len(rows) == int((POOL.subset == keep[0]).sum())
+
+
+def test_lora_targets_skip_vision_towers():
+    import re
+
+    class Fake:  # torch-free stand-in for nn.Module.named_modules()
+        def __init__(self, names):
+            self.names = names
+
+        def named_modules(self):
+            return [(n, None) for n in self.names]
+
+    assert E.lora_targets(Fake(["", "model.layers.0.self_attn.q_proj"])) == "all-linear"
+    names = ["model.language_model.layers.0.self_attn.q_proj", "model.language_model.layers.0.mlp.down_proj",
+             "model.vision_tower.encoder.layers.0.self_attn.q_proj", "model.embed_vision.embedding_projection"]
+    pat = E.lora_targets(Fake(names))
+    assert [n for n in names if re.fullmatch(pat, n)] == names[:2]
+
+
 def test_setup_is_noop_for_non_lora_and_lora_rag_uses_trained_adapter(monkeypatch):
     ctx = Ctx()
     ctx.run_id = "r1"

@@ -109,6 +109,8 @@ DEFAULT_CONFIG: dict = {
     "lora_warmup": 0.03,
     "lora_max_len": 2048,
     "lora_data_frac": 1.0,       # fraction of the training pool (stratified by subset) to train on
+    "lora_train_subsets": None,  # e.g. ["Aka_Gha", "Eng_Gha", "Amh_Eth"]; None = every subset in the pool
+    "lora_bits": 16,             # 16 = bf16 LoRA; 4 = QLoRA (4-bit base), for 27B+ models
     "lora_optim": "adamw_torch",
     "lora_save_steps": 500,      # also uploads the checkpoint to HF so training survives a molab restart
 }
@@ -306,7 +308,8 @@ def build_messages(question: str, subset: str, examples: list[tuple[str, str]]) 
 def render_prompt(tok, msgs: list[dict]) -> str:
     if getattr(tok, "chat_template", None):
         try:
-            return tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+            # enable_thinking=False: Qwen3.x / Gemma 4 templates otherwise open a reasoning block; others ignore it
+            return tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True, enable_thinking=False)
         except Exception:
             pass  # e.g. templates that reject a system role
     return "\n\n".join(m["content"] for m in msgs)
@@ -678,8 +681,10 @@ def setup(config: dict, sets: dict, ctx) -> None:
 def training_rows(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[str, str, list[tuple[str, str]], str]]:
     """(question, answer, examples, subset) per training row; examples = k nearest OTHER pool rows, same subset."""
     frac = float(cfg["lora_data_frac"])
-    rows = pool_df if frac >= 1 else pd.concat(
-        [g.sample(max(1, int(round(len(g) * frac))), random_state=0) for _, g in pool_df.groupby(SUBSET_COL)]
+    subs = cfg.get("lora_train_subsets")
+    rows = pool_df[pool_df[SUBSET_COL].isin(subs)] if subs else pool_df
+    rows = rows if frac >= 1 else pd.concat(
+        [g.sample(max(1, int(round(len(g) * frac))), random_state=0) for _, g in rows.groupby(SUBSET_COL)]
     )
     rows = rows.reset_index(drop=True)
     k = max(1, int(cfg["few_shot_k"]))
@@ -693,6 +698,15 @@ def training_rows(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[str, str,
         ex = [(str(pool_df[INPUT_COL].iloc[j]).strip()[:300], str(pool_df[OUTPUT_COL].iloc[j]).strip()[:cap]) for j in reversed(hits)]
         out.append((str(r[INPUT_COL]), str(r[OUTPUT_COL]).strip(), ex, str(r[SUBSET_COL])))
     return out
+
+
+def lora_targets(model):
+    """'all-linear' for text-only models; for multimodal ones (Gemma 3/4, Qwen3.5+) only the language model's
+    attention/MLP projections, so no adapter weights go to the unused vision/audio towers."""
+    names = [n for n, _ in model.named_modules()]
+    if not any(t in n for n in names for t in ("vision", "audio")):
+        return "all-linear"
+    return r"^(?!.*(vision|audio|multi_modal|embed_)).*\.(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)$"
 
 
 def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
@@ -733,13 +747,27 @@ def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
         data.append({"input_ids": ids, "labels": ([-100] * len(p_ids) + a_ids)[:max_len]})
     ctx.log(f"{len(data):,} training sequences ({skipped} skipped: prompt longer than {max_len} tokens)")
 
-    model = AutoModelForCausalLM.from_pretrained(cfg["model_id"], dtype=torch.bfloat16, device_map="auto", trust_remote_code=True)
+    import transformers
+
+    ctx.log(f"transformers {transformers.__version__}, torch {torch.__version__}; base {cfg['model_id']} ({int(cfg['lora_bits'])}-bit)")
+    load = dict(dtype=torch.bfloat16, device_map="auto", trust_remote_code=True)
+    if int(cfg["lora_bits"]) == 4:
+        from transformers import BitsAndBytesConfig
+
+        load["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+                                                         bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True)
+    model = AutoModelForCausalLM.from_pretrained(cfg["model_id"], **load)
     model.config.use_cache = False
-    model.gradient_checkpointing_enable()
-    model.enable_input_require_grads()
+    if int(cfg["lora_bits"]) == 4:
+        from peft import prepare_model_for_kbit_training
+
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
+    else:
+        model.gradient_checkpointing_enable()
+        model.enable_input_require_grads()
     model = get_peft_model(model, LoraConfig(
         r=int(cfg["lora_r"]), lora_alpha=int(cfg["lora_alpha"]), lora_dropout=float(cfg["lora_dropout"]),
-        bias="none", task_type="CAUSAL_LM", target_modules="all-linear",
+        bias="none", task_type="CAUSAL_LM", target_modules=lora_targets(model),
     ))
 
     fields = {f.name for f in dataclasses.fields(TrainingArguments)}
