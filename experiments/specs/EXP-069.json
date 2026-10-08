@@ -96,5 +96,8 @@
     "Amh_Eth"
   ],
   "max_minutes": 720.0,
-  "drafted": "2026-10-08T18:16:06+00:00"
+  "drafted": "2026-10-08T18:16:06+00:00",
+  "git_sha": "f6c4562d0b1282fffcfd76210ef22be8313aff2e",
+  "created": "2026-10-08T18:16:13+00:00",
+  "run_id": "exp069_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_8862fb"
 }
