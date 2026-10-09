@@ -233,6 +233,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-094-combine-pool-sub3]] — MBR pool: current best answer (weighted) + EXP-089 Qwen3.8-27B LoRA candidates (13 per row) on the generation subsets (ok; won: none)
 
+- [[EXP-092-ret-bgem3-sub1-nhall-tall-vall]] — translate-then-retrieve on Swa_Ken (NLLB swh_Latn -> English; Lug_Uga gained Val +0.019 via EXP-091); held-out + Val + test in one run so the ranker can record straight away (ok; won: none)
+
+- [[EXP-095-combine-ltr-sub1]] — LambdaRank final ranker on Swa_Ken alone plus the NLLB-translated view's top-50 (EXP-092 tr_ids) as a third candidate list (ok; won: Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
