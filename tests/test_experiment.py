@@ -529,3 +529,17 @@ def test_postprocess_join_keeps_structured_answers():
     assert E.postprocess(raw, "Aka_Gha", "join") == "Key steps: 1. Join groups. 2. Volunteer."
     ans, cands = E.merge_vllm_output({"greedy": "Steps:\n\nA.", "samples": []}, "Eng_Gha", "join")
     assert ans == cands[0] == "Steps: A."
+
+
+def test_fit_prompt_drops_least_similar_examples_so_the_question_survives():
+    class Tok:  # one token per word, no chat template
+        def __call__(self, text, add_special_tokens=True):
+            return {"input_ids": text.split()}
+
+    far, near = ("far q", "far answer " * 20), ("near q", "near answer")
+    full, d0 = E.fit_prompt(Tok(), "my question", "Eng_Uga", [far, near], 1000)
+    assert d0 == 0 and "far answer" in full
+    short, d = E.fit_prompt(Tok(), "my question", "Eng_Uga", [far, near], len(full.split()) - 5)
+    assert d == 1 and "far answer" not in short and "near answer" in short and "my question" in short
+    bare, d2 = E.fit_prompt(Tok(), "my question", "Eng_Uga", [far, near], 3)
+    assert d2 == 2 and "my question" in bare

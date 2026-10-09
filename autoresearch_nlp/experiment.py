@@ -389,6 +389,18 @@ def build_messages(question: str, subset: str, examples: list[tuple[str, str]]) 
     return msgs
 
 
+def fit_prompt(tok, question: str, subset: str, examples: list[tuple[str, str]], max_tokens: int) -> tuple[str, int]:
+    """Render the prompt, dropping examples from the front (the least similar: rag puts the nearest last) until it
+    fits max_tokens. Tokenizers truncate from the right, so an over-long prompt would lose the question and the
+    assistant turn, and the model would continue an example mid-word. Returns (prompt, examples dropped)."""
+    examples = list(examples)
+    for dropped in range(len(examples) + 1):
+        prompt = render_prompt(tok, build_messages(question, subset, examples[dropped:]))
+        if dropped == len(examples) or len(tok(prompt)["input_ids"]) <= max_tokens:
+            return prompt, dropped
+    return prompt, len(examples)
+
+
 def render_prompt(tok, msgs: list[dict]) -> str:
     if getattr(tok, "chat_template", None):
         try:
@@ -462,10 +474,12 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
     todo = rows[~rows[ID_COL].astype(str).isin(answers.keys())].reset_index(drop=True)
     if todo.empty:
         return
-    prompts = {
-        str(r[ID_COL]): render_prompt(tok, build_messages(str(r[INPUT_COL]), str(r[SUBSET_COL]), examples_for(str(r[ID_COL]), str(r[SUBSET_COL]))))
-        for _, r in todo.iterrows()
-    }
+    prompts, dropped = {}, 0
+    for _, r in todo.iterrows():
+        i, subset = str(r[ID_COL]), str(r[SUBSET_COL])
+        prompts[i], d = fit_prompt(tok, str(r[INPUT_COL]), subset, examples_for(i, subset), int(cfg["max_input_tokens"]))
+        dropped += d
+    ctx.log(f"prompts: {dropped:,} examples dropped to fit max_input_tokens={cfg['max_input_tokens']}")
     batch_size, every = int(cfg["infer_batch"]), int(cfg["checkpoint_every"])
     batches: list[tuple[str, list[str]]] = []
     for subset, grp in todo.groupby(SUBSET_COL):
@@ -610,13 +624,15 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
     bounds_by_subset = length_bounds(cfg, tok, pool_df)
     ctx.log("max_new_tokens per subset: " + ", ".join(f"{k}={v['max_new_tokens']}" for k, v in sorted(bounds_by_subset.items())))
     subset_of = dict(zip(todo[ID_COL].astype(str), todo[SUBSET_COL].astype(str)))
-    reqs = []
+    reqs, dropped = [], 0
     for _, r in todo.iterrows():
         i, subset = str(r[ID_COL]), str(r[SUBSET_COL])
-        prompt = render_prompt(tok, build_messages(str(r[INPUT_COL]), subset, examples_for(i, subset)))
+        prompt, d = fit_prompt(tok, str(r[INPUT_COL]), subset, examples_for(i, subset), int(cfg["max_input_tokens"]))
+        dropped += d
         ids = tok(prompt, truncation=True, max_length=int(cfg["max_input_tokens"]))["input_ids"]  # same ids as the HF path
         b = bounds_by_subset.get(subset, DEFAULT_BOUNDS)
         reqs.append({"id": i, "ids": ids, "max_tokens": b["max_new_tokens"], "min_tokens": b["min_new_tokens"]})
+    ctx.log(f"prompts: {dropped:,} examples dropped to fit max_input_tokens={cfg['max_input_tokens']}")
 
     adapter, rank = resolve_adapter(cfg["adapter"], ctx), 0
     if adapter:
