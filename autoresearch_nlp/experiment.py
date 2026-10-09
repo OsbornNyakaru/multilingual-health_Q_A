@@ -114,6 +114,10 @@ DEFAULT_CONFIG: dict = {
     "choose_from": None,         # "run:<run_id>" whose *_preds.csv carry cand_ids
     "choose_k": 5,
     "choose_chars": 600,         # cap on each option's text in the prompt
+    "choose_questions": False,   # show each option's matched pool question next to its answer
+    "choose_train": False,       # LoRA-train the chooser first (lora_* settings) on pool-only top-k lists
+    "choose_train_subsets": None,  # e.g. the closed subsets; None = every subset in the pool
+    "choose_train_min_overlap": 0.5,  # skip training lists whose best option overlaps the gold less than this
     "diag_k": 0,                 # >0: record each row's top-k candidate pool IDs (before + after rerank) for recall@k
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
@@ -637,8 +641,10 @@ LANG_NAMES = {"Eng": "English", "Lug": "Luganda", "Swa": "Swahili", "Aka": "Akan
 LETTERS = "ABCDEFGHIJ"
 
 
-def choose_messages(question: str, subset: str, options: list[str]) -> list[dict]:
-    body = "\n\n".join(f"{LETTERS[k]}. {o}" for k, o in enumerate(options))
+def choose_messages(question: str, subset: str, options: list[str], questions: list[str] | None = None) -> list[dict]:
+    """questions: the pool question each option was matched from, shown under its answer (choose_questions)."""
+    body = "\n\n".join(f"{LETTERS[k]}. {o}" + (f"\n(Dataset question with this answer: {questions[k]})" if questions else "")
+                       for k, o in enumerate(options))
     text = CHOOSE_PROMPT.format(lang=LANG_NAMES.get(subset[:3], "English"), n=len(options), question=question.strip(),
                                 options=body, first=LETTERS[0], last=LETTERS[len(options) - 1])
     return [{"role": "user", "content": text}]
@@ -698,6 +704,47 @@ def load_run_cands(ref: str, ctx) -> dict[str, list[str]]:
     return out
 
 
+def chooser_rows(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> list[tuple[list[dict], str]]:
+    """(messages, target letter) per training list, from the pool alone. Each pool row is a query; its options
+    are the top choose_k distinct answers of the OTHER pool rows (embedder, then rerank_model when set), so the
+    lists are honest (the retriever never trained on them). Target = the option closest to the row's own
+    answer (answer_overlap); lists whose best option is below choose_train_min_overlap are skipped. Options
+    are cyclically shifted at random so the chooser learns content, not position."""
+    import random
+
+    rng = random.Random(seed)
+    pool = pool_df.reset_index(drop=True)
+    subs = cfg["choose_train_subsets"]
+    rows = pool[pool[SUBSET_COL].isin(subs)] if subs else pool
+    ids = pool[ID_COL].astype(str).to_numpy()
+    answer_of = dict(zip(ids, pool[OUTPUT_COL].astype(str)))
+    question_of = dict(zip(ids, pool[INPUT_COL].astype(str)))
+    k_nn = int(cfg["rerank_k"]) if cfg["rerank_model"] else 4 * int(cfg["choose_k"])
+    nn = neighbours(cfg, rows, pool, ctx, k=k_nn + 1)
+    nn = {i: [h for h in hits if ids[h[0]] != i][:k_nn] for i, hits in nn.items()}  # leave the row itself out
+    if cfg["rerank_model"]:
+        nn = rerank(cfg, rows, pool, nn, ctx)
+    k, cap, floor = int(cfg["choose_k"]), int(cfg["choose_chars"]), float(cfg["choose_train_min_overlap"])
+    out, low = [], 0
+    for _, r in rows.iterrows():
+        i, gold = str(r[ID_COL]), str(r[OUTPUT_COL]).strip()
+        opts = distinct_options([ids[j] for j, _ in nn.get(i, [])], answer_of, k)
+        if len(opts) < 2:
+            continue
+        ov = [answer_overlap(answer_of[c].strip(), gold) for c in opts]
+        best = max(range(len(opts)), key=lambda j: (ov[j], -j))
+        if ov[best] < floor:
+            low += 1
+            continue
+        n, s = len(opts), rng.randrange(len(opts))
+        order = [(s + j) % n for j in range(n)]
+        qs = [question_of[opts[o]].strip()[:300] for o in order] if cfg["choose_questions"] else None
+        msgs = choose_messages(str(r[INPUT_COL]), str(r[SUBSET_COL]), [answer_of[opts[o]].strip()[:cap] for o in order], qs)
+        out.append((msgs, LETTERS[order.index(best)]))
+    ctx.log(f"chooser training: {len(out):,} lists ({low:,} skipped: no option within {floor} of the gold)")
+    return out
+
+
 def llm_choose(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, answers: dict, meta: dict) -> None:
     import json
     from pathlib import Path
@@ -708,6 +755,7 @@ def llm_choose(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, ans
         raise ValueError("llm_choose needs choose_from='run:<run_id>'")
     cands = load_run_cands(cfg["choose_from"], ctx)
     answer_of = dict(zip(pool_df[ID_COL].astype(str), pool_df[OUTPUT_COL].astype(str)))
+    question_of = dict(zip(pool_df[ID_COL].astype(str), pool_df[INPUT_COL].astype(str)))
     k, cap = int(cfg["choose_k"]), int(cfg["choose_chars"])
     mem = free_gpu_for_vllm(cfg, ctx)
     tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
@@ -731,9 +779,11 @@ def llm_choose(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, ans
             continue
         n = len(opts)
         texts = [answer_of[c].strip()[:cap] for c in opts]
+        qtexts = [question_of[c].strip()[:300] for c in opts]
         for s in range(n):
             order = [(s + j) % n for j in range(n)]
-            prompt = render_prompt(tok, choose_messages(str(r[INPUT_COL]), subset, [texts[o] for o in order]))
+            qs = [qtexts[o] for o in order] if cfg["choose_questions"] else None
+            prompt = render_prompt(tok, choose_messages(str(r[INPUT_COL]), subset, [texts[o] for o in order], qs))
             reqs.append({"id": f"{i}#{s}", "ids": tok(prompt, add_special_tokens=False)["input_ids"]})
     if no_cands:
         ctx.log(f"WARNING: {no_cands:,} rows have no candidates in {cfg['choose_from']}; they get no answer")
@@ -1079,7 +1129,8 @@ def setup(config: dict, sets: dict, ctx) -> None:
     val's (Train), else test's (Train + Val). Eval rows are never in that pool.
     """
     cfg = {**DEFAULT_CONFIG, **(config or {})}
-    if cfg["mode"] != "lora_rag" and not cfg["rerank_train"] and not cfg["embedder_train"]:
+    trains_lora = cfg["mode"] == "lora_rag" or (cfg["mode"] == "llm_choose" and cfg["choose_train"])
+    if not trains_lora and not cfg["rerank_train"] and not cfg["embedder_train"]:
         return
     name = next(n for n in ("held_out", "val", "test") if n in sets)
     ctx.log(f"training on the {name} pool")
@@ -1088,7 +1139,7 @@ def setup(config: dict, sets: dict, ctx) -> None:
         cfg["embedder"] = ctx.cache[_embedder_key(ctx, cfg)]  # the reranker/LoRA below train on its candidates
     if cfg["rerank_train"]:
         ctx.cache[_reranker_key(ctx, cfg)] = train_rerankers(cfg, sets[name][1], ctx)
-    if cfg["mode"] == "lora_rag":
+    if trains_lora:
         ctx.cache[_adapter_key(ctx, cfg)] = train_lora(cfg, sets[name][1], ctx)
 
 
@@ -1112,6 +1163,13 @@ def training_rows(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[str, str,
         ex = [(str(pool_df[INPUT_COL].iloc[j]).strip()[:300], str(pool_df[OUTPUT_COL].iloc[j]).strip()[:cap]) for j in reversed(hits)]
         out.append((str(r[INPUT_COL]), str(r[OUTPUT_COL]).strip(), ex, str(r[SUBSET_COL])))
     return out
+
+
+def lora_sequences(cfg: dict, pool_df: pd.DataFrame, ctx) -> list[tuple[list[dict], str]]:
+    """(prompt messages, target) per training sequence: chooser lists for llm_choose, else RAG answers."""
+    if cfg["mode"] == "llm_choose":
+        return chooser_rows(cfg, pool_df, ctx)
+    return [(build_messages(q, subset, ex), a) for q, a, ex, subset in training_rows(cfg, pool_df, ctx)]
 
 
 def lora_targets(model):
@@ -1143,7 +1201,7 @@ def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
         ctx.log("found a finished adapter for this run on HF; skipping training")
         return str(adapter_dir)
 
-    examples = training_rows(cfg, pool_df, ctx)
+    examples = lora_sequences(cfg, pool_df, ctx)
     if hasattr(ctx, "free_model"):
         ctx.free_model()
     tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
@@ -1151,8 +1209,8 @@ def train_lora(cfg: dict, pool_df: pd.DataFrame, ctx) -> str:
         tok.pad_token = tok.eos_token
     tok.padding_side = "right"
     max_len, data, skipped = int(cfg["lora_max_len"]), [], 0
-    for q, a, ex, subset in examples:
-        p_ids = tok(render_prompt(tok, build_messages(q, subset, ex)), add_special_tokens=False)["input_ids"]
+    for msgs, a in examples:
+        p_ids = tok(render_prompt(tok, msgs), add_special_tokens=False)["input_ids"]
         a_ids = tok(a + (tok.eos_token or ""), add_special_tokens=False)["input_ids"]
         if len(p_ids) > max_len - 32:
             skipped += 1
@@ -1256,6 +1314,11 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     meta: dict[str, dict] = {}
     cfg["adapter"] = resolve_adapter(cfg["adapter"], ctx)
     if mode == "llm_choose":
+        if cfg["choose_train"]:
+            key = _adapter_key(ctx, cfg)
+            if key not in ctx.cache:  # older runner without the setup step: train inline on this set's pool
+                ctx.cache[key] = train_lora(cfg, pool_df, ctx)
+            cfg["adapter"] = ctx.cache[key]
         llm_choose(cfg, eval_df, pool_df, ctx, answers, meta)
         return answers, meta
     if cfg["embedder_train"]:

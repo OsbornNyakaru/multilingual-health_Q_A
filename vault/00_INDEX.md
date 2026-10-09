@@ -45,6 +45,7 @@ TABLE id, status FROM "hypotheses" WHERE status = "open" OR status = "testing" S
 - [[H-013-whitespace-tokenizer-matches-grader]] — open
 - [[H-014-bigger-generator]] — open
 - [[H-015-llm-chooser-over-top5]] — rejected (EXP-085)
+- [[H-016-fine-tuned-listwise-chooser]] — testing (EXP-087)
 
 Closed or superseded: [[H-001-zero-shot-aya-floor]], [[H-007-afrolm-reranker]], [[H-009-gemma-aya-adapter-ensemble]].
 

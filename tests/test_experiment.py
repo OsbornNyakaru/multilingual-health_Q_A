@@ -447,3 +447,48 @@ def test_choose_messages_lists_every_option_with_letters():
     m = E.choose_messages(" Is malaria contagious? ", "Lug_Uga", ["No.", "Yes."])
     assert len(m) == 1 and "Luganda" in m[0]["content"] and "A. No.\n\nB. Yes." in m[0]["content"]
     assert "(A-B)" in m[0]["content"] and "Question: Is malaria contagious?" in m[0]["content"]
+
+
+CHOOSE_POOL = pd.DataFrame({
+    "ID": [f"c{i}" for i in range(5)],
+    "input": ["malaria prevention pregnancy", "prevent malaria pregnant women", "malaria pregnancy bed net",
+              "hiv symptoms adults", "hiv signs in adults"],
+    "output": ["sleep under a treated bed net", "sleep under a treated bed net", "take preventive malaria drugs",
+               "fever rash and weight loss", "fever rash and weight loss"],
+    "subset": ["Eng_Uga"] * 5,
+})
+
+
+def test_chooser_rows_leave_self_out_and_target_the_gold_answer():
+    cfg = {**E.DEFAULT_CONFIG, "mode": "llm_choose", "embedder": "tfidf-char", "choose_k": 3, "choose_questions": True}
+    rows = E.chooser_rows(cfg, CHOOSE_POOL, Ctx())
+    assert rows, "every row with a same-answer neighbour yields a list"
+    for msgs, letter in rows:
+        text = msgs[0]["content"]
+        opts = {L: text.split(f"\n\n{L}. ", 1)[1].split("\n", 1)[0] for L in "ABC" if f"\n\n{L}. " in text}
+        q = text.split("Question: ", 1)[1].split("\n", 1)[0]
+        gold = CHOOSE_POOL.set_index("input").loc[q, "output"]
+        assert opts[letter] == gold  # target letter points at the row's own answer, wherever the shift put it
+        assert f"(Dataset question with this answer: {q})" not in text  # the row itself is never an option
+    low = E.chooser_rows({**cfg, "choose_train_min_overlap": 1.01}, CHOOSE_POOL, Ctx())
+    assert low == []
+
+
+def test_choose_train_feeds_the_trained_adapter_to_the_chooser(monkeypatch):
+    ctx = Ctx()
+    ctx.run_id = "r2"
+    monkeypatch.setattr(E, "train_lora", lambda cfg, pool, c: f"/chooser/{cfg['mode']}/{len(pool)}")
+    cfg = {"mode": "llm_choose", "choose_from": "run:x", "choose_train": True, "embedder": "tfidf-char"}
+    E.setup(cfg, {"held_out": (EVAL, POOL)}, ctx)
+    seen = {}
+    monkeypatch.setattr(E, "llm_choose", lambda c, ev, pool, cx, answers, meta: seen.setdefault("adapter", c["adapter"]))
+    E.run(cfg, EVAL, POOL, ctx)
+    assert seen["adapter"] == "/chooser/llm_choose/6"
+    E.setup({**cfg, "choose_train": False}, {"held_out": (EVAL, POOL)}, Ctx())  # zero-shot chooser: no training
+
+
+def test_lora_sequences_pick_chooser_lists_or_rag_answers(monkeypatch):
+    monkeypatch.setattr(E, "chooser_rows", lambda cfg, pool, ctx: [("M", "B")])
+    assert E.lora_sequences({**E.DEFAULT_CONFIG, "mode": "llm_choose"}, POOL, Ctx()) == [("M", "B")]
+    seqs = E.lora_sequences({**E.DEFAULT_CONFIG, "mode": "lora_rag", "embedder": "tfidf-char", "few_shot_k": 1}, POOL, Ctx())
+    assert len(seqs) == len(POOL) and seqs[0][1] == POOL["output"].iloc[0] and seqs[0][0][-1]["role"] == "user"
