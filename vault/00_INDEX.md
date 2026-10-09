@@ -231,6 +231,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-091-combine-ltr-sub1]] — EXP-060's learned final ranker on Lug_Uga plus the NLLB-translated view's top-50 (EXP-088 tr_ids) as a third candidate list (FND-004 translate-then-retrieve) (ok; won: Lug_Uga)
 
+- [[EXP-094-combine-pool-sub3]] — MBR pool: current best answer (weighted) + EXP-089 Qwen3.8-27B LoRA candidates (13 per row) on the generation subsets (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
