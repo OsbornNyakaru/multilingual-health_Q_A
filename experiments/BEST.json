@@ -54,13 +54,13 @@
     "since": "2026-10-08T04:32:27+00:00"
   },
   "Lug_Uga": {
-    "run_id": "exp060_combine_ltr_sub4_eed26c",
-    "exp": "EXP-060",
+    "run_id": "exp091_combine_ltr_sub1_489d9a",
+    "exp": "EXP-091",
     "scores": {
-      "held_out": 0.5104,
-      "val": 0.4932
+      "held_out": 0.5205,
+      "val": 0.5118
     },
-    "since": "2026-10-07T17:40:03+00:00"
+    "since": "2026-10-09T20:34:26+00:00"
   },
   "Swa_Ken": {
     "run_id": "exp062_combine_ltr_sub4_5f85f5",

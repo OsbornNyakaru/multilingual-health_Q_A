@@ -6,14 +6,14 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
+composite test-mix: **held-out 0.4576**, **val 0.4527** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
 | Aka_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2216 | 0.2162 |
 | Eng_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2741 | 0.2770 |
-| Lug_Uga | 14.3% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.5104 | 0.4932 |
+| Lug_Uga | 14.3% | EXP-091 `exp091_combine_ltr_sub1_489d9a` | 0.5205 | 0.5118 |
 | Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
 | Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
 | Amh_Eth | 2.3% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.1516 | 0.1810 |
@@ -23,6 +23,9 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-091 | `exp091_combine_ltr_sub1_489d9a` | 2026-10-09 20:34 | combine | held_out=all, val=all | 0.5205 | 0.5118 | Lug_Uga | ok | EXP-060's learned final ranker on Lug_Uga plus the NLLB-translated view's top-50 (EXP-088 tr_ids) as a third candidate list (FND-004 translate-then-retrieve) |
+| EXP-090 | `exp090_ret_bgem3_sub1_ntall_e42cae` | 2026-10-09 20:17 | — | test=all |  |  | — | ok | EXP-088 on the test set (Lug_Uga): translated-view rankings feed the Lug_Uga combiner (ltr.py EXP-088:tr_ids picker) |
+| EXP-089 | `exp089_rag_bgem3_qwen3827b_k3_sub3_nhall-vall_6c34df` | 2026-10-09 20:14 | paragraphs | held_out=all, val=all | 0.1414 | 0.1406 | — | ok | EXP-084 rerun with paragraphs=join: Qwen3.8 answers in structured lists and postprocess kept only the first paragraph (median 12-21 words, Val 0.08-0.16); also stores raw candidates (raw_cands) for offline re-postprocessing |
 | EXP-088 | `exp088_ret_bgem3_sub1_nhall-vall_a31b27` | 2026-10-09 18:10 | diag_k, translate_model | held_out=all, val=all | 0.4073 | 0.4200 | — | ok | translate-then-retrieve on Lug_Uga: NLLB-200 1.3B translates Luganda questions (pool + eval) to English; BGE-M3 on the original, the translation, and a 50/50 blend; records each view's top-50 for recall@k (FND-004) |
 | EXP-087 | `exp087_llm_choose_rrb_qwen257bin_sub5_nhall-vall_50b2f1` | 2026-10-09 18:08 | choose_questions, choose_train, choose_train_subsets, lora_batch, lora_dropout, lora_epochs, lora_lr, model_id, rerank_k, rerank_model, rerank_on | held_out=all, val=all | 0.5827 | 0.5745 | — | ok | fine-tuned listwise chooser: Qwen2.5-7B LoRA trained on leave-one-out top-5 lists from the pool (base BGE-M3 + reranker), target = option closest to the gold, random cyclic shifts; options show their matched Train question; inference on EXP-055's top-5 with shift averaging |
 | EXP-084 | `exp084_rag_bgem3_qwen3827b_k3_sub3_nhall-vall_e80aaa` | 2026-10-09 15:42 | adapter, model_id, vllm_max_seqs | held_out=all, val=all | 0.1198 | 0.1201 | — | ok | 13-candidate vLLM generation with EXP-083's Qwen3.8-27B adapter (max_num_seqs 256; EXP-083's own generation hits the Mamba-cache limit) |
@@ -125,6 +128,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-091 | held_out |  |  |  | 0.5205 |  |  |  |  |
+| EXP-091 | val |  |  |  | 0.5118 |  |  |  |  |
+| EXP-089 | held_out |  | 0.1042 | 0.1835 |  |  |  | 0.1025 |  |
+| EXP-089 | val |  | 0.1009 | 0.1829 |  |  |  | 0.1208 |  |
 | EXP-088 | held_out |  |  |  | 0.4073 |  |  |  |  |
 | EXP-088 | val |  |  |  | 0.4200 |  |  |  |  |
 | EXP-087 | held_out | 0.6390 |  |  | 0.4703 | 0.5687 | 0.6303 |  | 0.5066 |

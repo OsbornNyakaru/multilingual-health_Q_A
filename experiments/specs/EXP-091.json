@@ -1,0 +1,33 @@
+{
+  "exp": "EXP-091",
+  "hypothesis": "H-017",
+  "description": "EXP-060's learned final ranker on Lug_Uga plus the NLLB-translated view's top-50 (EXP-088 tr_ids) as a third candidate list (FND-004 translate-then-retrieve)",
+  "parent": "exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "ltr",
+      "pickers": "EXP-055,EXP-051,EXP-088:tr_ids",
+      "gen": "EXP-038",
+      "top": 20,
+      "model": "HistGradientBoostingRegressor",
+      "feats": "v1",
+      "per_subset": false
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Lug_Uga"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-09T20:34:26+00:00",
+  "created": "2026-10-09T20:34:26+00:00",
+  "git_sha": "3de731f56f6026232d87ecda3cdcc4912ad78da9",
+  "run_id": "exp091_combine_ltr_sub1_489d9a"
+}

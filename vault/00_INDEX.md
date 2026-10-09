@@ -225,6 +225,12 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-088-ret-bgem3-sub1-nhall-vall]] — translate-then-retrieve on Lug_Uga: NLLB-200 1.3B translates Luganda questions (pool + eval) to English; BGE-M3 on the original, the translation, and a 50/50 blend; records each view's top-50 for recall@k (FND-004) (ok; won: none)
 
+- [[EXP-089-rag-bgem3-qwen3827b-k3-sub3-nhall-vall]] — EXP-084 rerun with paragraphs=join: Qwen3.8 answers in structured lists and postprocess kept only the first paragraph (median 12-21 words, Val 0.08-0.16); also stores raw candidates (raw_cands) for offline re-postprocessing (ok; won: none)
+
+- [[EXP-090-ret-bgem3-sub1-ntall]] — EXP-088 on the test set (Lug_Uga): translated-view rankings feed the Lug_Uga combiner (ltr.py EXP-088:tr_ids picker) (ok; won: none)
+
+- [[EXP-091-combine-ltr-sub1]] — EXP-060's learned final ranker on Lug_Uga plus the NLLB-translated view's top-50 (EXP-088 tr_ids) as a third candidate list (FND-004 translate-then-retrieve) (ok; won: Lug_Uga)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
