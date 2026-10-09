@@ -216,6 +216,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-084-rag-bgem3-qwen3827b-k3-sub3-nhall-vall]] — 13-candidate vLLM generation with EXP-083's Qwen3.8-27B adapter (max_num_seqs 256; EXP-083's own generation hits the Mamba-cache limit) (crash; won: none)
 
+- [[EXP-085-llm-choose-gemma431bi-sub5-nhall-vall]] — PROBE: base Gemma-4-31B as a listwise chooser over EXP-055's top-5 distinct answers (option-letter logprobs, 5 cyclic shifts); does it pick the gold more often than the ranker? (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

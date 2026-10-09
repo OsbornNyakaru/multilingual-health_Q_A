@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-085 | `exp085_llm_choose_gemma431bi_sub5_nhall-vall_d9248a` | 2026-10-09 10:34 | choose_from, mode, model_id | held_out=all, val=all | 0.5064 | 0.5004 | — | ok | PROBE: base Gemma-4-31B as a listwise chooser over EXP-055's top-5 distinct answers (option-letter logprobs, 5 cyclic shifts); does it pick the gold more often than the ranker? |
 | EXP-086 | `exp086_combine_ltr_sub4_e0ac5e` | 2026-10-09 07:09 | combine | held_out=all, val=all | 0.5973 | 0.5953 | — | ok | LambdaRank with 1st-place selector features (pool near-duplicate mass, agreement with other candidates, per-question z-scores and gaps) |
 | EXP-082 | `exp082_lora_rag_qwen3827b_sub3_nv60_a0d104` | 2026-10-09 04:38 | adapter, lora_data_frac, mode, model_id | val=60 |  |  | — | crash | Smoke: Qwen3.8-27B QLoRA (2% of rows) then 13-candidate vLLM generation; checks training speed and vLLM LoRA support |
 | EXP-080 | `exp080_rag_bgem3_gemma431bi_k3_sub5_ntall_d1bc57` | 2026-10-09 00:12 | — | test=all |  |  | — | ok | Test predictions for EXP-079 (13-candidate Gemma on the five retrieval subsets) |
@@ -120,6 +121,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-085 | held_out | 0.5537 |  |  | 0.4438 | 0.5012 | 0.4907 |  | 0.3747 |
+| EXP-085 | val | 0.5350 |  |  | 0.4539 | 0.5093 | 0.4995 |  | 0.3310 |
 | EXP-086 | held_out | 0.6332 |  |  | 0.4924 | 0.6331 | 0.6233 |  |  |
 | EXP-086 | val | 0.6298 |  |  | 0.4932 | 0.6330 | 0.6187 |  |  |
 | EXP-081 | held_out | 0.6299 |  |  | 0.5104 | 0.6320 | 0.6270 |  | 0.5409 |
