@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-080 | `exp080_rag_bgem3_gemma431bi_k3_sub5_ntall_d1bc57` | 2026-10-09 00:12 | — | test=all |  |  | — | ok | Test predictions for EXP-079 (13-candidate Gemma on the five retrieval subsets) |
 | EXP-081 | `exp081_combine_pool_sub5_80a5ef` | 2026-10-08 23:46 | combine | held_out=all, val=all | 0.5981 | 0.5876 | — | ok | pool: best run's answer (weight w) + EXP-079's 13 Gemma candidates |
 | EXP-079 | `exp079_rag_bgem3_gemma431bi_k3_sub5_nhall-vall_94b2de` | 2026-10-08 23:37 | — | held_out=all, val=all | 0.3429 | 0.3368 | — | ok | 13-candidate Gemma (EXP-061 adapter, vLLM) on the five retrieval subsets: candidates to pool with the ranker's pick |
 | EXP-078 | `exp078_rag_bgem3_gemma431bi_k3_sub2_ntall_9a412a` | 2026-10-08 21:47 | — | test=all |  |  | — | ok | EXP-077 test predictions (Aka_Gha, Eng_Gha): 13-candidate MBR via vLLM on EXP-061's adapter |

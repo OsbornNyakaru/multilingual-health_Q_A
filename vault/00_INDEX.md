@@ -206,6 +206,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-081-combine-pool-sub5]] — pool: best run's answer (weight w) + EXP-079's 13 Gemma candidates (ok; won: none)
 
+- [[EXP-080-rag-bgem3-gemma431bi-k3-sub5-ntall]] — Test predictions for EXP-079 (13-candidate Gemma on the five retrieval subsets) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
