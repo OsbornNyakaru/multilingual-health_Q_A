@@ -105,5 +105,8 @@
     "Lug_Uga"
   ],
   "max_minutes": 60.0,
-  "drafted": "2026-10-09T18:32:05+00:00"
+  "drafted": "2026-10-09T18:32:05+00:00",
+  "git_sha": "bcb2375241df825c4c36e6991c659ba048f1657b",
+  "created": "2026-10-09T18:32:30+00:00",
+  "run_id": "exp090_ret_bgem3_sub1_ntall_e42cae"
 }
