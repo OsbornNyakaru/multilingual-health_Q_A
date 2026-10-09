@@ -125,6 +125,9 @@ DEFAULT_CONFIG: dict = {
     "choose_train_subsets": None,  # e.g. the closed subsets; None = every subset in the pool
     "choose_train_min_overlap": 0.5,  # skip training lists whose best option overlaps the gold less than this
     "diag_k": 0,                 # >0: record each row's top-k candidate pool IDs (before + after rerank) for recall@k
+    "oof_folds": 0,              # >0: setup also writes K-fold cross-fitted top-diag_k lists for the training pool's own
+    "oof_subsets": None,         # questions (oof_lists: final-ranker training data); None = the eval set's subsets
+    "oof_seed": 0,
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
     # Defaults = the 11th-place reference recipe.
@@ -1186,6 +1189,146 @@ def train_reranker(cfg: dict, pool_df: pd.DataFrame, ctx, seed: int = 0) -> str:
     return str(out)
 
 
+# ── cross-fitted candidate lists for the pool's own questions (oof_folds) ───
+
+
+class _FoldCtx:
+    """ctx for one fold: its own work dir and no HF upload/download (fold models are throwaway; only lists persist)."""
+
+    upload_folder = None
+    download_folder = None
+
+    def __init__(self, ctx, work_dir):
+        self._ctx, self.work_dir = ctx, work_dir
+
+    def __getattr__(self, name):
+        return getattr(self._ctx, name)
+
+
+def _scored(ids, hits, k: int) -> str:
+    return "|".join(f"{ids[j]}:{sc:.5g}" for j, sc in hits[:k])
+
+
+def _fuse(per_fold: list[str], k: int) -> str:
+    """Mean score over folds for every pool ID any fold listed ("id:score|..." per fold); a fold that did not list
+    an ID gives it that fold's lowest listed score. Returns the top-k IDs, best first."""
+    folds = [dict((x.rsplit(":", 1)[0], float(x.rsplit(":", 1)[1])) for x in str(f).split("|") if ":" in x) for f in per_fold]
+    folds = [d for d in folds if d]
+    if not folds:
+        return ""
+    floor = [min(d.values()) for d in folds]
+    mean = {i: sum(d.get(i, fl) for d, fl in zip(folds, floor)) / len(folds) for i in set().union(*folds)}
+    return "|".join(sorted(mean, key=lambda i: -mean[i])[:k])
+
+
+def _oof_key(ctx, cfg: dict) -> tuple:
+    return ("oof_eval_lists",) + _adapter_key(ctx, cfg)[1:]
+
+
+def oof_lists(cfg: dict, sets: dict, name: str, subsets: list[str], ctx) -> dict[str, dict[str, str]]:
+    """K-fold cross-fitting so the final ranker can train on the training pool's own questions (far more than
+    held-out + Val) with features from the same models it sees at test time.
+
+    For fold f the embedder and selectors (per embedder_train / rerank_train) train on sets[name]'s pool minus
+    fold f. Then:
+      - each fold-f pool question retrieves from the whole pool minus itself (models never saw it, the pool holds
+        everything else, as at test time) -> oof_lists.csv.gz: ID, subset, fold, ret_ids, cand_ids (selector
+        ensemble), cand1_ids (seed-0 selector)[, tr_ids];
+      - every eval set's questions are scored by the same fold models -> oof_eval_folds.csv.gz (scored lists).
+    After the last fold each eval question's lists are the fold-averaged scores (1st place's lesson: a ranker
+    trained on fold-model features must see fold-model features at test time, not a refit on everything).
+    tr_ids: translated view with the base embedder (EXP-088), when translate_model is set. Both CSVs upload
+    after each fold to <run>/oof/ and a restart resumes from them. Returns {eval ID: {col: ids}}."""
+    import shutil
+    from pathlib import Path
+
+    import numpy as np
+
+    k_folds, dk = int(cfg["oof_folds"]), max(1, int(cfg["diag_k"]))
+    base_dir = Path(_work_dir(ctx, cfg)) / "oof"
+    out_dir = base_dir / "lists"
+    train_csv, eval_csv = out_dir / "oof_lists.csv.gz", out_dir / "oof_eval_folds.csv.gz"
+    upload, download = getattr(ctx, "upload_folder", None), getattr(ctx, "download_folder", None)
+    if not train_csv.exists() and download:
+        download("oof", out_dir)
+    rows = pd.read_csv(train_csv, dtype=str).fillna("").to_dict("records") if train_csv.exists() else []
+    erows = pd.read_csv(eval_csv, dtype=str).fillna("").to_dict("records") if eval_csv.exists() else []
+    done = {int(r["fold"]) for r in rows}
+    pool = sets[name][1].reset_index(drop=True)
+    ids = pool[ID_COL].astype(str).to_numpy()
+    fold_of = np.random.default_rng(int(cfg["oof_seed"])).permutation(len(pool)) % k_folds
+    asked = pool[SUBSET_COL].isin(subsets).to_numpy()
+    base = {**cfg, "translate_model": None}  # the main lists stay untranslated, like the pickers they stand in for
+    cols = ("ret_ids", "cand_ids", "cand1_ids")
+
+    def lists(fcfg, q, qpool, drop_self: bool) -> dict[str, dict[str, list]]:
+        pids = qpool[ID_COL].astype(str).to_numpy()
+        k = max(dk, int(cfg["rerank_k"]) if fcfg["rerank_model"] else 0) + int(drop_self)
+        nn = {i: [(j, sc) for j, sc in hits if not (drop_self and pids[j] == i)][: k - int(drop_self)]
+              for i, hits in neighbours(fcfg, q, qpool, ctx, k=k).items()}
+        out = {i: {"ret_ids": hits} for i, hits in nn.items()}
+        ens = fcfg["rerank_model"]
+        if ens:
+            for i, hits in rerank(fcfg, q, qpool, nn, ctx).items():
+                out[i]["cand_ids"] = hits
+            if isinstance(ens, (list, tuple)):
+                for i, hits in rerank({**fcfg, "rerank_model": ens[0]}, q, qpool, nn, ctx).items():
+                    out[i]["cand1_ids"] = hits
+        for d in out.values():
+            d.setdefault("cand_ids", d["ret_ids"])
+            d.setdefault("cand1_ids", d["cand_ids"])
+        return out
+
+    for f in range(k_folds):
+        if f in done:
+            continue
+        fdir = base_dir / f"fold{f}"
+        fctx, fcfg = _FoldCtx(ctx, fdir), dict(base)
+        train = pool[fold_of != f]
+        ctx.log(f"oof fold {f + 1}/{k_folds}: training on {len(train):,} of {len(pool):,} pool rows")
+        if cfg["embedder_train"]:
+            fcfg["embedder"] = train_embedder(fcfg, train, fctx)
+        if cfg["rerank_train"]:
+            fcfg["rerank_model"] = train_rerankers(fcfg, train, fctx)
+        q = pool[(fold_of == f) & asked].reset_index(drop=True)
+        sub_of = dict(zip(q[ID_COL].astype(str), q[SUBSET_COL].astype(str)))
+        for i, d in lists(fcfg, q, pool, drop_self=True).items():
+            rows.append({ID_COL: i, SUBSET_COL: sub_of[i], "fold": str(f),
+                         **{c: "|".join(ids[j] for j, _ in d[c][:dk]) for c in cols}})
+        for set_name, (ev, epool) in sets.items():
+            ev = ev[ev[SUBSET_COL].isin(subsets)].reset_index(drop=True)
+            epool = epool.reset_index(drop=True)
+            if ev.empty:
+                continue
+            pids = epool[ID_COL].astype(str).to_numpy()
+            for i, d in lists(fcfg, ev, epool, drop_self=False).items():
+                erows.append({ID_COL: i, "set": set_name, "fold": str(f), **{c: _scored(pids, d[c], dk) for c in cols}})
+        out_dir.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(rows).to_csv(train_csv, index=False)
+        pd.DataFrame(erows).to_csv(eval_csv, index=False)
+        if upload:
+            upload(out_dir, "oof")
+        ctx.log(f"oof fold {f + 1}/{k_folds}: {int((fold_of == f)[asked].sum()):,} pool questions + eval sets listed")
+        for key in [c for c in ctx.cache if str(fdir) in str(c)]:  # this fold's cross-encoders and pool vectors
+            del ctx.cache[key]
+        shutil.rmtree(fdir, ignore_errors=True)
+
+    fused: dict[str, dict[str, str]] = {}
+    ev_df = pd.DataFrame(erows)
+    for i, g in (ev_df.groupby(ID_COL) if not ev_df.empty else []):
+        fused[str(i)] = {c: _fuse(g[c].tolist(), dk) for c in cols}
+    if cfg["translate_model"]:
+        vcfg = {**cfg, "translate_alpha": 1.0}  # cfg["embedder"] is still the base model here
+        for _, (ev, epool) in sets.items():
+            ev = ev[ev[SUBSET_COL].isin(cfg["translate_subsets"] or [])].reset_index(drop=True)
+            if ev.empty:
+                continue
+            pids = epool.reset_index(drop=True)[ID_COL].astype(str).to_numpy()
+            for i, hits in neighbours(vcfg, ev, epool.reset_index(drop=True), ctx, k=dk).items():
+                fused.setdefault(i, {})["tr_ids"] = "|".join(pids[j] for j, _ in hits)
+    return fused
+
+
 # ── LoRA fine-tuning (mode lora_rag) ─────────────────────────────────────────
 
 
@@ -1209,10 +1352,14 @@ def setup(config: dict, sets: dict, ctx) -> None:
     """
     cfg = {**DEFAULT_CONFIG, **(config or {})}
     trains_lora = cfg["mode"] == "lora_rag" or (cfg["mode"] == "llm_choose" and cfg["choose_train"])
-    if not trains_lora and not cfg["rerank_train"] and not cfg["embedder_train"]:
+    if not trains_lora and not cfg["rerank_train"] and not cfg["embedder_train"] and not int(cfg["oof_folds"]):
         return
     name = next(n for n in ("held_out", "val", "test") if n in sets)
     ctx.log(f"training on the {name} pool")
+    if int(cfg["oof_folds"]) > 0:  # run() then answers every eval set from the fold-averaged lists
+        subsets = cfg["oof_subsets"] or sorted(set().union(*(set(e[SUBSET_COL]) for e, _ in sets.values())))
+        ctx.cache[_oof_key(ctx, cfg)] = oof_lists(cfg, sets, name, subsets, ctx)
+        return
     if cfg["embedder_train"]:
         ctx.cache[_embedder_key(ctx, cfg)] = train_embedder(cfg, sets[name][1], ctx)
         cfg["embedder"] = ctx.cache[_embedder_key(ctx, cfg)]  # the reranker/LoRA below train on its candidates
@@ -1399,6 +1546,19 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
                 ctx.cache[key] = train_lora(cfg, pool_df, ctx)
             cfg["adapter"] = ctx.cache[key]
         llm_choose(cfg, eval_df, pool_df, ctx, answers, meta)
+        return answers, meta
+    if int(cfg["oof_folds"]) > 0:
+        fused = ctx.cache.get(_oof_key(ctx, cfg))
+        if fused is None:
+            raise RuntimeError("oof_folds needs the setup step (runner 2026-10-06 or newer)")
+        answer_of = dict(zip(pool_df[ID_COL].astype(str), pool_df[OUTPUT_COL].astype(str)))
+        for i in eval_df[ID_COL].astype(str):
+            if i in fused:
+                meta[i] = dict(fused[i])
+                top = next((c for c in fused[i]["cand_ids"].split("|") if c in answer_of), None)
+                if top:
+                    answers[i] = answer_of[top]
+                    meta[i]["rerank_id"] = top
         return answers, meta
     if cfg["embedder_train"]:
         ekey = _embedder_key(ctx, cfg)

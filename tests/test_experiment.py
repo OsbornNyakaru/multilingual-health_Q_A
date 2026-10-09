@@ -543,3 +543,55 @@ def test_fit_prompt_drops_least_similar_examples_so_the_question_survives():
     assert d == 1 and "far answer" not in short and "near answer" in short and "my question" in short
     bare, d2 = E.fit_prompt(Tok(), "my question", "Eng_Uga", [far, near], 3)
     assert d2 == 2 and "my question" in bare
+
+
+def test_fuse_averages_fold_scores_with_each_folds_floor_for_missing_ids():
+    assert E._fuse(["a:3|b:1", "b:5|c:0"], 3) == "b|a|c"  # a=(3+0)/2, b=(1+5)/2, c=(1+0)/2
+    assert E._fuse(["", ""], 3) == ""
+
+
+OOF_POOL = pd.DataFrame({
+    "ID": [f"t{i}" for i in range(10)],
+    "input": ["prevent malaria pregnancy", "avoid malaria when pregnant", "malaria prevention pregnant women",
+              "hiv symptoms adults", "signs of hiv in adults", "what causes malaria", "malaria causes",
+              "treat malaria", "kuzuia malaria", "dalili za ukimwi"],
+    "output": ["net", "net", "net", "rash", "rash", "mosquito", "mosquito", "drugs", "chandarua", "homa"],
+    "subset": ["Eng_Uga"] * 8 + ["Swa_Ken"] * 2,
+})
+
+
+def test_oof_lists_cross_fit_leave_self_out_and_feed_run(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    trained_on = []
+
+    def fake_train(cfg, pool, ctx):
+        trained_on.append(set(pool["ID"]))
+        return "fake-ce"
+
+    monkeypatch.setattr(E, "train_rerankers", fake_train)
+
+    class FakeCE:
+        def predict(self, pairs, **kw):
+            return [1.0 if "women" in cand else 0.1 for _, cand in pairs]
+
+    ctx = Ctx()
+    ctx.cache[("cross_encoder", "fake-ce")] = FakeCE()
+    cfg = {"mode": "retrieval", "embedder": "tfidf-char", "rerank_model": "BAAI/bge-reranker-v2-m3", "rerank_train": True,
+           "rerank_k": 4, "diag_k": 4, "oof_folds": 2, "oof_subsets": ["Eng_Uga"]}
+    ev = EVAL[EVAL["subset"] == "Eng_Uga"]
+    sets = {"held_out": (ev, OOF_POOL), "val": (ev, OOF_POOL)}
+    E.setup(cfg, sets, ctx)
+    assert len(trained_on) == 2 and trained_on[0] != trained_on[1]  # each fold trains on the pool minus that fold
+    assert all(len(t) < len(OOF_POOL) for t in trained_on) and trained_on[0] | trained_on[1] == set(OOF_POOL["ID"])
+    lists = pd.read_csv(tmp_path / "runner_work/train" / E._adapter_key(ctx, {**E.DEFAULT_CONFIG, **cfg})[1] / "oof/lists/oof_lists.csv.gz",
+                        dtype=str).fillna("")
+    assert sorted(lists["ID"]) == [f"t{i}" for i in range(8)]  # every asked pool question once, Swa_Ken not asked
+    for _, r in lists.iterrows():
+        assert r["ID"] not in r["ret_ids"].split("|") and r["ID"] not in r["cand_ids"].split("|")
+        held = trained_on[int(r["fold"])]
+        assert r["ID"] not in held  # its fold's models never trained on it
+    answers, meta = E.run(cfg, ev, OOF_POOL, ctx)
+    assert answers["q1"] == "net" and meta["q1"]["cand_ids"].split("|")[0] == "t2" and meta["q1"]["rerank_id"] == "t2"
+    assert set(meta["q1"]) >= {"ret_ids", "cand_ids", "cand1_ids"}
+    E.setup(cfg, sets, ctx)  # restart: folds resume from the saved lists, nothing retrains
+    assert len(trained_on) == 2
