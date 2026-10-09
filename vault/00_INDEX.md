@@ -232,6 +232,7 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 ## Findings
 - [[FND-001-retrieval-strength-by-subset]] — closed-pool vs generative subsets
 - [[FND-002-length-truncation-on-retrieval]] — don't truncate retrieved answers
+- [[FND-004-luganda-answers-translate-english]] — many Lug_Uga stock answers are translations of Eng_Uga ones
 
 ## Legacy notes (pre-graph, 2026-09-18)
 Notes marked "Migrated" have been folded into the graph above but are kept for their detail. The others are operational notes that haven't been migrated.
