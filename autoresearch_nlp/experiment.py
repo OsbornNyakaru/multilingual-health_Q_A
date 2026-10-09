@@ -92,6 +92,7 @@ DEFAULT_CONFIG: dict = {
     "vllm_version": "0.31.0",
     "vllm_mem": 0.85,            # gpu_memory_utilization (the kernel keeps the embedder on the GPU)
     "vllm_chunk": 256,           # prompts per vLLM call; answers are checkpointed after each
+    "vllm_max_seqs": 0,          # max_num_seqs; 0 = vLLM's default (1024). Hybrid models (Qwen3.5+) need <= their Mamba cache blocks
     "gen_seed": 0,
     "few_shot_k": 2,             # fixed examples per subset (few_shot) or neighbours (rag_few_shot)
     "few_shot_max_chars": 150,   # cap on fixed few-shot example answers
@@ -559,7 +560,7 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
     job = {"model": cfg["model_id"], "adapter": adapter, "lora_rank": rank, "max_model_len": max_len,
            "mem": mem, "temps": list(cfg["gen_temps"]), "n": int(cfg["gen_samples"]),
            "top_p": float(cfg["gen_top_p"]), "seed": int(cfg["gen_seed"]), "chunk": int(cfg["vllm_chunk"]),
-           "requests": reqs, "out": str(out)}
+           "max_num_seqs": int(cfg["vllm_max_seqs"]), "requests": reqs, "out": str(out)}
     job_path.write_text(json.dumps(job), encoding="utf-8")
     ctx.log(f"vLLM: {len(reqs):,} rows, {1 + len(cfg['gen_temps']) * int(cfg['gen_samples']) if int(cfg['gen_samples']) else 1} "
             f"candidates each, max_model_len {max_len}, LoRA rank {rank or '-'}")

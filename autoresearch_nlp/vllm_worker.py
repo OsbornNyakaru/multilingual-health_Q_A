@@ -4,7 +4,7 @@ experiment.py (gen_engine="vllm") starts this with the vLLM venv's interpreter, 
 torch never meets the runner kernel's torch. It reads a job JSON:
 
     {"model": id, "adapter": local dir | null, "lora_rank": int, "max_model_len": int, "mem": float,
-     "temps": [..], "n": int, "top_p": float, "seed": int, "chunk": int,
+     "temps": [..], "n": int, "top_p": float, "seed": int, "chunk": int, "max_num_seqs": int (0 = default),
      "requests": [{"id", "ids": [prompt token ids], "max_tokens", "min_tokens"}, ...],
      "out": path}
 
@@ -38,6 +38,8 @@ def main(job_path: str) -> None:
     kw = dict(model=job["model"], dtype="bfloat16", max_model_len=int(job["max_model_len"]),
               gpu_memory_utilization=float(job["mem"]), seed=int(job["seed"]), trust_remote_code=True,
               limit_mm_per_prompt={"image": 0, "audio": 0, "video": 0})  # text only: skip vision/audio memory
+    if int(job.get("max_num_seqs") or 0) > 0:
+        kw["max_num_seqs"] = int(job["max_num_seqs"])
     lora = None
     if job.get("adapter"):
         from vllm.lora.request import LoRARequest
