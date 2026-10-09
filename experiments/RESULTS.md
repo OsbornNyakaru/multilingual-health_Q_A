@@ -111,6 +111,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-09 | `composite_20261009_2334.csv` | 0.6961 | 0.6830 | 0.6712 | 0.6249 | 0.8327 |  | #12: EXP-091 (ranker + NLLB-translated view) on Lug_Uga, 39 rows changed vs #10; public +0.0025, private flat, judge 0.8365 -> 0.8327 |
 | 2026-10-09 | `composite_20261009_1010.csv` | 0.6890 | 0.6785 | 0.6636 | 0.6171 | 0.8276 |  | #11: EXP-086 (ltr v2 features) on Eng_Uga+Swa_Ken, 61 rows changed vs #10; worse on all three parts; vetoed |
 | 2026-10-09 | `composite_20261009_0049.csv` | 0.6936 | 0.6829 | 0.6666 | 0.6202 | 0.8365 |  | submission #10: EXP-077/078 vLLM 13-candidate MBR for Aka_Gha + Eng_Gha; judge 0.8139 -> 0.8365 |
 | 2026-10-08 | `composite_20261008_1600.csv` | 0.6860 | 0.6729 | 0.6624 | 0.6196 | 0.8139 | 0.4458 | submission #9: Gemma-4-31B QLoRA (EXP-061, test EXP-063) on Aka_Gha/Eng_Gha/Amh_Eth |
