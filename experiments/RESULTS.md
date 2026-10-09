@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-083 | `exp083_lora_rag_qwen3827b_sub3_nhall-vall_70ce6b` | 2026-10-09 13:41 | adapter, mode, model_id | held_out=all, val=all |  |  | — | crash | Second generator for cross-model MBR: Qwen3.8-27B QLoRA (r64, 1 epoch, same recipe as EXP-061) + 13 candidates via vLLM on Aka_Gha/Eng_Gha/Amh_Eth |
 | EXP-085 | `exp085_llm_choose_gemma431bi_sub5_nhall-vall_d9248a` | 2026-10-09 10:34 | choose_from, mode, model_id | held_out=all, val=all | 0.5064 | 0.5004 | — | ok | PROBE: base Gemma-4-31B as a listwise chooser over EXP-055's top-5 distinct answers (option-letter logprobs, 5 cyclic shifts); does it pick the gold more often than the ranker? |
 | EXP-086 | `exp086_combine_ltr_sub4_e0ac5e` | 2026-10-09 07:09 | combine | held_out=all, val=all | 0.5973 | 0.5953 | — | ok | LambdaRank with 1st-place selector features (pool near-duplicate mass, agreement with other candidates, per-question z-scores and gaps) |
 | EXP-082 | `exp082_lora_rag_qwen3827b_sub3_nv60_a0d104` | 2026-10-09 04:38 | adapter, lora_data_frac, mode, model_id | val=60 |  |  | — | crash | Smoke: Qwen3.8-27B QLoRA (2% of rows) then 13-candidate vLLM generation; checks training speed and vLLM LoRA support |
