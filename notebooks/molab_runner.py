@@ -91,7 +91,7 @@ def _(data_repo_input, hf_token_input, mo, os, runs_repo_input):
     # Frozen harness: autoresearch_nlp/prepare.py must hash to this, or the runner refuses to run.
     PREPARE_SHA256 = "532b2c174894b7107129c3d7056613c62c4066e530761193b1518487e784f5dd"
     HELD_OUT_FINGERPRINT = "a8026f24ea3d"
-    RUNNER_VERSION = "2026-10-06-v2"  # reported in every ping so the Mac side can see which runner is live
+    RUNNER_VERSION = "2026-10-09-claim"  # reported in every ping so the Mac side can see which runner is live
 
     from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 
@@ -353,6 +353,53 @@ def _(
         todo = [s for s in specs if s["run_id"] not in done]
         return sorted(todo, key=lambda s: s.get("created", ""))  # submit order; exp.py submits same-model runs together
 
+    # Claim lock: a runner whose browser tab disconnected keeps running unseen on molab, and a reopened tab
+    # starts a second runner on the same queue. Each runner claims a run (runs/<rid>/claim.json) and refreshes
+    # the claim while it works; other runners skip runs with a fresh claim from another session.
+    SESSION_ID = __import__("uuid").uuid4().hex[:8]
+    CLAIM_EVERY, CLAIM_STALE = 240, 900  # seconds
+
+    def _claim_path(rid: str) -> str:
+        return f"runs/{rid}/claim.json"
+
+    def _write_claim(rid: str):
+        hf_put({_claim_path(rid): json.dumps({"session": SESSION_ID, "at": _now(), "t": time.time(), "gpu": gpu_info})},
+               f"{rid}: claim {SESSION_ID}")
+
+    def claimed_elsewhere(rid: str, files: list[str]) -> bool:
+        if _claim_path(rid) not in files:
+            return False
+        try:
+            c = hf_json(_claim_path(rid))
+        except Exception:
+            return False
+        return c.get("session") != SESSION_ID and time.time() - float(c.get("t", 0)) < CLAIM_STALE
+
+    def claim(rid: str) -> bool:
+        """Write our claim, then re-read it after a pause so two runners claiming at once don't both win."""
+        _write_claim(rid)
+        time.sleep(10)
+        try:
+            return hf_json(_claim_path(rid)).get("session") == SESSION_ID
+        except Exception:
+            return True
+
+    def keep_claim(rid: str):
+        """Refresh the claim in a background thread until the returned event is set."""
+        import threading
+
+        stop = threading.Event()
+
+        def _beat():
+            while not stop.wait(CLAIM_EVERY):
+                try:
+                    _write_claim(rid)
+                except Exception:
+                    pass
+
+        threading.Thread(target=_beat, daemon=True).start()
+        return stop
+
     def run_one(spec: dict, log) -> dict:
         rid = spec["run_id"]
         base = f"runs/{rid}"
@@ -481,15 +528,23 @@ def _(
             raise
         results, idle_since = [], time.time()
         while len(results) < max_runs:
-            todo = pending_runs()
+            files = hf_files()
+            todo = [t for t in pending_runs() if not claimed_elsewhere(t["run_id"], files)]
+            if todo and not claim(todo[0]["run_id"]):
+                log(f"· {todo[0]['run_id']} claimed by another runner; skipping")
+                continue
             if not todo:
                 if not watch or time.time() - idle_since > 60 * idle_minutes:
                     break
                 time.sleep(60)
                 continue
             spec = todo[0]
-            log(f"▶ {spec['run_id']}  ({len(todo)} pending)")
-            results.append(run_one(spec, log))
+            log(f"▶ {spec['run_id']}  ({len(todo)} pending, session {SESSION_ID})")
+            beat = keep_claim(spec["run_id"])
+            try:
+                results.append(run_one(spec, log))
+            finally:
+                beat.set()
             log(f"■ {spec['run_id']}: {results[-1]['status']}")
             idle_since = time.time()
         return results
