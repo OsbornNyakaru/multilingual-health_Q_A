@@ -10,6 +10,11 @@ char TF-IDF similarity to the answer's sibling questions, log answer frequency, 
 ROUGE overlap with a fine-tuned generator's output. A gradient-boosted regressor predicts each
 candidate's overlap with the gold answer; the highest prediction is picked.
 
+--feats v2 adds (after 1st place's selector features): each answer's near-duplicate mass in the pool
+(rows whose answer has bag-of-words cosine >= 0.8 with it), its mean/max similarity to and number of
+near-duplicates among the row's other candidates, and per-question z-scores and gaps to the row's best for
+the main signals. --per-subset fits one model per subset instead of one pooled model.
+
 Honest protocol: Val scores = 5-fold GroupKFold out-of-fold (held-out rows always in training);
 held-out scores = model trained on Val only; test = model trained on held-out + Val.
 """
@@ -33,6 +38,11 @@ from experiment import answer_overlap  # noqa: E402
 
 TOP = 20
 FEATURES_FIXED = ["logret", "q_ans", "q_ans_d", "sib_char", "lfreq", "len_ratio", "gen_overlap", "n_top1", "subset_code"]
+FEATURES_V2 = ["l_echo", "cand_mean", "cand_max", "cand_echo"]
+RELATIVE = ["logret", "q_ans", "sib_char", "lfreq", "gen_overlap", "l_echo", "cand_mean"]  # + logrank_*
+ECHO = 0.8
+FEATS = "v1"
+PER_SUBSET = False
 SUBSETS_ALL = ["Aka_Gha", "Amh_Eth", "Eng_Eth", "Eng_Gha", "Eng_Ken", "Eng_Uga", "Lug_Uga", "Swa_Ken"]
 
 
@@ -67,6 +77,15 @@ def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list
         for i, a in enumerate(P_ans):
             sib.setdefault(a, []).append(i)
         vw = TfidfVectorizer(analyzer="word", token_pattern=C.TOKEN, sublinear_tf=True).fit(pd.concat([P["input"], P_ans]))
+        if FEATS == "v2":
+            from sklearn.feature_extraction.text import CountVectorizer
+            from sklearn.preprocessing import normalize
+
+            uniq = sorted(freq)
+            row_of = {a: k for k, a in enumerate(uniq)}
+            bow = normalize(CountVectorizer(token_pattern=C.TOKEN, lowercase=False).fit_transform(uniq))
+            near = (bow @ bow.T).toarray() >= ECHO  # distinct answer x distinct answer
+            mass = near @ np.array([freq[a] for a in uniq], dtype=float)  # pool rows with a near-duplicate answer
         vc = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), sublinear_tf=True).fit(pd.concat([P["input"], Q["input"]]))
         PC = vc.transform(P["input"])
         lists = [dict(zip(pp["ID"], pp["cand_ids"])) for pp in picker_preds]
@@ -91,6 +110,10 @@ def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list
             cands = sorted(cands)
             qa = (vw.transform([q["input"]]) @ vw.transform(cands).T).toarray()[0]
             qc = (vc.transform([q["input"]]) @ PC.T).toarray()[0]
+            if FEATS == "v2":
+                ix = [row_of[a] for a in cands]
+                cs = (bow[ix] @ bow[ix].T).toarray()
+                np.fill_diagonal(cs, np.nan)
             for n, a in enumerate(cands):
                 feat = {"ID": qid, "subset": sub, "answer": a, "subset_code": SUBSETS_ALL.index(sub)}
                 tops = 0
@@ -106,20 +129,58 @@ def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list
                 feat["lfreq"] = math.log(freq.get(a, 1))
                 feat["len_ratio"] = len(a.split()) / median_len
                 feat["gen_overlap"] = answer_overlap(a, gen_of[qid]) if qid in gen_of else np.nan
+                if FEATS == "v2":
+                    feat["l_echo"] = math.log(mass[ix[n]])
+                    other = cs[n][~np.isnan(cs[n])]
+                    feat["cand_mean"] = float(other.mean()) if other.size else 0.0
+                    feat["cand_max"] = float(other.max()) if other.size else 0.0
+                    feat["cand_echo"] = int((other >= ECHO).sum())
                 if gold_of:
                     feat["label"] = answer_overlap(a, gold_of[qid])
                 rows.append(feat)
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    return add_relative(df) if FEATS == "v2" and not df.empty else df
+
+
+def add_relative(df: pd.DataFrame) -> pd.DataFrame:
+    """Per-question z-score and gap to the row's best, for the main signals."""
+    cols = sorted(c for c in df.columns if c.startswith("logrank_")) + [c for c in RELATIVE if c in df]
+    g = df.groupby("ID")[cols]
+    mean, std, mx = g.transform("mean"), g.transform("std").fillna(0), g.transform("max")
+    for c in cols:
+        df[f"{c}_z"] = (df[c] - mean[c]) / (std[c] + 1e-6)
+        df[f"{c}_gap"] = df[c] - mx[c]
+    return df
 
 
 def feature_cols(df: pd.DataFrame) -> list[str]:
-    return sorted(c for c in df.columns if c.startswith("logrank_")) + FEATURES_FIXED
+    base = sorted(c for c in df.columns if c.startswith("logrank_") and not c.endswith(("_z", "_gap"))) + FEATURES_FIXED
+    if FEATS == "v2":
+        base += FEATURES_V2 + sorted(c for c in df.columns if c.endswith(("_z", "_gap")))
+    return base
 
 
 KIND = "hgb"  # hgb = sklearn regressor on the overlap label; lambdarank = LightGBM ranker within each question
 
 
 def fit(df: pd.DataFrame):
+    if PER_SUBSET:
+        return {sub: fit_one(g) for sub, g in df.groupby("subset")}
+    return fit_one(df)
+
+
+def predict(model, d: pd.DataFrame) -> np.ndarray:
+    if isinstance(model, dict):
+        out = np.full(len(d), -np.inf)
+        for sub, m in model.items():
+            mask = (d["subset"] == sub).to_numpy()
+            if mask.any():
+                out[mask] = m.predict(d.loc[mask, feature_cols(d)])
+        return out
+    return model.predict(d[feature_cols(d)])
+
+
+def fit_one(df: pd.DataFrame):
     if KIND == "lambdarank":
         from lightgbm import LGBMRanker
 
@@ -138,7 +199,7 @@ def fit(df: pd.DataFrame):
 
 def pick(df: pd.DataFrame, model) -> pd.DataFrame:
     d = df.copy()
-    d["score"] = model.predict(d[feature_cols(d)])
+    d["score"] = predict(model, d)
     top = d.sort_values("score", ascending=False).drop_duplicates("ID")
     return top[["ID", "subset", "answer"]].rename(columns={"answer": "pred"})
 
@@ -204,7 +265,8 @@ def cmd_record(a) -> None:
         if missing:
             sys.exit(f"test predictions missing for {len(missing)} questions; check --test-map")
     model = {"hgb": "HistGradientBoostingRegressor", "lambdarank": "LGBMRanker(lambdarank)"}[KIND]
-    cfg = {"combine": {"rule": "ltr", "pickers": a.pickers, "gen": a.gen, "top": TOP, "model": model}}
+    cfg = {"combine": {"rule": "ltr", "pickers": a.pickers, "gen": a.gen, "top": TOP, "model": model, "feats": FEATS,
+                       "per_subset": PER_SUBSET}}
     C.record_virtual(cfg, "ltr", subsets, preds, test, C.run_dir(a.pickers.split(",")[0]).name, a.hyp, a.desc)
 
 
@@ -218,12 +280,14 @@ def main() -> None:
         p.add_argument("--subsets", required=True)
         p.add_argument("--hyp", default="H-011")
         p.add_argument("--model", choices=["hgb", "lambdarank"], default="hgb")
+        p.add_argument("--feats", choices=["v1", "v2"], default="v1")
+        p.add_argument("--per-subset", action="store_true")
         if name == "record":
             p.add_argument("--test-map", help="'EXP-055=EXP-0aa;EXP-051=EXP-052;EXP-038=EXP-044+EXP-042'")
             p.add_argument("--desc", required=True)
     a = ap.parse_args()
-    global KIND
-    KIND = a.model
+    global KIND, FEATS, PER_SUBSET
+    KIND, FEATS, PER_SUBSET = a.model, a.feats, a.per_subset
     {"eval": cmd_eval, "record": cmd_record}[a.cmd](a)
 
 

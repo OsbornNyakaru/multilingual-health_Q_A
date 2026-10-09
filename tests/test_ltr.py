@@ -1,5 +1,6 @@
 """CPU tests for scripts/ltr.py feature building and picking."""
 
+import math
 import sys
 from pathlib import Path
 
@@ -30,3 +31,13 @@ def test_pick_takes_the_highest_scored_candidate():
 
     f = L.build_features(Q, POOL, [PICK], None, ["Lug_Uga"])
     assert L.pick(f, M())["pred"].iloc[0] == "okusiigibwa kuba nga"
+
+
+def test_v2_features_echo_agreement_and_relative(monkeypatch):
+    monkeypatch.setattr(L, "FEATS", "v2")
+    f = L.build_features(Q, POOL, [PICK], None, ["Lug_Uga"]).set_index("answer")
+    assert set(L.feature_cols(f.reset_index())) <= set(f.columns)
+    shared = f.loc["okusiigibwa kuba nga"]
+    assert abs(shared["l_echo"] - math.log(2)) < 1e-9  # its 2 pool rows, no other near-duplicate
+    assert shared["cand_echo"] == 0 and 0 <= shared["cand_mean"] <= shared["cand_max"] <= 1
+    assert abs(f["q_ans_z"].mean()) < 1e-6 and (f["q_ans_gap"] <= 0).all() and (f["q_ans_gap"] == 0).any()

@@ -6,15 +6,15 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
+composite test-mix: **held-out 0.4572**, **val 0.4518** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
-| Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
+| Eng_Uga | 28.4% | EXP-086 `exp086_combine_ltr_sub4_e0ac5e` | 0.6332 | 0.6298 |
 | Aka_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2216 | 0.2162 |
 | Eng_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2741 | 0.2770 |
 | Lug_Uga | 14.3% | EXP-060 `exp060_combine_ltr_sub4_eed26c` | 0.5104 | 0.4932 |
-| Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
+| Swa_Ken | 8.7% | EXP-086 `exp086_combine_ltr_sub4_e0ac5e` | 0.6331 | 0.6330 |
 | Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
 | Amh_Eth | 2.3% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.1516 | 0.1810 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-086 | `exp086_combine_ltr_sub4_e0ac5e` | 2026-10-09 07:09 | combine | held_out=all, val=all | 0.5973 | 0.5953 | Eng_Uga, Swa_Ken | ok | LambdaRank with 1st-place selector features (pool near-duplicate mass, agreement with other candidates, per-question z-scores and gaps) |
 | EXP-082 | `exp082_lora_rag_qwen3827b_sub3_nv60_a0d104` | 2026-10-09 04:38 | adapter, lora_data_frac, mode, model_id | val=60 |  |  | — | crash | Smoke: Qwen3.8-27B QLoRA (2% of rows) then 13-candidate vLLM generation; checks training speed and vLLM LoRA support |
 | EXP-080 | `exp080_rag_bgem3_gemma431bi_k3_sub5_ntall_d1bc57` | 2026-10-09 00:12 | — | test=all |  |  | — | ok | Test predictions for EXP-079 (13-candidate Gemma on the five retrieval subsets) |
 | EXP-081 | `exp081_combine_pool_sub5_80a5ef` | 2026-10-08 23:46 | combine | held_out=all, val=all | 0.5981 | 0.5876 | — | ok | pool: best run's answer (weight w) + EXP-079's 13 Gemma candidates |
@@ -118,6 +119,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-086 | held_out | 0.6332 |  |  | 0.4924 | 0.6331 | 0.6233 |  |  |
+| EXP-086 | val | 0.6298 |  |  | 0.4932 | 0.6330 | 0.6187 |  |  |
 | EXP-081 | held_out | 0.6299 |  |  | 0.5104 | 0.6320 | 0.6270 |  | 0.5409 |
 | EXP-081 | val | 0.6268 |  |  | 0.4932 | 0.6232 | 0.6152 |  | 0.4777 |
 | EXP-079 | held_out | 0.4054 |  |  | 0.2044 | 0.3386 | 0.3383 |  | 0.4616 |

@@ -210,6 +210,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-082-lora-rag-qwen3827b-sub3-nv60]] — Smoke: Qwen3.8-27B QLoRA (2% of rows) then 13-candidate vLLM generation; checks training speed and vLLM LoRA support (crash; won: none)
 
+- [[EXP-086-combine-ltr-sub4]] — LambdaRank with 1st-place selector features (pool near-duplicate mass, agreement with other candidates, per-question z-scores and gaps) (ok; won: Eng_Uga, Swa_Ken)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
