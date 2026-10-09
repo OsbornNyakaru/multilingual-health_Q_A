@@ -34,7 +34,7 @@ import pandas as pd
 ID_COL, INPUT_COL, OUTPUT_COL, SUBSET_COL = "ID", "input", "output", "subset"
 
 DEFAULT_CONFIG: dict = {
-    # retrieval | zero_shot | few_shot | rag_few_shot | router | lora_rag
+    # retrieval | zero_shot | few_shot | rag_few_shot | router | lora_rag | llm_choose
     "mode": "retrieval",
     # retrieval (used by retrieval, rag_few_shot, router)
     "embedder": "BAAI/bge-m3",   # any sentence-transformers id, or "tfidf-char" (CPU)
@@ -108,6 +108,12 @@ DEFAULT_CONFIG: dict = {
     "fallback_below_frac": 0.0,  # >0: a generation shorter than this fraction of the subset's median pool
                                  # answer (in words) is replaced by the retrieved answer
     "checkpoint_every": 10,      # batches
+    # llm_choose: the LLM (model_id [+ adapter], via vLLM) picks among the top choose_k distinct answers of an
+    # earlier run's candidate list (its cand_ids column), scored by option-letter logprobs and averaged over
+    # choose_k cyclic shifts of the option order (each answer sits in every position once: no position bias)
+    "choose_from": None,         # "run:<run_id>" whose *_preds.csv carry cand_ids
+    "choose_k": 5,
+    "choose_chars": 600,         # cap on each option's text in the prompt
     "diag_k": 0,                 # >0: record each row's top-k candidate pool IDs (before + after rerank) for recall@k
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
@@ -526,8 +532,6 @@ def merge_vllm_output(rec: dict, subset: str) -> tuple[str, list[str]]:
 def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str, str], pool_df: pd.DataFrame,
                   meta: dict | None = None) -> None:
     import json
-    import subprocess
-    import time
     from pathlib import Path
 
     from transformers import AutoTokenizer
@@ -565,7 +569,6 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
     ctx.log(f"vLLM: {len(reqs):,} rows, {1 + len(cfg['gen_temps']) * int(cfg['gen_samples']) if int(cfg['gen_samples']) else 1} "
             f"candidates each, max_model_len {max_len}, LoRA rank {rank or '-'}")
 
-    worker = Path(__file__).with_name("vllm_worker.py")
     seen: set[str] = set()
 
     def collect() -> int:
@@ -588,6 +591,16 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
                 new += 1
         return new
 
+    run_vllm_worker(ctx, py, job_path, log_path, collect, answers, seen, len(reqs))
+
+
+def run_vllm_worker(ctx, py: str, job_path, log_path, collect, answers: dict, seen: set, total: int) -> None:
+    """Run vllm_worker.py on job_path; every 30 s collect() folds new output lines into answers, then checkpoint."""
+    import subprocess
+    import time
+    from pathlib import Path
+
+    worker = Path(__file__).with_name("vllm_worker.py")
     t0 = time.time()
     with open(log_path, "a", encoding="utf-8") as lf:
         proc = subprocess.Popen([py, str(worker), str(job_path)], stdout=lf, stderr=subprocess.STDOUT,
@@ -596,7 +609,7 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
             time.sleep(30)
             if collect():
                 ctx.save(answers)
-                ctx.log(f"vLLM {len(seen):,}/{len(reqs):,} rows ({time.time() - t0:.0f}s)", progress=(len(seen), len(reqs)))
+                ctx.log(f"vLLM {len(seen):,}/{total:,} rows ({time.time() - t0:.0f}s)", progress=(len(seen), total))
             if ctx.should_stop():
                 proc.terminate()
                 proc.wait(timeout=120)
@@ -604,12 +617,173 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
                 break
     collect()
     ctx.save(answers)
-    if proc.returncode not in (0, None) and len(seen) < len(reqs) and not ctx.should_stop():
-        text = log_path.read_text(encoding="utf-8", errors="replace")
+    if proc.returncode not in (0, None) and len(seen) < total and not ctx.should_stop():
+        text = Path(log_path).read_text(encoding="utf-8", errors="replace")
         keys = [ln for ln in text.splitlines() if any(w in ln for w in ("backend", "LoRA", "Error", "error:", "memory"))]
         tail = "\n".join(keys[-30:]) + "\n----\n" + text[-6000:]
         raise RuntimeError(f"vLLM worker exited with {proc.returncode}:\n{tail}")
-    ctx.log(f"vLLM done: {len(seen):,}/{len(reqs):,} rows in {time.time() - t0:.0f}s")
+    ctx.log(f"vLLM done: {len(seen):,}/{total:,} rows in {time.time() - t0:.0f}s")
+
+
+# ── LLM chooser (mode llm_choose) ────────────────────────────────────────────
+
+CHOOSE_PROMPT = (
+    "Below is a question from a {lang} health Q&A dataset and {n} candidate answers taken from the same dataset. "
+    "One of them is usually the dataset's own answer to this question. Choose the candidate that best answers "
+    "this exact question.\n\nQuestion: {question}\n\nCandidates:\n\n{options}\n\n"
+    "Reply with only the letter of the best candidate ({first}-{last})."
+)
+LANG_NAMES = {"Eng": "English", "Lug": "Luganda", "Swa": "Swahili", "Aka": "Akan", "Amh": "Amharic"}
+LETTERS = "ABCDEFGHIJ"
+
+
+def choose_messages(question: str, subset: str, options: list[str]) -> list[dict]:
+    body = "\n\n".join(f"{LETTERS[k]}. {o}" for k, o in enumerate(options))
+    text = CHOOSE_PROMPT.format(lang=LANG_NAMES.get(subset[:3], "English"), n=len(options), question=question.strip(),
+                                options=body, first=LETTERS[0], last=LETTERS[len(options) - 1])
+    return [{"role": "user", "content": text}]
+
+
+def distinct_options(cand_ids: list[str], answer_of: dict[str, str], k: int) -> list[str]:
+    """First pool ID of each of the top-k distinct answers, in candidate order (unknown IDs skipped)."""
+    out, seen = [], set()
+    for c in cand_ids:
+        a = answer_of.get(c)
+        if a is None or a.strip() in seen:
+            continue
+        seen.add(a.strip())
+        out.append(c)
+        if len(out) == k:
+            break
+    return out
+
+
+def choose_scores(shifts: dict[int, list], n: int) -> list[float]:
+    """Mean probability per option over cyclic shifts. shifts[s] = letter logprobs (None = not in the top
+    logprobs) for the prompt whose position j shows option (s + j) % n; normalised over the n letters."""
+    import math
+
+    tot = [0.0] * n
+    for s, lps in shifts.items():
+        lp = [x if x is not None else -50.0 for x in lps[:n]]
+        m = max(lp)
+        z = sum(math.exp(x - m) for x in lp)
+        for j in range(n):
+            tot[(s + j) % n] += math.exp(lp[j] - m) / z
+    return [t / max(1, len(shifts)) for t in tot]
+
+
+def load_run_cands(ref: str, ctx) -> dict[str, list[str]]:
+    """{row ID: candidate pool IDs} from every *_preds.csv the run uploaded (held-out, Val, test IDs never clash)."""
+    import os
+
+    from huggingface_hub import hf_hub_download
+
+    key = ("run_cands", ref)
+    if key in ctx.cache:
+        return ctx.cache[key]
+    rid = str(ref)[4:] if str(ref).startswith("run:") else str(ref)
+    repo = os.environ.get("HF_RUNS_REPO", "nyakaruosborn/afro-health-qa-runs")
+    out: dict[str, list[str]] = {}
+    for name in ("held_out", "val", "test"):
+        try:
+            path = hf_hub_download(repo, f"runs/{rid}/{name}_preds.csv", repo_type="dataset")
+        except Exception:
+            continue
+        df = pd.read_csv(path, dtype=str).fillna("")
+        if "cand_ids" in df:
+            out.update({i: [c for c in v.split("|") if c] for i, v in zip(df[ID_COL], df["cand_ids"])})
+    ctx.log(f"candidates of {rid}: {len(out):,} rows")
+    ctx.cache[key] = out
+    return out
+
+
+def llm_choose(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, answers: dict, meta: dict) -> None:
+    import json
+    from pathlib import Path
+
+    from transformers import AutoTokenizer
+
+    if not cfg["choose_from"]:
+        raise ValueError("llm_choose needs choose_from='run:<run_id>'")
+    cands = load_run_cands(cfg["choose_from"], ctx)
+    answer_of = dict(zip(pool_df[ID_COL].astype(str), pool_df[OUTPUT_COL].astype(str)))
+    k, cap = int(cfg["choose_k"]), int(cfg["choose_chars"])
+    mem = free_gpu_for_vllm(cfg, ctx)
+    tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
+    letters = [tok.encode(x, add_special_tokens=False) for x in LETTERS[:k]]
+    if any(len(t) != 1 for t in letters):
+        raise ValueError(f"option letters are not single tokens for {cfg['model_id']}: {letters}")
+    letters = [t[0] for t in letters]
+
+    opts_of, reqs, no_cands = {}, [], 0
+    for _, r in eval_df.iterrows():
+        i, subset = str(r[ID_COL]), str(r[SUBSET_COL])
+        if i in answers:
+            continue
+        opts = distinct_options(cands.get(i, []), answer_of, k)
+        if not opts:
+            no_cands += 1
+            continue
+        opts_of[i] = opts
+        if len(opts) == 1:
+            answers[i] = answer_of[opts[0]]
+            continue
+        n = len(opts)
+        texts = [answer_of[c].strip()[:cap] for c in opts]
+        for s in range(n):
+            order = [(s + j) % n for j in range(n)]
+            prompt = render_prompt(tok, choose_messages(str(r[INPUT_COL]), subset, [texts[o] for o in order]))
+            reqs.append({"id": f"{i}#{s}", "ids": tok(prompt, add_special_tokens=False)["input_ids"]})
+    if no_cands:
+        ctx.log(f"WARNING: {no_cands:,} rows have no candidates in {cfg['choose_from']}; they get no answer")
+    if not reqs:
+        return
+    n_rows = len({q["id"].rsplit("#", 1)[0] for q in reqs})
+    adapter, rank = resolve_adapter(cfg["adapter"], ctx), 0
+    if adapter:
+        r_ = int(json.load(open(Path(adapter) / "adapter_config.json"))["r"])
+        rank = next(x for x in VLLM_LORA_RANKS if x >= r_)
+    py = ensure_vllm(cfg, ctx)
+    work = Path(_work_dir(ctx, cfg))
+    work.mkdir(parents=True, exist_ok=True)
+    out, log_path, job_path = work / "vllm_choose.jsonl", work / "vllm_log.txt", work / "vllm_choose_job.json"
+    job = {"kind": "choose", "model": cfg["model_id"], "adapter": adapter, "lora_rank": rank,
+           "max_model_len": max(len(q["ids"]) for q in reqs) + 8, "mem": mem, "seed": int(cfg["gen_seed"]),
+           "chunk": int(cfg["vllm_chunk"]) * k, "max_num_seqs": int(cfg["vllm_max_seqs"]), "letters": letters,
+           "requests": reqs, "out": str(out)}
+    job_path.write_text(json.dumps(job), encoding="utf-8")
+    ctx.log(f"vLLM chooser: {n_rows:,} rows, top-{k} distinct answers, {len(reqs):,} prompts (cyclic shifts)")
+
+    seen: set[str] = set()
+    got: dict[str, dict[int, list]] = {}
+
+    def collect() -> int:
+        if not out.exists():
+            return 0
+        new = 0
+        with open(out, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                i, s = rec["id"].rsplit("#", 1)
+                if i in seen or i not in opts_of:
+                    continue
+                got.setdefault(i, {})[int(s)] = rec["lp"]
+                opts = opts_of[i]
+                if len(got[i]) < len(opts):
+                    continue
+                sc = choose_scores(got[i], len(opts))
+                best = max(range(len(opts)), key=lambda j: (sc[j], -j))  # ties: the ranker's order
+                answers[i] = answer_of[opts[best]]
+                meta.setdefault(i, {}).update(choose_ids="|".join(opts), choose_scores="|".join(f"{x:.4f}" for x in sc),
+                                              choose_pick=best)
+                seen.add(i)
+                new += 1
+        return new
+
+    run_vllm_worker(ctx, py, job_path, log_path, collect, answers, seen, n_rows)
 
 
 # ── adapters from earlier runs ───────────────────────────────────────────────
@@ -1081,6 +1255,9 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
     answers: dict[str, str] = dict(ctx.resume)
     meta: dict[str, dict] = {}
     cfg["adapter"] = resolve_adapter(cfg["adapter"], ctx)
+    if mode == "llm_choose":
+        llm_choose(cfg, eval_df, pool_df, ctx, answers, meta)
+        return answers, meta
     if cfg["embedder_train"]:
         ekey = _embedder_key(ctx, cfg)
         if ekey not in ctx.cache:  # older runner without the setup step: train on this set's pool

@@ -12,6 +12,9 @@ and appends one JSON line per request to `out`, a chunk at a time, so the parent
 
     {"id", "greedy": text, "samples": [n texts per temperature, in temps order]}
 
+With "kind": "choose" the job also has "letters" (option-letter token ids), each request is one prompt
+(no max/min tokens) and each line is {"id", "lp": [logprob of each letter as the first token, or null]}.
+
 Requests whose id is already in `out` are skipped (resume).
 """
 
@@ -52,9 +55,23 @@ def main(job_path: str) -> None:
         kw.pop("limit_mm_per_prompt")
         llm = LLM(**kw)
 
-    n, temps = int(job["n"]), [float(t) for t in job["temps"]]
     chunk = int(job["chunk"])
     t0 = time.time()
+    if job.get("kind") == "choose":
+        letters = [int(t) for t in job["letters"]]
+        # max_tokens=1 + 20 logprobs: the letters' first-token logprobs (raw, before sampling processors)
+        sp = SamplingParams(temperature=0.0, max_tokens=1, logprobs=20)
+        for s in range(0, len(reqs), chunk):
+            part = reqs[s : s + chunk]
+            outs = llm.generate([{"prompt_token_ids": r["ids"]} for r in part], sp, lora_request=lora, use_tqdm=False)
+            with open(job["out"], "a", encoding="utf-8") as f:
+                for r, o in zip(part, outs):
+                    lp = o.outputs[0].logprobs[0]
+                    f.write(json.dumps({"id": r["id"], "lp": [lp[t].logprob if t in lp else None for t in letters]}) + "\n")
+            print(f"[vllm] {s + len(part)}/{len(reqs)} done, {time.time() - t0:.0f}s", flush=True)
+        return
+
+    n, temps = int(job["n"]), [float(t) for t in job["temps"]]
     for s in range(0, len(reqs), chunk):
         part = reqs[s : s + chunk]
         prompts, params = [], []

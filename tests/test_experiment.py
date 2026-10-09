@@ -417,3 +417,33 @@ def test_clean_env_drops_kernel_python_paths(monkeypatch):
     monkeypatch.setenv("HF_HOME", "/cache")
     env = E.clean_env()
     assert "PYTHONPATH" not in env and env["HF_HOME"] == "/cache"
+
+
+def test_distinct_options_keeps_first_id_per_answer():
+    answer_of = {"a": "Drink water.", "b": " Drink water.", "c": "Rest.", "d": "See a doctor."}
+    assert E.distinct_options(["a", "x", "b", "c", "d"], answer_of, 2) == ["a", "c"]
+    assert E.distinct_options(["x"], answer_of, 3) == []
+
+
+def test_choose_scores_undoes_the_cyclic_shift():
+    # option 1 wins everywhere: shift s shows option (s + j) % 3 at position j, so it sits at position (1 - s) % 3
+    big, small = -0.01, -6.0
+    shifts = {s: [big if (s + j) % 3 == 1 else small for j in range(3)] for s in range(3)}
+    sc = E.choose_scores(shifts, 3)
+    assert max(range(3), key=sc.__getitem__) == 1 and abs(sum(sc) - 1) < 1e-9
+    # a letter missing from the top logprobs counts as very unlikely, not as an error
+    assert E.choose_scores({0: [None, -0.1]}, 2)[1] > 0.99
+
+
+def test_llm_choose_is_dispatched_before_retrieval(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(E, "llm_choose", lambda cfg, ev, pool, ctx, answers, meta: seen.setdefault("called", cfg["mode"]))
+    E.run({"mode": "llm_choose", "choose_from": "run:x"}, pd.DataFrame({"ID": [], "input": [], "subset": []}),
+          pd.DataFrame({"ID": [], "input": [], "output": [], "subset": []}), Ctx())
+    assert seen.get("called") == "llm_choose"
+
+
+def test_choose_messages_lists_every_option_with_letters():
+    m = E.choose_messages(" Is malaria contagious? ", "Lug_Uga", ["No.", "Yes."])
+    assert len(m) == 1 and "Luganda" in m[0]["content"] and "A. No.\n\nB. Yes." in m[0]["content"]
+    assert "(A-B)" in m[0]["content"] and "Question: Is malaria contagious?" in m[0]["content"]
