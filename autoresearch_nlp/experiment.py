@@ -112,6 +112,7 @@ DEFAULT_CONFIG: dict = {
     "min_len_pct": 0,            # >0: min_new_tokens = this percentile of pool answer lengths (stops too-short answers)
     "fallback_below_frac": 0.0,  # >0: a generation shorter than this fraction of the subset's median pool
                                  # answer (in words) is replaced by the retrieved answer
+    "paragraphs": "first",       # first: keep the first paragraph of a generation | join: keep all, whitespace collapsed
     "checkpoint_every": 10,      # batches
     # llm_choose: the LLM (model_id [+ adapter], via vLLM) picks among the top choose_k distinct answers of an
     # earlier run's candidate list (its cand_ids column), scored by option-letter logprobs and averaged over
@@ -183,11 +184,15 @@ def lang_of(subset: str) -> str:
     return SUBSET_TO_LANG.get(subset, "eng")
 
 
-def postprocess(text: str, subset: str) -> str:
+def postprocess(text: str, subset: str, paragraphs: str = "first") -> str:
+    """Strip an echoed answer marker; then keep the first paragraph (models that ramble on after the answer)
+    or join all paragraphs into one line (models that answer in structured lists, e.g. Qwen3.x)."""
     text = str(text).strip()
     marker = ANSWER_MARKERS.get(lang_of(subset), "")
     if marker and marker in text:
         text = text.split(marker, 1)[-1].strip()
+    if paragraphs == "join":
+        return " ".join(text.split())
     if "\n\n" in text:
         text = text.split("\n\n", 1)[0].strip()
     return text
@@ -490,13 +495,14 @@ def generate(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dict[str
             for s0 in range(0, len(ids), per_call):
                 sampled += sample_candidates(cfg, tok, model, [prompts[i] for i in ids[s0 : s0 + per_call]], bounds)
             for i, g, smp in zip(ids, texts, sampled):
-                cands = [postprocess(x, subset) for x in [g] + smp]
+                cands = [postprocess(x, subset, cfg["paragraphs"]) for x in [g] + smp]
                 answers[i] = cands[mbr_pick(cands)]
                 if meta is not None:
-                    meta.setdefault(i, {})["cands"] = json.dumps(cands, ensure_ascii=False)
+                    meta.setdefault(i, {}).update(cands=json.dumps(cands, ensure_ascii=False),
+                                                  raw_cands=json.dumps([g] + smp, ensure_ascii=False))
         else:
             for i, t in zip(ids, texts):
-                answers[i] = postprocess(t, subset)
+                answers[i] = postprocess(t, subset, cfg["paragraphs"])
         if b % every == 0:
             ctx.save(answers)
         ctx.log(f"batch {b}/{len(batches)} ({subset})", progress=(b, len(batches)))
@@ -583,9 +589,9 @@ def free_gpu_for_vllm(cfg: dict, ctx) -> float:
     return mem
 
 
-def merge_vllm_output(rec: dict, subset: str) -> tuple[str, list[str]]:
+def merge_vllm_output(rec: dict, subset: str, paragraphs: str = "first") -> tuple[str, list[str]]:
     """(answer, candidates) for one worker record: greedy alone, or the MBR medoid of greedy + samples."""
-    cands = [postprocess(x, subset) for x in [rec["greedy"]] + rec["samples"]]
+    cands = [postprocess(x, subset, paragraphs) for x in [rec["greedy"]] + rec["samples"]]
     return cands[mbr_pick(cands)], cands
 
 
@@ -644,10 +650,11 @@ def generate_vllm(cfg: dict, rows: pd.DataFrame, examples_for, ctx, answers: dic
                 if i in seen or i not in subset_of:
                     continue
                 seen.add(i)
-                ans, cands = merge_vllm_output(rec, subset_of[i])
+                ans, cands = merge_vllm_output(rec, subset_of[i], cfg["paragraphs"])
                 answers[i] = ans
-                if meta is not None and int(cfg["gen_samples"]) > 0:
-                    meta.setdefault(i, {})["cands"] = json.dumps(cands, ensure_ascii=False)
+                if meta is not None and int(cfg["gen_samples"]) > 0:  # raw_cands: re-postprocess offline without the GPU
+                    meta.setdefault(i, {}).update(cands=json.dumps(cands, ensure_ascii=False),
+                                                  raw_cands=json.dumps([rec["greedy"]] + rec["samples"], ensure_ascii=False))
                 new += 1
         return new
 

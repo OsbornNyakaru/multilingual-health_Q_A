@@ -521,3 +521,11 @@ def test_translate_memoises_and_only_translates_new_texts():
     ctx = Ctx()
     ctx.cache[("translations", "m", "lug_Latn")] = {"a": "A"}
     assert E.translate({"translate_model": "m"}, ["a", "a"], "lug_Latn", ctx) == ["A", "A"]  # no model load
+
+
+def test_postprocess_join_keeps_structured_answers():
+    raw = "Mmuaeɛ: Key steps:\n\n1. Join groups.\n2.  Volunteer."
+    assert E.postprocess(raw, "Aka_Gha") == "Key steps:"
+    assert E.postprocess(raw, "Aka_Gha", "join") == "Key steps: 1. Join groups. 2. Volunteer."
+    ans, cands = E.merge_vllm_output({"greedy": "Steps:\n\nA.", "samples": []}, "Eng_Gha", "join")
+    assert ans == cands[0] == "Steps: A."
