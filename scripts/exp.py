@@ -275,7 +275,8 @@ def decide(spec: dict, rec: dict, best: dict) -> list[str]:
         return []
     won = []
     subsets = set(rec["sets"]["held_out"]["per_subset"]) & set(rec["sets"]["val"]["per_subset"])
-    for s in sorted(subsets):
+    vetoed = set(rec.get("lb_veto") or [])  # subsets the leaderboard rejected after adoption (set by hand, with a note)
+    for s in sorted(subsets - vetoed):
         mine = {k: rec["sets"][k]["per_subset"][s] for k in ELIGIBLE_EVAL}
         cur = best.get(s)
         # Val leads (bigger, test-like); held-out only vetoes a clear regression (rule since 2026-10-07)

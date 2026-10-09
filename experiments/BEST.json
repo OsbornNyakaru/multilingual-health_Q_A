@@ -45,13 +45,13 @@
     "since": "2026-10-08T04:32:27+00:00"
   },
   "Eng_Uga": {
-    "run_id": "exp086_combine_ltr_sub4_e0ac5e",
-    "exp": "EXP-086",
+    "run_id": "exp062_combine_ltr_sub4_5f85f5",
+    "exp": "EXP-062",
     "scores": {
-      "held_out": 0.6332,
-      "val": 0.6298
+      "held_out": 0.6299,
+      "val": 0.6268
     },
-    "since": "2026-10-09T07:09:20+00:00"
+    "since": "2026-10-08T04:32:27+00:00"
   },
   "Lug_Uga": {
     "run_id": "exp060_combine_ltr_sub4_eed26c",
@@ -63,12 +63,12 @@
     "since": "2026-10-07T17:40:03+00:00"
   },
   "Swa_Ken": {
-    "run_id": "exp086_combine_ltr_sub4_e0ac5e",
-    "exp": "EXP-086",
+    "run_id": "exp062_combine_ltr_sub4_5f85f5",
+    "exp": "EXP-062",
     "scores": {
-      "held_out": 0.6331,
-      "val": 0.633
+      "held_out": 0.632,
+      "val": 0.6232
     },
-    "since": "2026-10-09T07:09:20+00:00"
+    "since": "2026-10-08T04:32:27+00:00"
   }
 }

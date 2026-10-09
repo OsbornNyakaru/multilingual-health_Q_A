@@ -2,7 +2,7 @@
 type: experiment
 id: EXP-086
 created: 2026-10-09
-status: confirmed
+status: rejected
 links: ["[[00_INDEX]]"]
 ---
 # EXP-086 LambdaRank with 1st-place selector features (pool near-duplicate mass, agreement with other candidates, per-question z-scores and gaps)
@@ -11,7 +11,7 @@ links: ["[[00_INDEX]]"]
 - parent: `exp055_ret_bgem3_rrb_sub5_nhall-vall_c31f57` · changed: combine
 - config: `{"combine": {"rule": "ltr", "pickers": "EXP-055,EXP-051", "gen": "EXP-038", "top": 20, "model": "LGBMRanker(lambdarank)", "feats": "v2", "per_subset": false}}` (non-default keys)
 - eval: {'held_out': 0, 'val': 0} · subsets: ['Eng_Uga', 'Lug_Uga', 'Swa_Ken', 'Eng_Ken']
-- adopted for subsets: **Eng_Uga, Swa_Ken**
+- adopted for subsets: **none**
 
 **held_out**: combined 0.6004, test-mix 0.5973, R1 0.8188, RL 0.8039, n=1062
 
