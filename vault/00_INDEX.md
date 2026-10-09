@@ -221,6 +221,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-085-llm-choose-gemma431bi-sub5-nhall-vall]] — PROBE: base Gemma-4-31B as a listwise chooser over EXP-055's top-5 distinct answers (option-letter logprobs, 5 cyclic shifts); does it pick the gold more often than the ranker? (ok; won: none)
 
+- [[EXP-087-llm-choose-rrb-qwen257bin-sub5-nhall-vall]] — fine-tuned listwise chooser: Qwen2.5-7B LoRA trained on leave-one-out top-5 lists from the pool (base BGE-M3 + reranker), target = option closest to the gold, random cyclic shifts; options show their matched Train question; inference on EXP-055's top-5 with shift averaging (ok; won: none)
+
+- [[EXP-088-ret-bgem3-sub1-nhall-vall]] — translate-then-retrieve on Lug_Uga: NLLB-200 1.3B translates Luganda questions (pool + eval) to English; BGE-M3 on the original, the translation, and a 50/50 blend; records each view's top-50 for recall@k (FND-004) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

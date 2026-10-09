@@ -215,7 +215,10 @@ def oof_val(held_f: pd.DataFrame, val_f: pd.DataFrame, folds: int = 5) -> pd.Dat
 
 
 def preds_for(exp_id: str, set_name: str) -> pd.DataFrame:
-    return pd.read_csv(C.run_dir(exp_id) / f"{set_name}_preds.csv", dtype=str).fillna("")
+    """'EXP-088' or 'EXP-088:tr_ids' (use that ranked-ID column of the run as its candidate list)."""
+    exp_id, _, col = exp_id.partition(":")
+    d = pd.read_csv(C.run_dir(exp_id) / f"{set_name}_preds.csv", dtype=str).fillna("")
+    return d.assign(cand_ids=d[col]) if col else d
 
 
 def test_preds_for(spec: str) -> pd.DataFrame:
@@ -275,7 +278,7 @@ def main() -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("eval", "record"):
         p = sub.add_parser(name)
-        p.add_argument("--pickers", required=True, help="EXP ids of selector runs with cand_ids/ret_ids (first one supplies retriever ranks)")
+        p.add_argument("--pickers", required=True, help="EXP ids of selector runs with cand_ids/ret_ids (first one supplies retriever ranks); EXP-088:tr_ids picks a column")
         p.add_argument("--gen", help="EXP id of a generation run on the same subsets")
         p.add_argument("--subsets", required=True)
         p.add_argument("--hyp", default="H-011")

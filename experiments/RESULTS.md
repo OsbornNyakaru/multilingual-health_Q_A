@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.4562**, **val 0.4501** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-088 | `exp088_ret_bgem3_sub1_nhall-vall_a31b27` | 2026-10-09 18:10 | diag_k, translate_model | held_out=all, val=all | 0.4073 | 0.4200 | — | ok | translate-then-retrieve on Lug_Uga: NLLB-200 1.3B translates Luganda questions (pool + eval) to English; BGE-M3 on the original, the translation, and a 50/50 blend; records each view's top-50 for recall@k (FND-004) |
+| EXP-087 | `exp087_llm_choose_rrb_qwen257bin_sub5_nhall-vall_50b2f1` | 2026-10-09 18:08 | choose_questions, choose_train, choose_train_subsets, lora_batch, lora_dropout, lora_epochs, lora_lr, model_id, rerank_k, rerank_model, rerank_on | held_out=all, val=all | 0.5827 | 0.5745 | — | ok | fine-tuned listwise chooser: Qwen2.5-7B LoRA trained on leave-one-out top-5 lists from the pool (base BGE-M3 + reranker), target = option closest to the gold, random cyclic shifts; options show their matched Train question; inference on EXP-055's top-5 with shift averaging |
 | EXP-084 | `exp084_rag_bgem3_qwen3827b_k3_sub3_nhall-vall_e80aaa` | 2026-10-09 15:42 | adapter, model_id, vllm_max_seqs | held_out=all, val=all | 0.1198 | 0.1201 | — | ok | 13-candidate vLLM generation with EXP-083's Qwen3.8-27B adapter (max_num_seqs 256; EXP-083's own generation hits the Mamba-cache limit) |
 | EXP-083 | `exp083_lora_rag_qwen3827b_sub3_nhall-vall_70ce6b` | 2026-10-09 13:41 | adapter, mode, model_id | held_out=all, val=all |  |  | — | crash | Second generator for cross-model MBR: Qwen3.8-27B QLoRA (r64, 1 epoch, same recipe as EXP-061) + 13 candidates via vLLM on Aka_Gha/Eng_Gha/Amh_Eth |
 | EXP-085 | `exp085_llm_choose_gemma431bi_sub5_nhall-vall_d9248a` | 2026-10-09 10:34 | choose_from, mode, model_id | held_out=all, val=all | 0.5064 | 0.5004 | — | ok | PROBE: base Gemma-4-31B as a listwise chooser over EXP-055's top-5 distinct answers (option-letter logprobs, 5 cyclic shifts); does it pick the gold more often than the ranker? |
@@ -123,6 +125,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-088 | held_out |  |  |  | 0.4073 |  |  |  |  |
+| EXP-088 | val |  |  |  | 0.4200 |  |  |  |  |
+| EXP-087 | held_out | 0.6390 |  |  | 0.4703 | 0.5687 | 0.6303 |  | 0.5066 |
+| EXP-087 | val | 0.6262 |  |  | 0.4767 | 0.5627 | 0.6112 |  | 0.4863 |
 | EXP-084 | held_out |  | 0.0783 | 0.1635 |  |  |  | 0.1028 |  |
 | EXP-084 | val |  | 0.0774 | 0.1632 |  |  |  | 0.1173 |  |
 | EXP-085 | held_out | 0.5537 |  |  | 0.4438 | 0.5012 | 0.4907 |  | 0.3747 |
