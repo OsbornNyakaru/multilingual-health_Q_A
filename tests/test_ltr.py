@@ -48,3 +48,14 @@ def test_preds_for_column_suffix_uses_that_ranking_as_candidates(monkeypatch, tm
     monkeypatch.setattr(L.C, "run_dir", lambda e: tmp_path)
     assert L.preds_for("EXP-088", "val")["cand_ids"].iloc[0] == "t2|t1"
     assert L.preds_for("EXP-088:tr_ids", "val")["cand_ids"].iloc[0] == "t3|t1"
+
+
+def test_pool_question_as_query_does_not_see_itself():
+    pool = pd.concat([POOL, Q.assign(ID="t5")], ignore_index=True)  # the query's own row sits in the pool
+    pick = PICK.assign(ID="t5")
+    q = Q.assign(ID="t5")
+    f = L.build_features(q, pool, [pick], None, ["Lug_Uga"]).set_index("answer")
+    g = L.build_features(Q, POOL, [PICK], None, ["Lug_Uga"]).set_index("answer")
+    a = "okusiigibwa kuba nga"  # the query's own answer: its own row must not add frequency or a perfect sibling
+    assert f.loc[a, "lfreq"] == g.loc[a, "lfreq"]
+    assert abs(f.loc[a, "sib_char"] - g.loc[a, "sib_char"]) < 0.05 and f.loc[a, "sib_char"] < 0.9  # no self-match (1.0)

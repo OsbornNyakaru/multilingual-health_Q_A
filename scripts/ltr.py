@@ -53,7 +53,8 @@ def load_frames():
     test = pd.read_csv(root / "raw" / "Test.csv", dtype=str).fillna("")
     held = pd.read_csv(X.REFS["held_out"], dtype=str).fillna("")
     work = pd.read_csv(X.ROOT / "autoresearch_nlp" / "data" / "processed" / "work_train.csv", dtype=str).fillna("")
-    return {"held_out": (held, work), "val": (val, train), "test": (test, pd.concat([train, val], ignore_index=True))}
+    return {"held_out": (held, work), "val": (val, train), "test": (test, pd.concat([train, val], ignore_index=True)),
+            "oof": (work, work)}  # oof: the pool's own questions, scored leave-self-out
 
 
 def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list[pd.DataFrame], gen_preds: pd.DataFrame | None,
@@ -88,6 +89,7 @@ def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list
             mass = near @ np.array([freq[a] for a in uniq], dtype=float)  # pool rows with a near-duplicate answer
         vc = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), sublinear_tf=True).fit(pd.concat([P["input"], Q["input"]]))
         PC = vc.transform(P["input"])
+        pos_of = {i: k for k, i in enumerate(P["ID"])}  # a pool question scored as a query must not see itself
         lists = [dict(zip(pp["ID"], pp["cand_ids"])) for pp in picker_preds]
         ret_list = dict(zip(picker_preds[0]["ID"], picker_preds[0]["ret_ids"]))
         for _, q in Q.iterrows():
@@ -110,6 +112,10 @@ def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list
             cands = sorted(cands)
             qa = (vw.transform([q["input"]]) @ vw.transform(cands).T).toarray()[0]
             qc = (vc.transform([q["input"]]) @ PC.T).toarray()[0]
+            own = pos_of.get(qid)
+            own_ans = P_ans.iloc[own] if own is not None else None
+            if own is not None:
+                qc[own] = -1.0
             if FEATS == "v2":
                 ix = [row_of[a] for a in cands]
                 cs = (bow[ix] @ bow[ix].T).toarray()
@@ -126,7 +132,7 @@ def build_features(queries: pd.DataFrame, pool: pd.DataFrame, picker_preds: list
                 feat["q_ans"] = qa[n]
                 feat["q_ans_d"] = qa[n] - qa.max()
                 feat["sib_char"] = float(qc[sib[a]].max())
-                feat["lfreq"] = math.log(freq.get(a, 1))
+                feat["lfreq"] = math.log(max(1, freq.get(a, 1) - (a == own_ans)))
                 feat["len_ratio"] = len(a.split()) / median_len
                 feat["gen_overlap"] = answer_overlap(a, gen_of[qid]) if qid in gen_of else np.nan
                 if FEATS == "v2":
@@ -204,20 +210,28 @@ def pick(df: pd.DataFrame, model) -> pd.DataFrame:
     return top[["ID", "subset", "answer"]].rename(columns={"answer": "pred"})
 
 
-def oof_val(held_f: pd.DataFrame, val_f: pd.DataFrame, folds: int = 5) -> pd.DataFrame:
+def oof_val(held_f: pd.DataFrame, val_f: pd.DataFrame, folds: int = 5, extra: pd.DataFrame | None = None) -> pd.DataFrame:
     from sklearn.model_selection import GroupKFold
 
     out = []
     for tr, te in GroupKFold(n_splits=folds).split(val_f, groups=val_f["ID"]):
-        model = fit(pd.concat([held_f, val_f.iloc[tr]], ignore_index=True))
+        model = fit(pd.concat([held_f, val_f.iloc[tr]] + ([extra] if extra is not None else []), ignore_index=True))
         out.append(pick(val_f.iloc[te], model))
     return pd.concat(out, ignore_index=True)
 
 
 def preds_for(exp_id: str, set_name: str) -> pd.DataFrame:
-    """'EXP-088' or 'EXP-088:tr_ids' (use that ranked-ID column of the run as its candidate list)."""
+    """'EXP-088' or 'EXP-088:tr_ids' (use that ranked-ID column of the run as its candidate list).
+    set_name 'oof' reads an oof_folds run's cross-fitted lists for the training pool's questions."""
     exp_id, _, col = exp_id.partition(":")
-    d = pd.read_csv(C.run_dir(exp_id) / f"{set_name}_preds.csv", dtype=str).fillna("")
+    f = C.run_dir(exp_id) / ("oof_lists.csv.gz" if set_name == "oof" else f"{set_name}_preds.csv")
+    if set_name == "oof" and not f.exists():
+        from huggingface_hub import hf_hub_download
+
+        import shutil
+
+        shutil.copy(hf_hub_download(X.RUNS_REPO, f"runs/{C.run_dir(exp_id).name}/oof/oof_lists.csv.gz", repo_type="dataset"), f)
+    d = pd.read_csv(f, dtype=str).fillna("")
     return d.assign(cand_ids=d[col]) if col else d
 
 
@@ -231,12 +245,18 @@ def evaluate(a):
     frames = load_frames()
     pickers = a.pickers.split(",")
     feats = {}
-    for s in ("held_out", "val"):
+    for s in ("held_out", "val") + (("oof",) if a.oof else ()):
         q, pool = frames[s]
-        feats[s] = build_features(q, pool, [preds_for(p, s) for p in pickers], preds_for(a.gen, s) if a.gen else None, subsets)
+        pk = [preds_for(p, s) for p in pickers]
+        gen = preds_for(a.gen, s) if a.gen and s != "oof" else None  # no generator outputs for training questions
+        if s == "oof":
+            ids = set(pk[0]["ID"])
+            q = q[q["ID"].isin(ids)]
+        feats[s] = build_features(q, pool, pk, gen, subsets)
         print(f"{s}: {len(feats[s]):,} candidate rows for {feats[s]['ID'].nunique():,} questions")
-    val_pred = oof_val(feats["held_out"], feats["val"])
-    held_pred = pick(feats["held_out"], fit(feats["val"]))
+    extra = feats.get("oof")
+    val_pred = oof_val(feats["held_out"], feats["val"], extra=extra)
+    held_pred = pick(feats["held_out"], fit(pd.concat([feats["val"]] + ([extra] if extra is not None else []), ignore_index=True)))
     return feats, {"held_out": held_pred, "val": val_pred}, frames
 
 
@@ -263,7 +283,7 @@ def cmd_record(a) -> None:
         tp = [test_preds_for(mapping[p]) for p in a.pickers.split(",")]
         tg = test_preds_for(mapping[a.gen]) if a.gen and a.gen in mapping else None
         tf = build_features(q, pool, tp, tg, subsets)
-        test = pick(tf, fit(pd.concat([feats["held_out"], feats["val"]], ignore_index=True)))
+        test = pick(tf, fit(pd.concat([feats["held_out"], feats["val"]] + ([feats["oof"]] if "oof" in feats else []), ignore_index=True)))
         missing = set(q[q["subset"].isin(subsets)]["ID"]) - set(test["ID"])
         if missing:
             sys.exit(f"test predictions missing for {len(missing)} questions; check --test-map")
@@ -285,6 +305,8 @@ def main() -> None:
         p.add_argument("--model", choices=["hgb", "lambdarank"], default="hgb")
         p.add_argument("--feats", choices=["v1", "v2"], default="v1")
         p.add_argument("--per-subset", action="store_true")
+        p.add_argument("--oof", action="store_true", help="also train on the first picker's run's cross-fitted lists for the "
+                       "training pool's questions (an oof_folds run; pickers must all be that run's columns)")
         if name == "record":
             p.add_argument("--test-map", help="'EXP-055=EXP-0aa;EXP-051=EXP-052;EXP-038=EXP-044+EXP-042'")
             p.add_argument("--desc", required=True)
