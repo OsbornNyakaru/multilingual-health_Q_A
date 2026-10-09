@@ -104,6 +104,6 @@
   "max_minutes": 240.0,
   "drafted": "2026-10-09T06:36:40+00:00",
   "git_sha": "3ad69ab391454297f2aa7e750ff3ea717605aedd",
-  "created": "2026-10-09T06:36:53+00:00",
+  "created": "2026-10-09T04:22:00+00:00",
   "run_id": "exp085_llm_choose_gemma431bi_sub5_nhall-vall_d9248a"
 }
