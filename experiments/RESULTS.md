@@ -6,7 +6,7 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.4578**, **val 0.4531** (8/8 subsets covered)
+composite test-mix: **held-out 0.4576**, **val 0.4527** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
@@ -14,7 +14,7 @@ composite test-mix: **held-out 0.4578**, **val 0.4531** (8/8 subsets covered)
 | Aka_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2216 | 0.2162 |
 | Eng_Gha | 18.8% | EXP-077 `exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01` | 0.2741 | 0.2770 |
 | Lug_Uga | 14.3% | EXP-091 `exp091_combine_ltr_sub1_489d9a` | 0.5205 | 0.5118 |
-| Swa_Ken | 8.7% | EXP-095 `exp095_combine_ltr_sub1_7776e5` | 0.6342 | 0.6278 |
+| Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
 | Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
 | Amh_Eth | 2.3% | EXP-061 `exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1` | 0.1516 | 0.1810 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
@@ -23,7 +23,7 @@ composite test-mix: **held-out 0.4578**, **val 0.4531** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
-| EXP-095 | `exp095_combine_ltr_sub1_7776e5` | 2026-10-09 21:10 | combine | held_out=all, val=all | 0.6342 | 0.6278 | Swa_Ken | ok | LambdaRank final ranker on Swa_Ken alone plus the NLLB-translated view's top-50 (EXP-092 tr_ids) as a third candidate list |
+| EXP-095 | `exp095_combine_ltr_sub1_7776e5` | 2026-10-09 21:10 | combine | held_out=all, val=all | 0.6342 | 0.6278 | — | ok | LambdaRank final ranker on Swa_Ken alone plus the NLLB-translated view's top-50 (EXP-092 tr_ids) as a third candidate list |
 | EXP-092 | `exp092_ret_bgem3_sub1_nhall-tall-vall_1ba790` | 2026-10-09 20:48 | translate_subsets | held_out=all, val=all, test=all | 0.5639 | 0.5671 | — | ok | translate-then-retrieve on Swa_Ken (NLLB swh_Latn -> English; Lug_Uga gained Val +0.019 via EXP-091); held-out + Val + test in one run so the ranker can record straight away |
 | EXP-094 | `exp094_combine_pool_sub3_7490b4` | 2026-10-09 20:47 | combine | held_out=all, val=all | 0.2422 | 0.2427 | — | ok | MBR pool: current best answer (weighted) + EXP-089 Qwen3.8-27B LoRA candidates (13 per row) on the generation subsets |
 | EXP-091 | `exp091_combine_ltr_sub1_489d9a` | 2026-10-09 20:34 | combine | held_out=all, val=all | 0.5205 | 0.5118 | Lug_Uga | ok | EXP-060's learned final ranker on Lug_Uga plus the NLLB-translated view's top-50 (EXP-088 tr_ids) as a third candidate list (FND-004 translate-then-retrieve) |
@@ -114,6 +114,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-10 | `composite_20261010_0011.csv` | 0.6959 | 0.6819 | 0.6705 | 0.6239 | 0.8346 |  | #13: EXP-095 (Swa_Ken ranker + translated view), 10 rows changed vs #12; ROUGE down on public and private, judge up; Swa_Ken vetoed |
 | 2026-10-09 | `composite_20261009_2334.csv` | 0.6961 | 0.6830 | 0.6712 | 0.6249 | 0.8327 |  | #12: EXP-091 (ranker + NLLB-translated view) on Lug_Uga, 39 rows changed vs #10; public +0.0025, private flat, judge 0.8365 -> 0.8327 |
 | 2026-10-09 | `composite_20261009_1010.csv` | 0.6890 | 0.6785 | 0.6636 | 0.6171 | 0.8276 |  | #11: EXP-086 (ltr v2 features) on Eng_Uga+Swa_Ken, 61 rows changed vs #10; worse on all three parts; vetoed |
 | 2026-10-09 | `composite_20261009_0049.csv` | 0.6936 | 0.6829 | 0.6666 | 0.6202 | 0.8365 |  | submission #10: EXP-077/078 vLLM 13-candidate MBR for Aka_Gha + Eng_Gha; judge 0.8139 -> 0.8365 |
