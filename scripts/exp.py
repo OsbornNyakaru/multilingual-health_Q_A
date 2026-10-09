@@ -249,9 +249,10 @@ def score_set(set_name: str, preds: pd.DataFrame) -> dict:
 def recall_diag(preds: pd.DataFrame, set_name: str) -> dict:
     """recall@k per subset: is the gold answer among the answers of the top-k candidates?
 
-    Uses the meta columns ret_ids (retrieval order) and cand_ids (after rerank) written when diag_k > 0.
+    Uses the meta columns ret_ids (retrieval order), src_ids / tr_ids (original / translated view alone, with
+    translate_model) and cand_ids (after rerank) written when diag_k > 0.
     """
-    cols = [c for c in ("ret_ids", "cand_ids") if c in preds.columns]
+    cols = [c for c in ("ret_ids", "src_ids", "tr_ids", "cand_ids") if c in preds.columns]
     if not cols:
         return {}
     train = pd.read_csv(ROOT / "data" / "raw" / "Train.csv", dtype=str).fillna("")

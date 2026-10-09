@@ -52,6 +52,11 @@ DEFAULT_CONFIG: dict = {
     "embedder_train_subsets": None,  # e.g. ["Lug_Uga"]; None = every subset in the pool
     "hybrid_with": None,         # e.g. "tfidf-char": blend a second retriever's similarity in
     "hybrid_alpha": 0.5,         # weight of hybrid_with in the blend
+    "translate_model": None,     # e.g. "facebook/nllb-200-distilled-1.3B": also retrieve on English translations of the questions
+    "translate_subsets": ["Lug_Uga"],
+    "translate_alpha": 0.5,      # weight of the translated view in the similarity blend
+    "translate_beams": 2,
+    "translate_batch": 64,
     "rerank_model": None,        # e.g. "BAAI/bge-reranker-v2-m3": cross-encoder over the top rerank_k
     "rerank_k": 20,
     "rerank_on": "question",     # question (paraphrase check) | answer (relevance check) | both (question || answer)
@@ -191,16 +196,17 @@ def postprocess(text: str, subset: str) -> str:
 # ── retrieval ────────────────────────────────────────────────────────────────
 
 
-def _pool_key(name: str, prefix: str, cfg: dict, pool_df: pd.DataFrame) -> str:
+def _pool_key(name: str, prefix: str, cfg: dict, pool_df: pd.DataFrame, tag: str = "") -> str:
     h = hashlib.sha256(pd.util.hash_pandas_object(pool_df[[ID_COL]], index=False).values.tobytes()).hexdigest()[:12]
-    return f"pool_emb|{name}|{prefix}|{cfg['retrieve_on']}|{h}"
+    return f"pool_emb|{name}|{prefix}|{cfg['retrieve_on']}|{h}{tag}"
 
 
-def _encode(name: str, cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx):
-    """(query vectors, pool vectors) for one retriever; rows L2-normalised so dot = cosine."""
+def _encode(name: str, cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, tag: str = ""):
+    """(query vectors, pool vectors) for one retriever; rows L2-normalised so dot = cosine.
+    tag separates cached pool vectors of a different text view of the same pool (e.g. translations)."""
     dense = name != "tfidf-char"
     qp, pp = (cfg["query_prefix"], cfg["passage_prefix"]) if dense else ("", "")
-    key = _pool_key(name, pp, cfg, pool_df)
+    key = _pool_key(name, pp, cfg, pool_df, tag)
     pool_texts = [pp + str(t) for t in pool_df[cfg["retrieve_on"]]]
     queries = [qp + str(t) for t in eval_df[INPUT_COL]]
     if not dense:
@@ -226,10 +232,55 @@ def _encode(name: str, cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, 
     return q_vecs, ctx.cache[key]
 
 
+NLLB_CODES = {"Lug": "lug_Latn", "Swa": "swh_Latn", "Aka": "aka_Latn", "Amh": "amh_Ethi"}
+
+
+def translate(cfg: dict, texts: list[str], src: str, ctx) -> list[str]:
+    """English translations (NLLB-200 language code src), memoised per text in ctx.cache."""
+    m = cfg["translate_model"]
+    memo = ctx.cache.setdefault(("translations", m, src), {})
+    todo = sorted({t for t in texts if t not in memo}, key=len)
+    if todo:
+        import torch
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+        if ("translator", m) not in ctx.cache:
+            dev = "cuda" if torch.cuda.is_available() else "cpu"
+            ctx.cache[("translator", m)] = (AutoTokenizer.from_pretrained(m),
+                                            AutoModelForSeq2SeqLM.from_pretrained(m, dtype=torch.bfloat16).to(dev).eval())
+        tok, model = ctx.cache[("translator", m)]
+        tok.src_lang = src
+        eng, bs = tok.convert_tokens_to_ids("eng_Latn"), int(cfg["translate_batch"])
+        ctx.log(f"translating {len(todo):,} {src} texts to English with {m}")
+        for b in range(0, len(todo), bs):
+            part = todo[b:b + bs]
+            enc = tok(part, return_tensors="pt", padding=True, truncation=True, max_length=256).to(model.device)
+            with torch.no_grad():
+                out = model.generate(**enc, forced_bos_token_id=eng, num_beams=int(cfg["translate_beams"]), max_new_tokens=256)
+            memo.update(zip(part, tok.batch_decode(out, skip_special_tokens=True)))
+    return [memo[t] for t in texts]
+
+
+def translated_view(cfg: dict, df: pd.DataFrame, ctx) -> pd.DataFrame:
+    """df with the retrieve_on and input texts of translate_subsets rows replaced by English translations."""
+    out = df.copy()
+    cols = list(dict.fromkeys([INPUT_COL, cfg["retrieve_on"]]))
+    for subset in set(cfg["translate_subsets"] or []) & set(df[SUBSET_COL]):
+        src = NLLB_CODES.get(subset[:3])
+        if not src:
+            continue
+        rows = (df[SUBSET_COL] == subset).to_numpy()
+        for c in cols:
+            out.loc[rows, c] = translate(cfg, df.loc[rows, c].astype(str).tolist(), src, ctx)
+    return out
+
+
 def neighbours(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, k: int) -> dict[str, list[tuple[int, float]]]:
     """Top-k pool rows (positional index into pool_df, similarity) per eval ID, within the same subset.
 
     With hybrid_with set, similarity = (1 - hybrid_alpha) * embedder + hybrid_alpha * hybrid_with.
+    With translate_model set, that blend is mixed with the embedder's similarity on English translations:
+    (1 - translate_alpha) * blend + translate_alpha * translated.
     """
     import numpy as np
 
@@ -237,6 +288,11 @@ def neighbours(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, k: 
     if cfg["hybrid_with"]:
         a = float(cfg["hybrid_alpha"])
         parts = [(parts[0][0], 1.0 - a), (_encode(cfg["hybrid_with"], cfg, eval_df, pool_df, ctx), a)]
+    if cfg["translate_model"]:
+        a = float(cfg["translate_alpha"])
+        tv = _encode(cfg["embedder"], cfg, translated_view(cfg, eval_df, ctx), translated_view(cfg, pool_df, ctx), ctx,
+                     tag=f"|tr:{cfg['translate_model']}:{sorted(cfg['translate_subsets'] or [])}")
+        parts = [(p, w * (1.0 - a)) for p, w in parts] + [(tv, a)]
     pool_subsets = pool_df[SUBSET_COL].to_numpy()
     out: dict[str, list[tuple[int, float]]] = {}
     for subset in eval_df[SUBSET_COL].unique():
@@ -1358,6 +1414,15 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
         meta[i] = {"sim": round(hits[0][1], 4), "nn_id": str(pool_ids[hits[0][0]])}
         if dk:
             meta[i]["ret_ids"] = "|".join(pool_ids[j] for j, _ in hits[:dk])
+    if nn and dk and cfg["translate_model"]:  # each view alone, to measure what the translation adds
+        views = {"src_ids": {**cfg, "translate_model": None}, "tr_ids": {**cfg, "translate_alpha": 1.0}}
+        for col, vcfg in views.items():
+            for i, hits in neighbours(vcfg, eval_df, pool_df, ctx, k=dk).items():
+                meta[i][col] = "|".join(pool_ids[j] for j, _ in hits)
+        q_en = translated_view(cfg, eval_df, ctx)
+        for i, q, q2 in zip(eval_df[ID_COL].astype(str), eval_df[INPUT_COL].astype(str), q_en[INPUT_COL].astype(str)):
+            if q2 != q and i in meta:
+                meta[i]["q_en"] = q2
     if nn and cfg["rerank_model"]:
         nn = rerank(cfg, eval_df, pool_df, nn, ctx)
         for i, hits in nn.items():

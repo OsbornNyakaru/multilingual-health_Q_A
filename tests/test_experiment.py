@@ -492,3 +492,32 @@ def test_lora_sequences_pick_chooser_lists_or_rag_answers(monkeypatch):
     assert E.lora_sequences({**E.DEFAULT_CONFIG, "mode": "llm_choose"}, POOL, Ctx()) == [("M", "B")]
     seqs = E.lora_sequences({**E.DEFAULT_CONFIG, "mode": "lora_rag", "embedder": "tfidf-char", "few_shot_k": 1}, POOL, Ctx())
     assert len(seqs) == len(POOL) and seqs[0][1] == POOL["output"].iloc[0] and seqs[0][0][-1]["role"] == "user"
+
+
+LUG_POOL = pd.DataFrame({
+    "ID": ["l1", "l2", "l3", "l4"],
+    "input": ["ekibuuzo ekisooka", "ekibuuzo eky'okubiri", "ekirala ddala", "obubonero bwa siriimu"],
+    "output": ["ans malaria", "ans hiv", "ans other", "ans hiv"],
+    "subset": ["Lug_Uga"] * 4,
+})
+LUG_EVAL = pd.DataFrame({"ID": ["lq"], "input": ["kino kye kibuuzo"], "subset": ["Lug_Uga"]})
+EN = {"ekibuuzo ekisooka": "how to prevent malaria", "ekibuuzo eky'okubiri": "what are hiv symptoms",
+      "ekirala ddala": "something else entirely", "obubonero bwa siriimu": "hiv symptoms in adults", "kino kye kibuuzo": "hiv symptoms what are they"}
+
+
+def test_translated_view_steers_retrieval_and_is_recorded(monkeypatch):
+    calls = []
+    monkeypatch.setattr(E, "translate", lambda cfg, texts, src, ctx: calls.append(src) or [EN[t] for t in texts])
+    cfg = {"mode": "retrieval", "embedder": "tfidf-char", "translate_model": "fake-nllb", "translate_alpha": 1.0, "diag_k": 3}
+    answers, meta = E.run(cfg, LUG_EVAL, LUG_POOL, Ctx())
+    assert answers["lq"] == "ans hiv" and set(calls) == {"lug_Latn"}
+    assert meta["lq"]["tr_ids"].split("|")[0] in {"l2", "l4"} and meta["lq"]["q_en"] == "hiv symptoms what are they"
+    assert len(meta["lq"]["src_ids"].split("|")) == 3  # diag_k
+    off, m2 = E.run({**cfg, "translate_subsets": ["Swa_Ken"]}, LUG_EVAL, LUG_POOL, Ctx())  # Lug not translated
+    assert "q_en" not in m2["lq"]
+
+
+def test_translate_memoises_and_only_translates_new_texts():
+    ctx = Ctx()
+    ctx.cache[("translations", "m", "lug_Latn")] = {"a": "A"}
+    assert E.translate({"translate_model": "m"}, ["a", "a"], "lug_Latn", ctx) == ["A", "A"]  # no model load
