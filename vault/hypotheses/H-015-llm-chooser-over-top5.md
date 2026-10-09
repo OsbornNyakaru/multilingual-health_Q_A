@@ -2,7 +2,7 @@
 type: hypothesis
 id: H-015
 created: 2026-10-09
-status: refuted
+status: rejected
 links: ["[[FND-003-research-synthesis-2026-10-09]]", "[[H-011-closed-pool-vs-generative-router]]", "[[00_INDEX]]"]
 ---
 # H-015 zero-shot LLM chooser over the ranker's top-5
