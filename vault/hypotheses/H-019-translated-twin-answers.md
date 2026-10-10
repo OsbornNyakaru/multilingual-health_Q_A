@@ -36,3 +36,12 @@ links: ["[[H-014-bigger-generator]]", "[[H-017-translate-then-retrieve-luganda]]
 - Learned Akan spelling normalisation ("-ɔ/-ɛ" endings) on the fine-tuned output: ±0.0006, dead end.
 - #16: test twins from the translator retrained on Train + Val (EXP-107, routed by EXP-109 with EXP-104's thresholds) + Eng_Ken ranker EXP-106: public 0.762889, private 0.751234 (+0.0024 / +0.0034 vs #15). Retraining on all data for test pays off.
 - Closed subsets (EXP-108, EXP-110 router): twin answers alone lose to the rankers (Val Lug 0.289 vs 0.512, Eng_Uga 0.246 vs 0.627, Swa 0.535 vs 0.623, Eng_Ken 0.557 vs 0.626); the router never routes Lug/Swa, and its Eng_Uga/Eng_Ken thresholds gain on held-out but lose on Val. Canned answers are better copied than translated; mutual twins are scarce where questions repeat (Lug<->Eng_Uga 501, Swa<->Eng_Ken 817 pairs). Untested: the twin translation as a ranker feature.
+
+## 2026-10-10: translator tuning and a router with more signals
+
+- EXP-111 (4 beams) and EXP-112 (2 epochs + 4 beams): 2 epochs help Akan and Ghana English (unrouted: Aka 0.3612/0.3476 -> 0.3648/0.3531, Eng_Gha 0.3537/0.3626 -> 0.3613/0.3682 on held-out/Val) and hurt Amharic (0.2628/0.2609 -> 0.2524/0.2486).
+- Submission #17 (EXP-115 router, EXP-114 test twins): 0.768251 public / 0.756522 private, +0.0054 over #16. The LLM judge rose 0.8333 -> 0.8451: a better translator pays more on the leaderboard than local ROUGE shows.
+- EXP-117, `combine.py twin --rich`: route on `twin_sim + margin_w * twin_margin + agree_w * agree`, and rows that lose a shared twin fall back. Eng_Gha 0.3938/0.3941 -> 0.4063/0.4109 (margin 2, agreement 0.4, losers dropped); Aka_Gha 0.3639/0.3528 -> 0.3664/0.3547 (margin 2). The same rule wins when tuned on Val and checked on held-out.
+- Twin matching is the bottleneck now: on Val 9% of Akan and 12% of Ghana English rows lose a shared twin, and those rows score 0.15-0.18 with the twin answer against 0.21-0.27 with Gemma's.
+- Amharic: the translator turns the "This is a question about, X." opening of Ethiopia English answers into noise. Dropping the first predicted sentence on CPU gives only +0.003 on EXP-102; EXP-122 removes the opening before translating and in the training pairs.
+- Queued: EXP-116 (3 epochs), EXP-118 (skip paired candidates), EXP-119 (+ one-to-one), EXP-120 (pairs at cosine >= 0.8), EXP-121 (question pairs), EXP-122 (Amharic prefix).
