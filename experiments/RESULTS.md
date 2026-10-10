@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5121**, **val 0.5062** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-123 | `exp123_combine_twin_sub2_959d3f` | 2026-10-10 19:45 | combine | held_out=all, val=all | 0.3881 | 0.3808 | — | ok | Rich twin router on EXP-118 (paired twin candidates skipped) |
+| EXP-118 | `exp118_twin_gemma431bi_sub2_nhall-vall_ac4677` | 2026-10-10 19:43 | twin_skip_paired | held_out=all, val=all | 0.3608 | 0.3580 | — | ok | Twin candidates that already have their twin inside the pool are skipped (they cannot be the new row's twin) |
 | EXP-116 | `exp116_twin_gemma431bi_sub2_nhall-vall_e94fc8` | 2026-10-10 19:27 | twin_train_epochs | held_out=all, val=all | 0.3585 | 0.3578 | — | ok | Twin translator fine-tuned 3 epochs instead of 2 (4 beams); Akan and Ghana English |
 | EXP-117 | `exp117_combine_twin_sub2_5dc5a1` | 2026-10-10 19:09 | combine | held_out=all, val=all | 0.3863 | 0.3828 | Eng_Gha | ok | Twin router with more signals on EXP-112 (twin margin, agreement with the Gemma answer, rows that lose a shared twin fall back), test twins from EXP-114 |
 | EXP-115 | `exp115_combine_twin_sub2_e91d9f` | 2026-10-10 18:37 | combine | held_out=all, val=all | 0.3788 | 0.3734 | — | ok | EXP-113 twin router (2-epoch translator, 4 beams) with test twins from the translator retrained on Train + Val (EXP-114) |
@@ -159,6 +161,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-123 | held_out |  | 0.3675 | 0.4088 |  |  |  |  |  |
+| EXP-123 | val |  | 0.3528 | 0.4088 |  |  |  |  |  |
+| EXP-118 | held_out |  | 0.3591 | 0.3625 |  |  |  |  |  |
+| EXP-118 | val |  | 0.3494 | 0.3667 |  |  |  |  |  |
 | EXP-116 | held_out |  | 0.3586 | 0.3584 |  |  |  |  |  |
 | EXP-116 | val |  | 0.3512 | 0.3644 |  |  |  |  |  |
 | EXP-117 | held_out |  | 0.3664 | 0.4063 |  |  |  |  |  |

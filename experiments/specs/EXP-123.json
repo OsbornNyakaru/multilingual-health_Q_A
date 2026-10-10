@@ -1,0 +1,50 @@
+{
+  "exp": "EXP-123",
+  "hypothesis": "H-019",
+  "description": "Rich twin router on EXP-118 (paired twin candidates skipped)",
+  "parent": "exp118_twin_gemma431bi_sub2_nhall-vall_ac4677",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "twin",
+      "twin": "exp118_twin_gemma431bi_sub2_nhall-vall_ac4677",
+      "test_twin": null,
+      "base": {
+        "Aka_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01",
+        "Eng_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01"
+      },
+      "route": {
+        "Aka_Gha": {
+          "source": "nllb",
+          "min_sim": 0.87,
+          "margin_w": 2.0,
+          "agree_w": 0.0,
+          "drop_losers": false
+        },
+        "Eng_Gha": {
+          "source": "nllb",
+          "min_sim": 0.98,
+          "margin_w": 1.0,
+          "agree_w": 0.4,
+          "drop_losers": false
+        }
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Aka_Gha",
+    "Eng_Gha"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T19:45:07+00:00",
+  "created": "2026-10-10T19:45:07+00:00",
+  "git_sha": "2ce278716b91db22f00abf0b319902c53cef9910",
+  "run_id": "exp123_combine_twin_sub2_959d3f"
+}

@@ -283,6 +283,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-116-twin-gemma431bi-sub2-nhall-vall]] — Twin translator fine-tuned 3 epochs instead of 2 (4 beams); Akan and Ghana English (ok; won: none)
 
+- [[EXP-118-twin-gemma431bi-sub2-nhall-vall]] — Twin candidates that already have their twin inside the pool are skipped (they cannot be the new row's twin) (ok; won: none)
+
+- [[EXP-123-combine-twin-sub2]] — Rich twin router on EXP-118 (paired twin candidates skipped) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
