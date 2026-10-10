@@ -133,6 +133,15 @@ DEFAULT_CONFIG: dict = {
     # subset), translated into the row's language with twin_translator (NLLB-200, sentence by sentence)
     "twin_translator": "facebook/nllb-200-3.3B",
     "twin_llm": False,           # also translate with model_id via vLLM (meta llm_answer), to compare translators
+    # twin_train: fine-tune twin_translator (setup, on the training pool) on the pool's own twin pairs: rows that are each
+    # other's best English-question match with cosine >= twin_train_min_sim; aligned sentence pairs where the two answers
+    # split into the same number of sentences, else the whole answers; both directions. Answers are then translated with it.
+    "twin_train": False,
+    "twin_train_min_sim": 0.9,
+    "twin_train_epochs": 1.0,
+    "twin_train_lr": 1e-4,
+    "twin_train_batch": 16,
+    "twin_train_max_len": 384,
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
     # Defaults = the 11th-place reference recipe.
@@ -257,11 +266,13 @@ def translate(cfg: dict, texts: list[str], src: str, ctx, tgt: str = "eng_Latn")
         import torch
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
+        dev = "cuda" if torch.cuda.is_available() else "cpu"
         if ("translator", m) not in ctx.cache:
-            dev = "cuda" if torch.cuda.is_available() else "cpu"
             ctx.cache[("translator", m)] = (AutoTokenizer.from_pretrained(m),
                                             AutoModelForSeq2SeqLM.from_pretrained(m, dtype=torch.bfloat16).to(dev).eval())
         tok, model = ctx.cache[("translator", m)]
+        if model.device.type != dev:  # parked on the CPU while vLLM had the GPU (twin_llm)
+            model.to(dev)
         tok.src_lang = src
         eng, bs = tok.convert_tokens_to_ids(tgt), int(cfg["translate_batch"])
         ctx.log(f"translating {len(todo):,} {src} texts to {tgt} with {m}")
@@ -757,12 +768,28 @@ def twin_matches(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -
     return out
 
 
+SENTENCE_END = r"(?<=[.!?\u1362])\s+"  # \u1362 = Ethiopic full stop
+
+
+def sentences(text: str) -> list[str]:
+    import re
+
+    return [x for ln in str(text).splitlines() if ln.strip() for x in re.split(SENTENCE_END, ln.strip()) if x]
+
+
+TWIN_FT = "twin-ft"  # translator name prefix of twin_train models in ctx.cache (the kernel's cache outlives a run)
+
+
+def twin_ft_name(ctx, cfg: dict) -> str:
+    return f"{TWIN_FT}:{_adapter_key(ctx, cfg)[1]}"
+
+
 def translate_answers(cfg: dict, texts: list[str], src: str, tgt: str, ctx) -> list[str]:
     """NLLB works on sentences: split each text into lines and sentences, translate those, put them back."""
     import re
 
-    tcfg = {**cfg, "translate_model": cfg["twin_translator"]}
-    split = [[[x for x in re.split(r"(?<=[.!?])\s+", ln.strip()) if x] for ln in t.splitlines() if ln.strip()] for t in texts]
+    tcfg = {**cfg, "translate_model": twin_ft_name(ctx, cfg) if cfg["twin_train"] else cfg["twin_translator"]}
+    split = [[[x for x in re.split(SENTENCE_END, ln.strip()) if x] for ln in t.splitlines() if ln.strip()] for t in texts]
     flat = [x for lines in split for ln in lines for x in ln]
     done = dict(zip(flat, translate(tcfg, flat, src, ctx, tgt=tgt)))
     return ["\n".join(" ".join(done[x] for x in ln) for ln in lines) for lines in split]
@@ -779,7 +806,11 @@ def twin_llm(cfg: dict, jobs: list[tuple[str, str, str, str]], ctx, answers: dic
 
     from transformers import AutoTokenizer
 
-    ctx.cache.pop(("translator", cfg["twin_translator"]), None)  # free NLLB's GPU memory for vLLM
+    for key in [k for k in ctx.cache if isinstance(k, tuple) and k[0] == "translator"]:  # free the GPU for vLLM
+        if str(key[1]).startswith(TWIN_FT):
+            ctx.cache[key][1].to("cpu")  # trained in setup: park it for the next eval set
+        else:
+            ctx.cache.pop(key)
     mem = free_gpu_for_vllm(cfg, ctx)
     tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
     reqs = []
@@ -818,6 +849,84 @@ def twin_llm(cfg: dict, jobs: list[tuple[str, str, str, str]], ctx, answers: dic
 
     run_vllm_worker(ctx, ensure_vllm(cfg, ctx), job_path, log_path, collect_seen, answers, seen, len(reqs))
     return got
+
+
+def twin_pairs(cfg: dict, pool_df: pd.DataFrame, subsets: list[str], ctx) -> list[tuple[str, str, str, str]]:
+    """(source code, target code, source text, target text) training pairs from the pool's own twins: rows of a
+    non-English subset and of its English twin subset that are each other's best match with cosine >= twin_train_min_sim.
+    Aligned sentence pairs when both answers have the same number of sentences, else the whole answers; both directions."""
+    pool = pool_df.reset_index(drop=True)
+    ids = pool[ID_COL].astype(str).to_numpy()
+    lo = float(cfg["twin_train_min_sim"])
+    out = []
+    for s in sorted({x if not x.startswith("Eng") else TWIN_OF[x] for x in subsets if x in TWIN_OF}):
+        t = TWIN_OF[s]
+        fwd = twin_matches(cfg, pool[pool[SUBSET_COL] == s], pool, ctx)
+        back = twin_matches(cfg, pool[pool[SUBSET_COL] == t], pool, ctx)
+        n = 0
+        for i, (j, sim, _) in fwd.items():
+            b = back.get(str(ids[j]))
+            if sim < lo or not b or str(ids[b[0]]) != i or b[1] < lo:
+                continue
+            a_s, a_t = sentences(pool[OUTPUT_COL].iloc[b[0]]), sentences(pool[OUTPUT_COL].iloc[j])
+            units = list(zip(a_s, a_t)) if len(a_s) == len(a_t) else [(" ".join(a_s), " ".join(a_t))]
+            for x, y in units:
+                out += [(nllb_code(s), nllb_code(t), x, y), (nllb_code(t), nllb_code(s), y, x)]
+            n += 1
+        ctx.log(f"twin pairs {s} <-> {t}: {n:,} mutual matches (cosine >= {lo})")
+    return out
+
+
+def train_twin_translator(cfg: dict, pool_df: pd.DataFrame, subsets: list[str], ctx):
+    """Fine-tune twin_translator on twin_pairs (fp32 weights, bf16 autocast, Adafactor); returns (tokenizer, model)."""
+    import random
+
+    import torch
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+    from transformers.optimization import Adafactor
+
+    pairs = twin_pairs(cfg, pool_df, subsets, ctx)
+    name, bs, max_len = cfg["twin_translator"], int(cfg["twin_train_batch"]), int(cfg["twin_train_max_len"])
+    tok = AutoTokenizer.from_pretrained(name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(name, dtype=torch.float32).to("cuda")
+    model.gradient_checkpointing_enable()
+    model.config.use_cache = False
+    model.train()
+    opt = Adafactor(model.parameters(), lr=float(cfg["twin_train_lr"]), scale_parameter=False, relative_step=False,
+                    warmup_init=False)
+    rng = random.Random(0)
+    by_dir: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    for a, b, x, y in pairs:
+        by_dir.setdefault((a, b), []).append((x, y))
+    epochs = float(cfg["twin_train_epochs"])
+    batches = []
+    for e in range(max(1, int(-(-epochs // 1)))):
+        for d, rows in by_dir.items():
+            rows = rows[:]
+            rng.shuffle(rows)
+            if e + 1 > epochs:  # fractional last epoch
+                rows = rows[: int(len(rows) * (epochs - e))]
+            batches += [(d, rows[k:k + bs]) for k in range(0, len(rows), bs)]
+    rng.shuffle(batches)
+    ctx.log(f"twin translator: {len(pairs):,} pairs, {len(batches):,} steps of {bs}")
+    for step, ((src, tgt), rows) in enumerate(batches, 1):
+        tok.src_lang, tok.tgt_lang = src, tgt
+        enc = tok([x for x, _ in rows], text_target=[y for _, y in rows], max_length=max_len, truncation=True,
+                  padding=True, return_tensors="pt").to("cuda")
+        enc["labels"][enc["labels"] == tok.pad_token_id] = -100
+        with torch.autocast("cuda", dtype=torch.bfloat16):
+            loss = model(**enc).loss
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        opt.step()
+        opt.zero_grad(set_to_none=True)
+        if step % 100 == 0 or step == len(batches):
+            ctx.log(f"twin translator step {step}/{len(batches)} loss {loss.item():.4f}", progress=(step, len(batches)))
+    del opt
+    model.config.use_cache = True
+    model = model.to(torch.bfloat16).eval()
+    torch.cuda.empty_cache()
+    return tok, model
 
 
 def twin_answers(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, answers: dict, meta: dict) -> None:
@@ -1481,11 +1590,18 @@ def setup(config: dict, sets: dict, ctx) -> None:
     val's (Train), else test's (Train + Val). Eval rows are never in that pool.
     """
     cfg = {**DEFAULT_CONFIG, **(config or {})}
+    for key in [k for k in ctx.cache if isinstance(k, tuple) and k[0] == "translator" and str(k[1]).startswith(TWIN_FT)]:
+        ctx.cache.pop(key)  # an earlier run's twin translator (a whole model, not a path on disk)
     trains_lora = cfg["mode"] == "lora_rag" or (cfg["mode"] == "llm_choose" and cfg["choose_train"])
-    if not trains_lora and not cfg["rerank_train"] and not cfg["embedder_train"] and not int(cfg["oof_folds"]):
+    trains_twin = cfg["mode"] == "twin" and cfg["twin_train"]
+    if not (trains_lora or trains_twin or cfg["rerank_train"] or cfg["embedder_train"] or int(cfg["oof_folds"])):
         return
     name = next(n for n in ("held_out", "val", "test") if n in sets)
     ctx.log(f"training on the {name} pool")
+    if trains_twin:  # one translator for every eval set, trained on the most honest pool present
+        subsets = sorted(set().union(*(set(e[SUBSET_COL]) for e, _ in sets.values())))
+        ctx.cache[("translator", twin_ft_name(ctx, cfg))] = train_twin_translator(cfg, sets[name][1], subsets, ctx)
+        return
     if int(cfg["oof_folds"]) > 0:  # run() then answers every eval set from the fold-averaged lists
         subsets = cfg["oof_subsets"] or sorted(set().union(*(set(e[SUBSET_COL]) for e, _ in sets.values())))
         ctx.cache[_oof_key(ctx, cfg)] = oof_lists(cfg, sets, name, subsets, ctx)
@@ -1678,6 +1794,8 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
         llm_choose(cfg, eval_df, pool_df, ctx, answers, meta)
         return answers, meta
     if mode == "twin":
+        if cfg["twin_train"] and ("translator", twin_ft_name(ctx, cfg)) not in ctx.cache:
+            raise RuntimeError("twin_train needs the setup step (runner 2026-10-06 or newer)")
         twin_answers(cfg, eval_df, pool_df, ctx, answers, meta)
         return answers, meta
     if int(cfg["oof_folds"]) > 0:

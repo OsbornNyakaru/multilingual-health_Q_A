@@ -175,15 +175,29 @@ def fit(df: pd.DataFrame):
     return fit_one(df)
 
 
+def fitted_cols(df: pd.DataFrame) -> list[str]:
+    """feature_cols with at least one value: sklearn 1.9's histogram binning fails on an all-missing column
+    (gen_overlap when no generator run is given)."""
+    return [c for c in feature_cols(df) if df[c].notna().any()]
+
+
+def model_cols(m, d: pd.DataFrame) -> list[str]:
+    """The columns the model was fitted on (sklearn: feature_names_in_, LightGBM: feature_name_)."""
+    for attr in ("feature_names_in_", "feature_name_"):
+        if hasattr(m, attr):
+            return list(getattr(m, attr))
+    return feature_cols(d)
+
+
 def predict(model, d: pd.DataFrame) -> np.ndarray:
     if isinstance(model, dict):
         out = np.full(len(d), -np.inf)
         for sub, m in model.items():
             mask = (d["subset"] == sub).to_numpy()
             if mask.any():
-                out[mask] = m.predict(d.loc[mask, feature_cols(d)])
+                out[mask] = m.predict(d.loc[mask, model_cols(m, d)])
         return out
-    return model.predict(d[feature_cols(d)])
+    return model.predict(d[model_cols(model, d)])
 
 
 def fit_one(df: pd.DataFrame):
@@ -194,13 +208,13 @@ def fit_one(df: pd.DataFrame):
         rel = (d["label"] * 10).round().astype(int)  # graded relevance 0..10 from the ROUGE overlap
         m = LGBMRanker(objective="lambdarank", n_estimators=300, learning_rate=0.05, num_leaves=31, min_child_samples=20,
                        reg_lambda=1.0, random_state=0, verbose=-1)
-        return m.fit(d[feature_cols(d)], rel, group=d.groupby("ID", sort=True).size().to_numpy(),
+        return m.fit(d[fitted_cols(d)], rel, group=d.groupby("ID", sort=True).size().to_numpy(),
                      categorical_feature=["subset_code"])
     from sklearn.ensemble import HistGradientBoostingRegressor
 
     m = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05, max_leaf_nodes=31, l2_regularization=1.0,
-                                      categorical_features=[feature_cols(df).index("subset_code")], random_state=0)
-    return m.fit(df[feature_cols(df)], df["label"])
+                                      categorical_features=[fitted_cols(df).index("subset_code")], random_state=0)
+    return m.fit(df[fitted_cols(df)], df["label"])
 
 
 def pick(df: pd.DataFrame, model) -> pd.DataFrame:

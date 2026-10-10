@@ -543,6 +543,30 @@ def test_twin_answers_with_the_translated_answer_of_the_matching_question_in_the
     assert meta["e2"]["twin_id"] == "a1" and answers["e2"] == "<eng_Latn>Akan hiv mmuae."
 
 
+def test_twin_pairs_keep_mutual_confident_matches_aligned_by_sentence(monkeypatch):
+    en = {"akan malaria asemmisa": "how do i prevent malaria", "akan hiv asemmisa": "what are hiv symptoms"}
+    monkeypatch.setattr(E, "translate", lambda cfg, texts, src, ctx, tgt="eng_Latn": [en.get(t, t) for t in texts])
+    pool = pd.DataFrame({
+        "ID": ["a1", "a2", "g1", "g2", "g3"],
+        "input": ["akan malaria asemmisa", "akan hiv asemmisa", "how to prevent malaria", "hiv symptom list",
+                  "what causes pregnancy"],
+        "output": ["Akan one. Akan two.", "Akan hiv.", "Eng one. Eng two.", "Eng hiv. Extra sentence.", "Other."],
+        "subset": ["Aka_Gha", "Aka_Gha", "Eng_Gha", "Eng_Gha", "Eng_Gha"],
+    })
+    ctx = Ctx()
+    ctx.get_embedder = lambda name: FakeDense()
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "fake-dense", "twin_train_min_sim": 0.5}
+    pairs = E.twin_pairs(cfg, pool, ["Aka_Gha", "Eng_Gha"], ctx)
+    assert ("aka_Latn", "eng_Latn", "Akan two.", "Eng two.") in pairs  # same sentence count: aligned sentence pairs
+    assert ("eng_Latn", "aka_Latn", "Eng one.", "Akan one.") in pairs  # and both directions
+    assert ("aka_Latn", "eng_Latn", "Akan hiv.", "Eng hiv. Extra sentence.") in pairs  # else the whole answers
+    assert len(pairs) == 6 and not any("Other." in p for p in pairs)  # g3 has no mutual twin
+
+
+def test_sentences_split_ethiopic_full_stops():
+    assert E.sentences("ጤና ነው። ውሃ ጠጡ።\nNext line. Two") == ["ጤና ነው።", "ውሃ ጠጡ።", "Next line.", "Two"]
+
+
 def test_postprocess_join_keeps_structured_answers():
     raw = "Mmuaeɛ: Key steps:\n\n1. Join groups.\n2.  Volunteer."
     assert E.postprocess(raw, "Aka_Gha") == "Key steps:"
