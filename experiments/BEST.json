@@ -27,13 +27,13 @@
     "since": "2026-10-07T04:48:38+00:00"
   },
   "Eng_Gha": {
-    "run_id": "exp113_combine_twin_sub2_5ee429",
-    "exp": "EXP-113",
+    "run_id": "exp117_combine_twin_sub2_5dc5a1",
+    "exp": "EXP-117",
     "scores": {
-      "held_out": 0.3938,
-      "val": 0.3941
+      "held_out": 0.4063,
+      "val": 0.4109
     },
-    "since": "2026-10-10T17:54:26+00:00"
+    "since": "2026-10-10T19:09:47+00:00"
   },
   "Eng_Ken": {
     "run_id": "exp106_combine_ltr_sub4_1cb7a1",

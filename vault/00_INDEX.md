@@ -279,6 +279,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-115-combine-twin-sub2]] — EXP-113 twin router (2-epoch translator, 4 beams) with test twins from the translator retrained on Train + Val (EXP-114) (ok; won: none)
 
+- [[EXP-117-combine-twin-sub2]] — Twin router with more signals on EXP-112 (twin margin, agreement with the Gemma answer, rows that lose a shared twin fall back), test twins from EXP-114 (ok; won: Eng_Gha)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

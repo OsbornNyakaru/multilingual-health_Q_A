@@ -1,0 +1,50 @@
+{
+  "exp": "EXP-117",
+  "hypothesis": "H-019",
+  "description": "Twin router with more signals on EXP-112 (twin margin, agreement with the Gemma answer, rows that lose a shared twin fall back), test twins from EXP-114",
+  "parent": "exp112_twin_gemma431bi_sub3_nhall-vall_e257ce",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "twin",
+      "twin": "exp112_twin_gemma431bi_sub3_nhall-vall_e257ce",
+      "test_twin": "exp114_twin_gemma431bi_sub2_ntall_1be16e",
+      "base": {
+        "Aka_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01",
+        "Eng_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01"
+      },
+      "route": {
+        "Aka_Gha": {
+          "source": "nllb",
+          "min_sim": 0.81,
+          "margin_w": 2.0,
+          "agree_w": 0.0,
+          "drop_losers": false
+        },
+        "Eng_Gha": {
+          "source": "nllb",
+          "min_sim": 0.99,
+          "margin_w": 2.0,
+          "agree_w": 0.4,
+          "drop_losers": true
+        }
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Aka_Gha",
+    "Eng_Gha"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T19:09:47+00:00",
+  "created": "2026-10-10T19:09:47+00:00",
+  "git_sha": "b8574ee54eb4eb21f4c0bf6b5e9348445e9553c3",
+  "run_id": "exp117_combine_twin_sub2_5dc5a1"
+}

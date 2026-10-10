@@ -231,29 +231,63 @@ def cmd_pool(a) -> None:
 # ── twin ─────────────────────────────────────────────────────────────────────
 
 TWIN_SOURCES = {"nllb": "pred", "llm": "llm_answer"}
-TWIN_THRESHOLDS = [round(0.6 + 0.01 * i, 2) for i in range(40)] + [None]  # None = never route
+TWIN_THRESHOLDS = [round(0.5 + 0.01 * i, 2) for i in range(75)] + [None]  # None = never route
+TWIN_WEIGHTS = [(m, g, d) for m in (0.0, 1.0, 2.0) for g in (0.0, 0.2, 0.4) for d in (False, True)]
 
 
-def twin_apply(base: pd.DataFrame, twin: pd.DataFrame, rule_by_subset: dict) -> pd.DataFrame:
-    """Each row: its twin's translated answer (source per subset) when twin_sim >= the subset's threshold and that
-    translation exists, else the base answer. rule_by_subset = {subset: (source, threshold or None)}."""
-    t = twin.reindex(columns=["ID", "twin_sim", *TWIN_SOURCES.values()]).rename(columns={"pred": "twin_pred"})  # a run
-    # without twin_llm has no llm_answer: those rows keep the base answer
-    m = base.merge(t, on="ID", how="left")
+def _rouge_rows(preds: list[str], refs: list[str]) -> list[float]:
+    """Per-row mean of ROUGE-1 and ROUGE-L F1 with the harness's scorer."""
+    sc = X.prepare._rouge_scorer()
+    out = []
+    for p, r in zip(preds, refs):
+        s = sc.score(r, p)
+        out.append((s["rouge1"].fmeasure + s["rougeL"].fmeasure) / 2)
+    return out
+
+
+def twin_features(base: pd.DataFrame, twin: pd.DataFrame) -> pd.DataFrame:
+    """base rows with their twin candidates and the router's signals: twin_sim, twin_margin (over the runner-up twin),
+    agree_<source> (ROUGE between the twin translation and the base answer) and loser (another row of the same set and
+    subset has the same twin with a higher twin_sim: one twin has one translation, so this row's match is wrong)."""
+    t = twin.reindex(columns=["ID", "twin_id", "twin_sim", "twin_margin", *TWIN_SOURCES.values()])  # a run without
+    # twin_llm has no llm_answer: those rows keep the base answer
+    m = base[["ID", "subset", "pred"]].merge(t.rename(columns={"pred": "twin_pred"}), on="ID", how="left")
+    m["twin_sim"] = pd.to_numeric(m["twin_sim"], errors="coerce").fillna(0.0)
+    m["twin_margin"] = pd.to_numeric(m["twin_margin"], errors="coerce").fillna(0.0)
+    for source, col in TWIN_SOURCES.items():
+        col = "twin_pred" if source == "nllb" else col
+        m[col] = [x.strip() if isinstance(x, str) else "" for x in m[col]]
+        m[f"agree_{source}"] = _rouge_rows(m[col].tolist(), m["pred"].astype(str).tolist())
+    has = m["twin_id"].notna()
+    rank = m[has].groupby(["subset", "twin_id"])["twin_sim"].rank(ascending=False, method="first")
+    m["loser"] = (rank.reindex(m.index) > 1).fillna(False)
+    return m
+
+
+def twin_route(m: pd.DataFrame, rule_by_subset: dict) -> pd.DataFrame:
+    """Each row of twin_features: its twin's translated answer when the translation exists and
+    twin_sim + margin_w * twin_margin + agree_w * agree >= threshold (and, with drop_losers, the row is not a loser),
+    else the base answer. rule_by_subset = {subset: (source, threshold or None[, margin_w, agree_w, drop_losers])}."""
     out = m[["ID", "subset"]].copy()
     preds, src = [], []
-    for _, r in m.iterrows():
-        source, thr = rule_by_subset.get(r["subset"], ("nllb", None))
-        col = "twin_pred" if source == "nllb" else TWIN_SOURCES[source]
-        alt = r[col] if isinstance(r[col], str) and r[col].strip() else ""
-        use = thr is not None and alt and float(r["twin_sim"] or 0) >= thr
+    for r in m.to_dict("records"):
+        source, thr, mw, aw, drop = (*rule_by_subset.get(r["subset"], ("nllb", None)), 0.0, 0.0, False)[:5]
+        alt = r["twin_pred" if source == "nllb" else TWIN_SOURCES[source]]
+        use = (thr is not None and bool(alt) and not (drop and r["loser"])
+               and r["twin_sim"] + mw * r["twin_margin"] + aw * r[f"agree_{source}"] >= thr)
         preds.append(alt if use else r["pred"])
         src.append(f"twin_{source}" if use else "base")
     out["pred"], out["source"] = preds, src
     return out
 
 
+def twin_apply(base: pd.DataFrame, twin: pd.DataFrame, rule_by_subset: dict) -> pd.DataFrame:
+    return twin_route(twin_features(base, twin), rule_by_subset)
+
+
 def cmd_twin(a) -> None:
+    import numpy as np
+
     subsets = a.subsets.split(",")
     td = run_dir(a.twin)
     twin = {s: pd.read_csv(td / f"{s}_preds.csv", dtype={"ID": str, "subset": str}) for s in SETS}
@@ -262,22 +296,37 @@ def cmd_twin(a) -> None:
     base_rid = {sub: base_rid.get(sub) or X.load_best()[sub]["run_id"] for sub in subsets}
     base = {s: pd.concat([best_preds(sub, s, base_rid[sub]) for sub in subsets]) for s in SETS}
     refs = {s: pd.read_csv(X.REFS[s], dtype=str).fillna("")[["ID", "output"]] for s in SETS}
+    feats = {}
+    for s in SETS:  # per-row scores once: the grid then only picks between two known numbers per row
+        f = twin_features(base[s], twin[s]).merge(refs[s], on="ID")
+        f["s_base"] = _rouge_rows(f["pred"].tolist(), f["output"].tolist())
+        for source, col in TWIN_SOURCES.items():
+            f[f"s_{source}"] = _rouge_rows(f["twin_pred" if source == "nllb" else col].tolist(), f["output"].tolist())
+        feats[s] = f
 
     def score(s, sub, rule):
-        p = twin_apply(base[s][base[s]["subset"] == sub], twin[s], {sub: rule}).merge(refs[s], on="ID")
-        return X.prepare.score(p["pred"].tolist(), p["output"].tolist()).combined
+        f = feats[s][feats[s]["subset"] == sub]
+        source, thr, mw, aw, drop = rule
+        if thr is None:
+            return float(f["s_base"].mean()) * 0.74
+        alt = f["twin_pred" if source == "nllb" else TWIN_SOURCES[source]] != ""
+        use = alt & ~(drop & f["loser"]) & (f["twin_sim"] + mw * f["twin_margin"] + aw * f[f"agree_{source}"] >= thr)
+        return float(np.where(use, f[f"s_{source}"], f["s_base"]).mean()) * 0.74  # 0.37 * (R1 + RL)
 
+    weights = TWIN_WEIGHTS if a.rich else [(0.0, 0.0, False)]
     rule_by, report = {}, []
     for sub in subsets:
-        grid = [(src, t) for src in TWIN_SOURCES for t in TWIN_THRESHOLDS]
+        grid = [(src, t, *w) for src in TWIN_SOURCES for t in TWIN_THRESHOLDS for w in weights]
         sc = {r: score("held_out", sub, r) for r in grid}
-        rule = max(grid, key=lambda r: (round(sc[r], 6), 2.0 if r[1] is None else r[1]))  # ties: route fewer rows
+        # ties: the simplest rule (no extra signals), then route fewer rows
+        rule = max(grid, key=lambda r: (round(sc[r], 6), -(r[2] + r[3] + r[4]), 2.0 if r[1] is None else r[1]))
         rule_by[sub] = rule
-        off = ("nllb", None)
-        report.append(f"{sub}: {rule[0]} sim>={rule[1]} held-out {sc[off]:.4f} -> {sc[rule]:.4f}, "
+        off = ("nllb", None, 0.0, 0.0, False)
+        report.append(f"{sub}: {rule[0]} sim + {rule[2]}*margin + {rule[3]}*agree >= {rule[1]}"
+                      f"{', losers dropped' if rule[4] else ''}: held-out {sc[off]:.4f} -> {sc[rule]:.4f}, "
                       f"val {score('val', sub, off):.4f} -> {score('val', sub, rule):.4f}")
     print("tuned on held-out:\n  " + "\n  ".join(report))
-    preds = {s: twin_apply(base[s], twin[s], rule_by) for s in SETS}
+    preds = {s: twin_route(feats[s], rule_by) for s in SETS}
     test = None
     if a.test_twin:
         tt = pd.read_csv(run_dir(a.test_twin) / "test_preds.csv", dtype={"ID": str, "subset": str})
@@ -285,7 +334,8 @@ def cmd_twin(a) -> None:
         print("test rows routed to twin:", test.groupby("subset")["source"].apply(lambda x: f"{(x != 'base').mean():.0%}").to_dict())
     cfg = {"combine": {"rule": "twin", "twin": td.name, "test_twin": run_dir(a.test_twin).name if a.test_twin else None,
                        "base": base_rid,
-                       "route": {k: {"source": v[0], "min_sim": v[1]} for k, v in rule_by.items()}}}
+                       "route": {k: {"source": v[0], "min_sim": v[1], "margin_w": v[2], "agree_w": v[3],
+                                     "drop_losers": v[4]} for k, v in rule_by.items()}}}
     record_virtual(cfg, "twin", subsets, preds, test, td.name, a.hyp, a.desc)
 
 
@@ -387,6 +437,9 @@ def main() -> None:
     t.add_argument("--subsets", required=True)
     t.add_argument("--base", help="per-subset base runs, e.g. Aka_Gha=EXP-077,Amh_Eth=EXP-061 (default: the best run)")
     t.add_argument("--test-twin", help="EXP id with the twin run's test predictions")
+    t.add_argument("--rich", action="store_true",
+                   help="also tune the weights of the twin margin and of the agreement with the base answer, and "
+                        "whether rows that lose a shared twin fall back")
     t.add_argument("--hyp", default="H-019")
     t.add_argument("--desc", required=True)
     a = ap.parse_args()

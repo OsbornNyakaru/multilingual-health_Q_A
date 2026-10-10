@@ -67,3 +67,15 @@ def test_twin_apply_routes_confident_twins_per_subset_and_falls_back_without_a_t
     assert out["pred"].tolist() == ["nllb a", "gen b", "llm c", "gen d"]
     assert out["source"].tolist() == ["twin_nllb", "base", "twin_llm", "base"]
     assert C.twin_apply(base, twin, {})["pred"].tolist() == base["pred"].tolist()  # no rule: never route
+
+
+def test_twin_route_margin_agreement_and_shared_twins():
+    base = pd.DataFrame({"ID": ["a", "b", "c"], "subset": ["Eng_Gha"] * 3, "pred": ["take the pills daily", "gen b", "gen c"]})
+    twin = pd.DataFrame({"ID": ["a", "b", "c"], "twin_id": ["t1", "t2", "t2"], "twin_sim": [0.7, 0.9, 0.8],
+                         "twin_margin": [0.2, 0.0, 0.0], "pred": ["take the pills daily", "nllb x", "nllb y"]})
+    f = C.twin_features(base, twin)
+    assert f["loser"].tolist() == [False, False, True] and f["agree_nllb"].iloc[0] == 1.0  # c shares t2 with b, lower sim
+    assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.75)})["source"].tolist() == ["base", "twin_nllb", "twin_nllb"]
+    assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.75, 0.0, 0.0, True)})["source"].tolist() == ["base", "twin_nllb", "base"]
+    assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.85, 1.0, 0.0, False)})["source"].tolist() == ["twin_nllb", "twin_nllb", "base"]
+    assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.95, 0.0, 0.4, False)})["source"].tolist() == ["twin_nllb", "base", "base"]

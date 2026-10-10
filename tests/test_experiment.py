@@ -563,6 +563,45 @@ def test_twin_pairs_keep_mutual_confident_matches_aligned_by_sentence(monkeypatc
     assert len(pairs) == 6 and not any("Other." in p for p in pairs)  # g3 has no mutual twin
 
 
+def test_twin_matching_skips_paired_candidates_and_assigns_one_to_one(monkeypatch):
+    en = {"akan malaria asemmisa": "how to prevent malaria", "akan malaria foforo": "how to prevent malaria now",
+          "akan hiv asemmisa": "what are hiv symptoms"}
+    monkeypatch.setattr(E, "translate", lambda cfg, texts, src, ctx, tgt="eng_Latn": [en.get(t, t) for t in texts])
+    pool = pd.DataFrame({
+        "ID": ["a1", "g1", "g2", "g3"],
+        "input": ["akan malaria asemmisa", "how to prevent malaria", "how can i prevent malaria today", "hiv symptoms"],
+        "output": ["Akan net.", "Use a net.", "Use a net today.", "Fever."],
+        "subset": ["Aka_Gha", "Eng_Gha", "Eng_Gha", "Eng_Gha"],
+    })
+    ev = pd.DataFrame({"ID": ["e1", "e2"], "input": ["akan malaria foforo", "akan malaria foforo"], "subset": ["Aka_Gha"] * 2})
+    ctx = Ctx()
+    ctx.get_embedder = lambda name: FakeDense()
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "fake-dense", "twin_train_min_sim": 0.5}
+    ids = pool["ID"].tolist()
+    assert E.twin_pool_pairs(cfg, pool, "Eng_Gha", ctx) == [(0, 1)]  # a1 <-> g1, whichever side asks
+    assert {ids[m[0]] for m in E.twin_matches(cfg, ev, pool, ctx).values()} == {"g1"}
+    skip = E.twin_matches({**cfg, "twin_skip_paired": True}, ev, pool, ctx)
+    assert {ids[m[0]] for m in skip.values()} == {"g2"}  # g1 has its twin a1 in the pool
+    one = E.twin_matches({**cfg, "twin_one_to_one": True}, ev, pool, ctx)
+    assert len({m[0] for m in one.values()}) == 2 and min(m[2] for m in one.values()) <= 0  # one row gave up its best match
+
+
+def test_twin_drop_prefix_and_question_pairs(monkeypatch):
+    monkeypatch.setattr(E, "translate", lambda cfg, texts, src, ctx, tgt="eng_Latn": list(texts))
+    pool = pd.DataFrame({"ID": ["m1", "e1"], "input": ["hiv symptoms", "hiv symptoms"],
+                         "output": ["Amh one.", "This is a question about, HIV. Eng one."], "subset": ["Amh_Eth", "Eng_Eth"]})
+    ctx = Ctx()
+    ctx.get_embedder = lambda name: FakeDense()
+    cfg = {**E.DEFAULT_CONFIG, "embedder": "fake-dense", "twin_drop_prefix": r"^This is a question about,[^.]*\.\s*",
+           "twin_train_questions": True}
+    pairs = E.twin_pairs(cfg, pool, ["Amh_Eth"], ctx)
+    assert ("amh_Ethi", "eng_Latn", "Amh one.", "Eng one.") in pairs and ("eng_Latn", "amh_Ethi", "hiv symptoms", "hiv symptoms") in pairs
+    ev = pd.DataFrame({"ID": ["q"], "input": ["hiv symptoms"], "subset": ["Amh_Eth"]})
+    answers, meta = {}, {}
+    E.twin_answers(cfg, ev, pool, ctx, answers, meta)
+    assert answers["q"] == "Eng one."
+
+
 def test_sentences_split_ethiopic_full_stops():
     assert E.sentences("ጤና ነው። ውሃ ጠጡ።\nNext line. Two") == ["ጤና ነው።", "ውሃ ጠጡ።", "Next line.", "Two"]
 

@@ -133,11 +133,16 @@ DEFAULT_CONFIG: dict = {
     # subset), translated into the row's language with twin_translator (NLLB-200, sentence by sentence)
     "twin_translator": "facebook/nllb-200-3.3B",
     "twin_llm": False,           # also translate with model_id via vLLM (meta llm_answer), to compare translators
+    "twin_skip_paired": False,   # a pool row that already has its twin inside the pool (twin_pool_pairs) is no candidate
+    "twin_one_to_one": False,    # one twin per eval row: the assignment with the highest total cosine, not each row's best
+    "twin_drop_prefix": "",      # regex removed from the start of English twin answers before translating and training
+                                 # (Eng_Eth answers open with "This is a question about, X."; Amh_Eth answers never do)
     # twin_train: fine-tune twin_translator (setup, on the training pool) on the pool's own twin pairs: rows that are each
     # other's best English-question match with cosine >= twin_train_min_sim; aligned sentence pairs where the two answers
     # split into the same number of sentences, else the whole answers; both directions. Answers are then translated with it.
     "twin_train": False,
     "twin_train_min_sim": 0.9,
+    "twin_train_questions": False,  # also train on the twins' question pairs
     "twin_train_epochs": 1.0,
     "twin_train_lr": 1e-4,
     "twin_train_batch": 16,
@@ -742,9 +747,12 @@ def english_questions(cfg: dict, df: pd.DataFrame, ctx) -> list[str]:
     return translated_view(tcfg, df, ctx)[INPUT_COL].astype(str).tolist()
 
 
-def twin_matches(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> dict[str, tuple[int, float, float]]:
-    """{eval ID: (pool position of its twin, cosine, margin over the runner-up)}: the most similar question,
-    compared in English, among the pool rows of the paired subset."""
+def twin_matches(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx,
+                 plain: bool = False) -> dict[str, tuple[int, float, float]]:
+    """{eval ID: (pool position of its twin, cosine, margin over the best other candidate)}: the most similar question,
+    compared in English, among the pool rows of the paired subset. twin_skip_paired drops candidates that have their
+    twin inside the pool; twin_one_to_one gives every candidate to at most one eval row (the margin is then negative
+    where a row did not get its own best candidate). plain: neither."""
     import numpy as np
 
     emb = ctx.get_embedder(cfg["embedder"])
@@ -757,15 +765,47 @@ def twin_matches(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -
     for s in sorted(set(eval_df[SUBSET_COL])):
         rows = np.flatnonzero(eval_df[SUBSET_COL].to_numpy() == s)
         cand = np.flatnonzero(pool_df[SUBSET_COL].to_numpy() == TWIN_OF.get(s))
+        if len(cand) and cfg["twin_skip_paired"] and not plain:
+            taken = {p[not s.startswith("Eng")] for p in twin_pool_pairs(cfg, pool_df, s, ctx)}  # the candidates' side
+            free = np.array([c for c in cand if c not in taken], dtype=int)
+            ctx.log(f"twin {s}: {len(cand) - len(free):,} of {len(cand):,} candidates already have their twin in the pool")
+            cand = free
         if not len(cand):
             continue
         sims = enc(english_questions(cfg, eval_df.iloc[rows], ctx)) @ enc(english_questions(cfg, pool_df.iloc[cand], ctx)).T
-        order = np.argsort(-sims, axis=1)
-        for k, r in enumerate(rows):
-            a = order[k, 0]
-            second = float(sims[k, order[k, 1]]) if len(cand) > 1 else 0.0
-            out[str(eval_df[ID_COL].iloc[r])] = (int(cand[a]), round(float(sims[k, a]), 4), round(float(sims[k, a]) - second, 4))
+        pick = dict(enumerate(np.argmax(sims, axis=1)))
+        if cfg["twin_one_to_one"] and not plain:
+            from scipy.optimize import linear_sum_assignment
+
+            pick = dict(zip(*linear_sum_assignment(-sims)))  # fewer candidates than rows: the rest get no twin
+        for k, a in pick.items():
+            other = float(np.delete(sims[k], a).max()) if len(cand) > 1 else 0.0
+            out[str(eval_df[ID_COL].iloc[rows[k]])] = (int(cand[a]), round(float(sims[k, a]), 4), round(float(sims[k, a]) - other, 4))
     return out
+
+
+def twin_pool_pairs(cfg: dict, pool_df: pd.DataFrame, subset: str, ctx) -> list[tuple[int, int]]:
+    """(position of the non-English row, position of its English twin) for the pool rows of subset's language pair
+    that are each other's best match with cosine >= twin_train_min_sim."""
+    s = TWIN_OF[subset] if subset.startswith("Eng") else subset
+    key = ("twin_pool_pairs", s, cfg["embedder"], cfg["twin_translator"], float(cfg["twin_train_min_sim"]), len(pool_df),
+           str(pool_df[ID_COL].iloc[0]))
+    memo = getattr(ctx, "cache", {})
+    if key not in memo:
+        ids = pool_df[ID_COL].astype(str).to_numpy()
+        pos = {i: k for k, i in enumerate(ids)}
+        lo = float(cfg["twin_train_min_sim"])
+        fwd = twin_matches(cfg, pool_df[pool_df[SUBSET_COL] == s], pool_df, ctx, plain=True)
+        back = twin_matches(cfg, pool_df[pool_df[SUBSET_COL] == TWIN_OF[s]], pool_df, ctx, plain=True)
+        memo[key] = [(pos[i], j) for i, (j, sim, _) in fwd.items()
+                     if sim >= lo and (b := back.get(str(ids[j]))) and str(ids[b[0]]) == i and b[1] >= lo]
+    return memo[key]
+
+
+def drop_prefix(cfg: dict, text: str) -> str:
+    import re
+
+    return re.sub(cfg["twin_drop_prefix"], "", str(text), count=1) if cfg["twin_drop_prefix"] else str(text)
 
 
 SENTENCE_END = r"(?<=[.!?\u1362])\s+"  # \u1362 = Ethiopic full stop
@@ -852,28 +892,22 @@ def twin_llm(cfg: dict, jobs: list[tuple[str, str, str, str]], ctx, answers: dic
 
 
 def twin_pairs(cfg: dict, pool_df: pd.DataFrame, subsets: list[str], ctx) -> list[tuple[str, str, str, str]]:
-    """(source code, target code, source text, target text) training pairs from the pool's own twins: rows of a
-    non-English subset and of its English twin subset that are each other's best match with cosine >= twin_train_min_sim.
-    Aligned sentence pairs when both answers have the same number of sentences, else the whole answers; both directions."""
+    """(source code, target code, source text, target text) training pairs from the pool's own twins (twin_pool_pairs).
+    Aligned sentence pairs when both answers have the same number of sentences, else the whole answers; both directions.
+    twin_train_questions adds the two questions as a pair."""
     pool = pool_df.reset_index(drop=True)
-    ids = pool[ID_COL].astype(str).to_numpy()
-    lo = float(cfg["twin_train_min_sim"])
     out = []
     for s in sorted({x if not x.startswith("Eng") else TWIN_OF[x] for x in subsets if x in TWIN_OF}):
         t = TWIN_OF[s]
-        fwd = twin_matches(cfg, pool[pool[SUBSET_COL] == s], pool, ctx)
-        back = twin_matches(cfg, pool[pool[SUBSET_COL] == t], pool, ctx)
-        n = 0
-        for i, (j, sim, _) in fwd.items():
-            b = back.get(str(ids[j]))
-            if sim < lo or not b or str(ids[b[0]]) != i or b[1] < lo:
-                continue
-            a_s, a_t = sentences(pool[OUTPUT_COL].iloc[b[0]]), sentences(pool[OUTPUT_COL].iloc[j])
+        found = twin_pool_pairs(cfg, pool, s, ctx)
+        for i, j in found:
+            a_s, a_t = sentences(pool[OUTPUT_COL].iloc[i]), sentences(drop_prefix(cfg, pool[OUTPUT_COL].iloc[j]))
             units = list(zip(a_s, a_t)) if len(a_s) == len(a_t) else [(" ".join(a_s), " ".join(a_t))]
+            if cfg["twin_train_questions"]:
+                units.append((str(pool[INPUT_COL].iloc[i]), str(pool[INPUT_COL].iloc[j])))
             for x, y in units:
                 out += [(nllb_code(s), nllb_code(t), x, y), (nllb_code(t), nllb_code(s), y, x)]
-            n += 1
-        ctx.log(f"twin pairs {s} <-> {t}: {n:,} mutual matches (cosine >= {lo})")
+        ctx.log(f"twin pairs {s} <-> {t}: {len(found):,} mutual matches (cosine >= {cfg['twin_train_min_sim']})")
     return out
 
 
@@ -936,7 +970,10 @@ def twin_answers(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, a
     jobs = []
     for i, (j, sim, margin) in match.items():
         meta[i] = {"twin_id": str(pool_ids[j]), "twin_sim": sim, "twin_margin": margin}
-        jobs.append((i, str(pool_df[OUTPUT_COL].iloc[j]), nllb_code(TWIN_OF[subset_of[i]]), nllb_code(subset_of[i])))
+        text = str(pool_df[OUTPUT_COL].iloc[j])
+        if TWIN_OF[subset_of[i]].startswith("Eng"):
+            text = drop_prefix(cfg, text)
+        jobs.append((i, text, nllb_code(TWIN_OF[subset_of[i]]), nllb_code(subset_of[i])))
     for (src, tgt) in sorted({(a, b) for _, _, a, b in jobs}):
         part = [(i, t) for i, t, a, b in jobs if (a, b) == (src, tgt)]
         for (i, _), tr in zip(part, translate_answers(cfg, [t for _, t in part], src, tgt, ctx)):
