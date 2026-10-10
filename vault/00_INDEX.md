@@ -275,6 +275,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-113-combine-twin-sub2]] — Twin router on EXP-112 (translator fine-tuned 2 epochs, 4 beams), else EXP-077 (ok; won: Eng_Gha)
 
+- [[EXP-114-twin-gemma431bi-sub2-ntall]] — Test predictions for EXP-112: twin translator fine-tuned 2 epochs on the test pool (Train + Val), 4 beams; Akan and Ghana English (ok; won: none)
+
+- [[EXP-115-combine-twin-sub2]] — EXP-113 twin router (2-epoch translator, 4 beams) with test twins from the translator retrained on Train + Val (EXP-114) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

@@ -1,0 +1,44 @@
+{
+  "exp": "EXP-115",
+  "hypothesis": "H-019",
+  "description": "EXP-113 twin router (2-epoch translator, 4 beams) with test twins from the translator retrained on Train + Val (EXP-114)",
+  "parent": "exp112_twin_gemma431bi_sub3_nhall-vall_e257ce",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "twin",
+      "twin": "exp112_twin_gemma431bi_sub3_nhall-vall_e257ce",
+      "test_twin": "exp114_twin_gemma431bi_sub2_ntall_1be16e",
+      "base": {
+        "Aka_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01",
+        "Eng_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01"
+      },
+      "route": {
+        "Aka_Gha": {
+          "source": "nllb",
+          "min_sim": 0.63
+        },
+        "Eng_Gha": {
+          "source": "nllb",
+          "min_sim": 0.83
+        }
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Aka_Gha",
+    "Eng_Gha"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T18:37:52+00:00",
+  "created": "2026-10-10T18:37:52+00:00",
+  "git_sha": "9248256e8dc9438fcfab25f7714c2435f7231310",
+  "run_id": "exp115_combine_twin_sub2_e91d9f"
+}
