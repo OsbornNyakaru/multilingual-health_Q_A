@@ -281,6 +281,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-117-combine-twin-sub2]] — Twin router with more signals on EXP-112 (twin margin, agreement with the Gemma answer, rows that lose a shared twin fall back), test twins from EXP-114 (ok; won: Eng_Gha)
 
+- [[EXP-116-twin-gemma431bi-sub2-nhall-vall]] — Twin translator fine-tuned 3 epochs instead of 2 (4 beams); Akan and Ghana English (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
