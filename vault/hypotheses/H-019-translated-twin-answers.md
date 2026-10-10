@@ -2,7 +2,7 @@
 type: hypothesis
 id: H-019
 created: 2026-10-10
-status: testing
+status: supported
 links: ["[[H-014-bigger-generator]]", "[[H-017-translate-then-retrieve-luganda]]", "[[00_INDEX]]"]
 ---
 # H-019 Answer open-subset rows with their twin's translated gold answer
@@ -26,3 +26,8 @@ links: ["[[H-014-bigger-generator]]", "[[H-017-translate-then-retrieve-luganda]]
 - [[H-014-bigger-generator]]
 - [[H-017-translate-then-retrieve-luganda]]
 - [[00_INDEX]]
+
+## Result (2026-10-10)
+- EXP-098 probe, Val (R1+RL)/2: twin vs current Aka 0.348 vs 0.292, Eng_Gha 0.412 vs 0.374; Amharic best with Gemma's translation (0.325 vs 0.242). NLLB beats base Gemma on Akan and Ghana English.
+- EXP-100 router (source + min twin_sim tuned on held-out): Val Aka 0.216 → 0.261, Eng_Gha 0.277 → 0.345, Amh 0.181 → 0.246. Test rows routed: Aka 71%, Eng_Gha 69%, Amh 93%.
+- Leaderboard #14: public 0.724483, private 0.711607 (+0.028 on both vs #12). ROUGE-1 0.7074 / ROUGE-L 0.6729 public; judge 0.8222 (down 0.011).

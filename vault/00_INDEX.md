@@ -48,7 +48,7 @@ TABLE id, status FROM "hypotheses" WHERE status = "open" OR status = "testing" S
 - [[H-016-fine-tuned-listwise-chooser]] — testing (EXP-087)
 - [[H-017-translate-then-retrieve-luganda]] — testing (EXP-088)
 - [[H-018-cross-fitted-ranker-training]] — testing (EXP-097)
-- [[H-019-translated-twin-answers]] — testing (EXP-098)
+- [[H-019-translated-twin-answers]] — supported (EXP-100: +0.028 LB, #14 0.7245 / 0.7116)
 
 Closed or superseded: [[H-001-zero-shot-aya-floor]], [[H-007-afrolm-reranker]], [[H-009-gemma-aya-adapter-ensemble]].
 
@@ -240,6 +240,16 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 - [[EXP-095-combine-ltr-sub1]] — LambdaRank final ranker on Swa_Ken alone plus the NLLB-translated view's top-50 (EXP-092 tr_ids) as a third candidate list (ok; won: Swa_Ken)
 
 - [[EXP-093-lora-rag-gemma431bi-sub3-ntall]] — Test predictions for EXP-077 from a Gemma-4-31B LoRA retrained on Train + Val (the test pool; EXP-061's adapter saw only work_train), same recipe and 13-candidate vLLM MBR; 1st place retrained on all data (crash; won: none)
+
+- [[EXP-097-ret-bgem3-rrb-sub5-nhall-tall-vall]] — 5-fold cross-fitted EXP-055 pipeline (fine-tuned BGE-M3 + 3 answer-aware selectors per fold): leave-self-out top-30 lists for ~17.7k work_train questions to train the final ranker, and held-out/Val/test lists from the same fold models averaged (1st place's consistency lesson) (ok; won: none)
+
+- [[EXP-098-twin-gemma431bi-sub4-nhall-vall]] — Twin probe: answer each Akan/Ghana-English/Amharic/Ethiopia-English row with the gold answer of its twin row in the paired subset (best English-question match in the pool), translated by NLLB-200-3.3B sentence by sentence; base Gemma-4-31B translations kept in meta (llm_answer) to compare translators (ok; won: Aka_Gha, Amh_Eth, Eng_Gha)
+
+- [[EXP-100-combine-twin-sub3]] — Twin router: the twin's translated gold answer (NLLB, or Gemma for Amharic; source and min twin_sim tuned per subset on held-out) when the twin match is confident, else EXP-077/EXP-061 (ok; won: Aka_Gha, Amh_Eth, Eng_Gha)
+
+- [[EXP-099-twin-gemma431bi-sub4-ntall]] — Test predictions for EXP-098 (twin answers: NLLB, plus Gemma translations in meta); test pool Train + Val holds ~92% of twins (ok; won: none)
+
+- [[EXP-101-combine-twin-sub3]] — EXP-100 twin router with test predictions (EXP-099 twins; test pool Train + Val) (ok; won: none)
 
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
