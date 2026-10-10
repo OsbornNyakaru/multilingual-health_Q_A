@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5131**, **val 0.5079** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-131 | `exp131_combine_twin_sub2_d8b243` | 2026-10-10 21:14 | combine | held_out=all, val=all | 0.3805 | 0.3731 | — | ok | Rich twin router on EXP-125 (paired candidates skipped at cosine >= 0.8, one-to-one, pairs at 0.8) |
+| EXP-125 | `exp125_twin_gemma431bi_sub2_nhall-vall_3d2b66` | 2026-10-10 21:12 | twin_train_min_sim | held_out=all, val=all | 0.3506 | 0.3442 | — | ok | EXP-119 (paired candidates skipped, one-to-one twins) with the translator trained on pairs at cosine >= 0.8 (EXP-120) |
 | EXP-130 | `exp130_combine_twin_sub1_de56ef` | 2026-10-10 20:50 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | Twin router --rich on EXP-122 (Amharic, English answer prefix dropped) |
 | EXP-129 | `exp129_combine_twin_sub1_de56ef` | 2026-10-10 20:50 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | Twin router (similarity only) on EXP-122 (Amharic, English answer prefix dropped) |
 | EXP-122 | `exp122_twin_gemma431bi_sub1_nhall-vall_7b3ccb` | 2026-10-10 20:40 | twin_drop_prefix | held_out=all, val=all | 0.2744 | 0.2711 | Amh_Eth | ok | Amharic: drop the 'This is a question about, X.' opening of Ethiopia English twin answers before translating and in the training pairs (Amharic answers never have it) |
@@ -169,6 +171,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-131 | held_out |  | 0.3608 | 0.4003 |  |  |  |  |  |
+| EXP-131 | val |  | 0.3446 | 0.4017 |  |  |  |  |  |
+| EXP-125 | held_out |  | 0.3547 | 0.3464 |  |  |  |  |  |
+| EXP-125 | val |  | 0.3371 | 0.3514 |  |  |  |  |  |
 | EXP-130 | held_out |  |  |  |  |  |  | 0.2794 |  |
 | EXP-130 | val |  |  |  |  |  |  | 0.2733 |  |
 | EXP-129 | held_out |  |  |  |  |  |  | 0.2794 |  |
