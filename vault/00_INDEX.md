@@ -265,6 +265,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-109-combine-twin-sub3]] — EXP-104 twin router (thresholds tuned on EXP-102 held-out) with test twins translated by the translator retrained on Train + Val (EXP-107) (ok; won: none)
 
+- [[EXP-108-twin-gemma431bi-sub4-nhall-tall-vall]] — Twins for the closed subsets: Luganda<->Uganda English and Swahili<->Kenya English rows answered by the twin's gold answer, translated by NLLB fine-tuned on the pool's own twin pairs (as EXP-102); a router decides per subset against the rankers (ok; won: none)
+
+- [[EXP-110-combine-twin-sub4]] — Twin router for the closed subsets: EXP-108's translated twin answer (Lug<->Eng_Uga, Swa<->Eng_Ken) when the twin match is confident, else the best ranker (EXP-091/062/106) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

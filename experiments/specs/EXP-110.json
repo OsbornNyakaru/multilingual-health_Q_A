@@ -1,0 +1,56 @@
+{
+  "exp": "EXP-110",
+  "hypothesis": "H-019",
+  "description": "Twin router for the closed subsets: EXP-108's translated twin answer (Lug<->Eng_Uga, Swa<->Eng_Ken) when the twin match is confident, else the best ranker (EXP-091/062/106)",
+  "parent": "exp108_twin_gemma431bi_sub4_nhall-tall-vall_30b0c4",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "twin",
+      "twin": "exp108_twin_gemma431bi_sub4_nhall-tall-vall_30b0c4",
+      "test_twin": "exp108_twin_gemma431bi_sub4_nhall-tall-vall_30b0c4",
+      "base": {
+        "Lug_Uga": "exp091_combine_ltr_sub1_489d9a",
+        "Eng_Uga": "exp062_combine_ltr_sub4_5f85f5",
+        "Swa_Ken": "exp062_combine_ltr_sub4_5f85f5",
+        "Eng_Ken": "exp106_combine_ltr_sub4_1cb7a1"
+      },
+      "route": {
+        "Lug_Uga": {
+          "source": "nllb",
+          "min_sim": null
+        },
+        "Eng_Uga": {
+          "source": "nllb",
+          "min_sim": 0.96
+        },
+        "Swa_Ken": {
+          "source": "nllb",
+          "min_sim": null
+        },
+        "Eng_Ken": {
+          "source": "nllb",
+          "min_sim": 0.92
+        }
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Lug_Uga",
+    "Eng_Uga",
+    "Swa_Ken",
+    "Eng_Ken"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T13:07:14+00:00",
+  "created": "2026-10-10T13:07:14+00:00",
+  "git_sha": "760f6e810d945edfab591de5c20786be8d7949db",
+  "run_id": "exp110_combine_twin_sub4_968b27"
+}
