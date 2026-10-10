@@ -519,8 +519,28 @@ def test_translated_view_steers_retrieval_and_is_recorded(monkeypatch):
 
 def test_translate_memoises_and_only_translates_new_texts():
     ctx = Ctx()
-    ctx.cache[("translations", "m", "lug_Latn")] = {"a": "A"}
+    ctx.cache[("translations", "m", "lug_Latn", "eng_Latn")] = {"a": "A"}
     assert E.translate({"translate_model": "m"}, ["a", "a"], "lug_Latn", ctx) == ["A", "A"]  # no model load
+
+
+def test_twin_answers_with_the_translated_answer_of_the_matching_question_in_the_paired_subset(monkeypatch):
+    en = {"akan malaria asemmisa": "how do i prevent malaria", "akan hiv asemmisa": "what are hiv symptoms"}
+    monkeypatch.setattr(E, "translate", lambda cfg, texts, src, ctx, tgt="eng_Latn": [en.get(t, f"<{tgt}>{t}") for t in texts])
+    pool = pd.DataFrame({
+        "ID": ["g1", "g2", "a1", "u1"],
+        "input": ["how to prevent malaria", "hiv symptoms in adults", "akan hiv asemmisa", "prevent malaria uganda"],
+        "output": ["Use a net.\nSleep under it. Close windows.", "Fever and rash.", "Akan hiv mmuae.", "Uganda answer."],
+        "subset": ["Eng_Gha", "Eng_Gha", "Aka_Gha", "Eng_Uga"],
+    })
+    ev = pd.DataFrame({"ID": ["e1", "e2"], "input": ["akan malaria asemmisa", "hiv symptom question"],
+                       "subset": ["Aka_Gha", "Eng_Gha"]})
+    ctx = Ctx()
+    ctx.get_embedder = lambda name: FakeDense()
+    answers, meta = E.run({"mode": "twin", "embedder": "fake-dense"}, ev, pool, ctx)
+    # Akan row -> its English twin's answer in Akan, sentence by sentence, lines kept; never the Eng_Uga row
+    assert meta["e1"]["twin_id"] == "g1" and meta["e1"]["twin_margin"] > 0
+    assert answers["e1"] == "<aka_Latn>Use a net.\n<aka_Latn>Sleep under it. <aka_Latn>Close windows."
+    assert meta["e2"]["twin_id"] == "a1" and answers["e2"] == "<eng_Latn>Akan hiv mmuae."
 
 
 def test_postprocess_join_keeps_structured_answers():

@@ -34,7 +34,7 @@ import pandas as pd
 ID_COL, INPUT_COL, OUTPUT_COL, SUBSET_COL = "ID", "input", "output", "subset"
 
 DEFAULT_CONFIG: dict = {
-    # retrieval | zero_shot | few_shot | rag_few_shot | router | lora_rag | llm_choose
+    # retrieval | zero_shot | few_shot | rag_few_shot | router | lora_rag | llm_choose | twin
     "mode": "retrieval",
     # retrieval (used by retrieval, rag_few_shot, router)
     "embedder": "BAAI/bge-m3",   # any sentence-transformers id, or "tfidf-char" (CPU)
@@ -128,6 +128,11 @@ DEFAULT_CONFIG: dict = {
     "oof_folds": 0,              # >0: setup also writes K-fold cross-fitted top-diag_k lists for the training pool's own
     "oof_subsets": None,         # questions (oof_lists: final-ranker training data); None = the eval set's subsets
     "oof_seed": 0,
+    # twin: Aka_Gha rows are row-by-row translations of Eng_Gha rows (likewise other language/English pairs).
+    # Answer each row with the gold answer of its twin in the pool (best English-question match in the paired
+    # subset), translated into the row's language with twin_translator (NLLB-200, sentence by sentence)
+    "twin_translator": "facebook/nllb-200-3.3B",
+    "twin_llm": False,           # also translate with model_id via vLLM (meta llm_answer), to compare translators
     # lora_rag: fine-tune a LoRA adapter on RAG-enriched prompts (each training row sees its few_shot_k
     # nearest OTHER training Q&A pairs, target = its own answer), then generate like rag_few_shot.
     # Defaults = the 11th-place reference recipe.
@@ -243,10 +248,10 @@ def _encode(name: str, cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, 
 NLLB_CODES = {"Lug": "lug_Latn", "Swa": "swh_Latn", "Aka": "aka_Latn", "Amh": "amh_Ethi"}
 
 
-def translate(cfg: dict, texts: list[str], src: str, ctx) -> list[str]:
-    """English translations (NLLB-200 language code src), memoised per text in ctx.cache."""
+def translate(cfg: dict, texts: list[str], src: str, ctx, tgt: str = "eng_Latn") -> list[str]:
+    """Translations from NLLB-200 language code src into tgt (English by default), memoised per text in ctx.cache."""
     m = cfg["translate_model"]
-    memo = ctx.cache.setdefault(("translations", m, src), {})
+    memo = ctx.cache.setdefault(("translations", m, src, tgt), {})
     todo = sorted({t for t in texts if t not in memo}, key=len)
     if todo:
         import torch
@@ -258,8 +263,8 @@ def translate(cfg: dict, texts: list[str], src: str, ctx) -> list[str]:
                                             AutoModelForSeq2SeqLM.from_pretrained(m, dtype=torch.bfloat16).to(dev).eval())
         tok, model = ctx.cache[("translator", m)]
         tok.src_lang = src
-        eng, bs = tok.convert_tokens_to_ids("eng_Latn"), int(cfg["translate_batch"])
-        ctx.log(f"translating {len(todo):,} {src} texts to English with {m}")
+        eng, bs = tok.convert_tokens_to_ids(tgt), int(cfg["translate_batch"])
+        ctx.log(f"translating {len(todo):,} {src} texts to {tgt} with {m}")
         for b in range(0, len(todo), bs):
             part = todo[b:b + bs]
             enc = tok(part, return_tensors="pt", padding=True, truncation=True, max_length=256).to(model.device)
@@ -709,6 +714,131 @@ def run_vllm_worker(ctx, py: str, job_path, log_path, collect, answers: dict, se
         tail = "\n".join(keys[-30:]) + "\n----\n" + text[-6000:]
         raise RuntimeError(f"vLLM worker exited with {proc.returncode}:\n{tail}")
     ctx.log(f"vLLM done: {len(seen):,}/{total:,} rows in {time.time() - t0:.0f}s")
+
+
+# ── twins (mode twin) ────────────────────────────────────────────────────────
+
+TWIN_OF = {"Aka_Gha": "Eng_Gha", "Eng_Gha": "Aka_Gha", "Lug_Uga": "Eng_Uga", "Eng_Uga": "Lug_Uga",
+           "Swa_Ken": "Eng_Ken", "Eng_Ken": "Swa_Ken", "Amh_Eth": "Eng_Eth", "Eng_Eth": "Amh_Eth"}
+
+
+def nllb_code(subset: str) -> str:
+    return NLLB_CODES.get(subset[:3], "eng_Latn")
+
+
+def english_questions(cfg: dict, df: pd.DataFrame, ctx) -> list[str]:
+    tcfg = {**cfg, "translate_model": cfg["twin_translator"], "translate_subsets": sorted(set(df[SUBSET_COL]))}
+    return translated_view(tcfg, df, ctx)[INPUT_COL].astype(str).tolist()
+
+
+def twin_matches(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> dict[str, tuple[int, float, float]]:
+    """{eval ID: (pool position of its twin, cosine, margin over the runner-up)}: the most similar question,
+    compared in English, among the pool rows of the paired subset."""
+    import numpy as np
+
+    emb = ctx.get_embedder(cfg["embedder"])
+
+    def enc(texts):
+        return emb.encode(texts, batch_size=int(cfg["embed_batch"]), normalize_embeddings=True,
+                          convert_to_numpy=True, show_progress_bar=False)
+
+    out = {}
+    for s in sorted(set(eval_df[SUBSET_COL])):
+        rows = np.flatnonzero(eval_df[SUBSET_COL].to_numpy() == s)
+        cand = np.flatnonzero(pool_df[SUBSET_COL].to_numpy() == TWIN_OF.get(s))
+        if not len(cand):
+            continue
+        sims = enc(english_questions(cfg, eval_df.iloc[rows], ctx)) @ enc(english_questions(cfg, pool_df.iloc[cand], ctx)).T
+        order = np.argsort(-sims, axis=1)
+        for k, r in enumerate(rows):
+            a = order[k, 0]
+            second = float(sims[k, order[k, 1]]) if len(cand) > 1 else 0.0
+            out[str(eval_df[ID_COL].iloc[r])] = (int(cand[a]), round(float(sims[k, a]), 4), round(float(sims[k, a]) - second, 4))
+    return out
+
+
+def translate_answers(cfg: dict, texts: list[str], src: str, tgt: str, ctx) -> list[str]:
+    """NLLB works on sentences: split each text into lines and sentences, translate those, put them back."""
+    import re
+
+    tcfg = {**cfg, "translate_model": cfg["twin_translator"]}
+    split = [[[x for x in re.split(r"(?<=[.!?])\s+", ln.strip()) if x] for ln in t.splitlines() if ln.strip()] for t in texts]
+    flat = [x for lines in split for ln in lines for x in ln]
+    done = dict(zip(flat, translate(tcfg, flat, src, ctx, tgt=tgt)))
+    return ["\n".join(" ".join(done[x] for x in ln) for ln in lines) for lines in split]
+
+
+TWIN_PROMPT = ("Translate this answer from a health Q&A dataset from {src} into {tgt}. Translate every sentence "
+               "faithfully and keep the structure. Reply with the translation only.\n\n{text}")
+
+
+def twin_llm(cfg: dict, jobs: list[tuple[str, str, str, str]], ctx, answers: dict) -> dict[str, str]:
+    """{id: translation} by model_id (no adapter) via vLLM, for jobs of (id, text, source language, target language)."""
+    import json
+    from pathlib import Path
+
+    from transformers import AutoTokenizer
+
+    ctx.cache.pop(("translator", cfg["twin_translator"]), None)  # free NLLB's GPU memory for vLLM
+    mem = free_gpu_for_vllm(cfg, ctx)
+    tok = AutoTokenizer.from_pretrained(cfg["model_id"], trust_remote_code=True)
+    reqs = []
+    for i, text, src, tgt in jobs:
+        prompt = render_prompt(tok, [{"role": "user", "content": TWIN_PROMPT.format(src=src, tgt=tgt, text=text)}])
+        n = len(tok(text)["input_ids"])
+        reqs.append({"id": i, "ids": tok(prompt)["input_ids"], "max_tokens": min(2048, 2 * n + 64), "min_tokens": 0})
+    work = Path(_work_dir(ctx, cfg))
+    work.mkdir(parents=True, exist_ok=True)
+    out, log_path, job_path = work / "twin_out.jsonl", work / "twin_log.txt", work / "twin_job.json"
+    max_len = max(len(r["ids"]) + r["max_tokens"] for r in reqs) + 16
+    job_path.write_text(json.dumps({"model": cfg["model_id"], "adapter": None, "lora_rank": 0, "max_model_len": max_len,
+                                    "mem": mem, "temps": [], "n": 0, "top_p": 1.0, "seed": int(cfg["gen_seed"]),
+                                    "chunk": int(cfg["vllm_chunk"]), "max_num_seqs": int(cfg["vllm_max_seqs"]),
+                                    "requests": reqs, "out": str(out)}), encoding="utf-8")
+    got: dict[str, str] = {}
+    want = {r["id"] for r in reqs}
+
+    def collect() -> int:
+        if not out.exists():
+            return 0
+        new = 0
+        for line in out.read_text(encoding="utf-8").splitlines():
+            rec = json.loads(line) if line.strip() else {}
+            if rec.get("id") in want and rec["id"] not in got:
+                got[rec["id"]] = str(rec["greedy"]).strip()
+                new += 1
+        return new
+
+    seen: set[str] = set()  # run_vllm_worker counts progress here
+
+    def collect_seen() -> int:
+        new = collect()
+        seen.update(got)
+        return new
+
+    run_vllm_worker(ctx, ensure_vllm(cfg, ctx), job_path, log_path, collect_seen, answers, seen, len(reqs))
+    return got
+
+
+def twin_answers(cfg: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx, answers: dict, meta: dict) -> None:
+    pool_ids = pool_df[ID_COL].astype(str).to_numpy()
+    match = twin_matches(cfg, eval_df, pool_df, ctx)
+    subset_of = dict(zip(eval_df[ID_COL].astype(str), eval_df[SUBSET_COL].astype(str)))
+    jobs = []
+    for i, (j, sim, margin) in match.items():
+        meta[i] = {"twin_id": str(pool_ids[j]), "twin_sim": sim, "twin_margin": margin}
+        jobs.append((i, str(pool_df[OUTPUT_COL].iloc[j]), nllb_code(TWIN_OF[subset_of[i]]), nllb_code(subset_of[i])))
+    for (src, tgt) in sorted({(a, b) for _, _, a, b in jobs}):
+        part = [(i, t) for i, t, a, b in jobs if (a, b) == (src, tgt)]
+        for (i, _), tr in zip(part, translate_answers(cfg, [t for _, t in part], src, tgt, ctx)):
+            answers[i] = tr
+    ctx.log(f"twin: answered {len(match):,} / {len(eval_df):,} rows from translated twin answers")
+    if cfg["twin_llm"] and jobs:
+        names = {nllb_code(s): LANG_NAMES[s[:3]] for s in TWIN_OF}
+        names["aka_Latn"] = "Akan (Twi, as written in Ghana)"
+        llm = twin_llm(cfg, [(i, t, names[a], names[b]) for i, t, a, b in jobs], ctx, answers)
+        for i, tr in llm.items():
+            meta[i]["llm_answer"] = tr
 
 
 # ── LLM chooser (mode llm_choose) ────────────────────────────────────────────
@@ -1546,6 +1676,9 @@ def run(config: dict, eval_df: pd.DataFrame, pool_df: pd.DataFrame, ctx) -> tupl
                 ctx.cache[key] = train_lora(cfg, pool_df, ctx)
             cfg["adapter"] = ctx.cache[key]
         llm_choose(cfg, eval_df, pool_df, ctx, answers, meta)
+        return answers, meta
+    if mode == "twin":
+        twin_answers(cfg, eval_df, pool_df, ctx, answers, meta)
         return answers, meta
     if int(cfg["oof_folds"]) > 0:
         fused = ctx.cache.get(_oof_key(ctx, cfg))

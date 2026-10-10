@@ -23,6 +23,7 @@ composite test-mix: **held-out 0.4576**, **val 0.4527** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-093 | `exp093_lora_rag_gemma431bi_sub3_ntall_ec4e7e` | 2026-10-09 23:17 | adapter, mode | test=all |  |  | — | crash | Test predictions for EXP-077 from a Gemma-4-31B LoRA retrained on Train + Val (the test pool; EXP-061's adapter saw only work_train), same recipe and 13-candidate vLLM MBR; 1st place retrained on all data |
 | EXP-095 | `exp095_combine_ltr_sub1_7776e5` | 2026-10-09 21:10 | combine | held_out=all, val=all | 0.6342 | 0.6278 | — | ok | LambdaRank final ranker on Swa_Ken alone plus the NLLB-translated view's top-50 (EXP-092 tr_ids) as a third candidate list |
 | EXP-092 | `exp092_ret_bgem3_sub1_nhall-tall-vall_1ba790` | 2026-10-09 20:48 | translate_subsets | held_out=all, val=all, test=all | 0.5639 | 0.5671 | — | ok | translate-then-retrieve on Swa_Ken (NLLB swh_Latn -> English; Lug_Uga gained Val +0.019 via EXP-091); held-out + Val + test in one run so the ranker can record straight away |
 | EXP-094 | `exp094_combine_pool_sub3_7490b4` | 2026-10-09 20:47 | combine | held_out=all, val=all | 0.2422 | 0.2427 | — | ok | MBR pool: current best answer (weighted) + EXP-089 Qwen3.8-27B LoRA candidates (13 per row) on the generation subsets |

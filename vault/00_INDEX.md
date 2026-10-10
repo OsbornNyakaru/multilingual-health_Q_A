@@ -48,6 +48,7 @@ TABLE id, status FROM "hypotheses" WHERE status = "open" OR status = "testing" S
 - [[H-016-fine-tuned-listwise-chooser]] — testing (EXP-087)
 - [[H-017-translate-then-retrieve-luganda]] — testing (EXP-088)
 - [[H-018-cross-fitted-ranker-training]] — testing (EXP-097)
+- [[H-019-translated-twin-answers]] — testing (EXP-098)
 
 Closed or superseded: [[H-001-zero-shot-aya-floor]], [[H-007-afrolm-reranker]], [[H-009-gemma-aya-adapter-ensemble]].
 
@@ -237,6 +238,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 - [[EXP-092-ret-bgem3-sub1-nhall-tall-vall]] — translate-then-retrieve on Swa_Ken (NLLB swh_Latn -> English; Lug_Uga gained Val +0.019 via EXP-091); held-out + Val + test in one run so the ranker can record straight away (ok; won: none)
 
 - [[EXP-095-combine-ltr-sub1]] — LambdaRank final ranker on Swa_Ken alone plus the NLLB-translated view's top-50 (EXP-092 tr_ids) as a third candidate list (ok; won: Swa_Ken)
+
+- [[EXP-093-lora-rag-gemma431bi-sub3-ntall]] — Test predictions for EXP-077 from a Gemma-4-31B LoRA retrained on Train + Val (the test pool; EXP-061's adapter saw only work_train), same recipe and 13-candidate vLLM MBR; 1st place retrained on all data (crash; won: none)
 
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
