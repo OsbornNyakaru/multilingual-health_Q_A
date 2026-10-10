@@ -47,7 +47,7 @@ TABLE id, status FROM "hypotheses" WHERE status = "open" OR status = "testing" S
 - [[H-015-llm-chooser-over-top5]] — rejected (EXP-085)
 - [[H-016-fine-tuned-listwise-chooser]] — testing (EXP-087)
 - [[H-017-translate-then-retrieve-luganda]] — testing (EXP-088)
-- [[H-018-cross-fitted-ranker-training]] — testing (EXP-097)
+- [[H-018-cross-fitted-ranker-training]] — rejected (EXP-097; side win: EXP-106 Eng_Ken)
 - [[H-019-translated-twin-answers]] — supported (EXP-100: +0.028 LB, #14 0.7245 / 0.7116)
 
 Closed or superseded: [[H-001-zero-shot-aya-floor]], [[H-007-afrolm-reranker]], [[H-009-gemma-aya-adapter-ensemble]].
@@ -256,6 +256,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 - [[EXP-102-twin-gemma431bi-sub3-nhall-tall-vall]] — EXP-098 twins translated by NLLB-3.3B fine-tuned on the pool's own twin pairs (mutual matches, cosine >= 0.9; aligned sentences, both directions; Akan<->English, Amharic<->English), trained once in setup on the most honest pool; held-out + Val + test in one run (ok; won: none)
 
 - [[EXP-104-combine-twin-sub3]] — Twin router on EXP-102 (twin answers translated by NLLB fine-tuned on the pool's twin pairs; source + min twin_sim tuned per subset on held-out), else EXP-077/EXP-061 (ok; won: Aka_Gha, Amh_Eth, Eng_Gha)
+
+- [[EXP-105-combine-ltr-sub1]] — Eng_Ken ranker (LambdaRank) over EXP-097's fold-averaged selector lists (ret_ids + cand_ids + cand1_ids), no generator; the cross-fitted training lists themselves did not help (ok; won: none)
+
+- [[EXP-106-combine-ltr-sub4]] — Closed-subset ranker (LambdaRank, pooled over 4 subsets) over EXP-097's fold-averaged selector lists, no generator; the cross-fitted training lists themselves did not help (ok; won: Eng_Ken)
 
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0

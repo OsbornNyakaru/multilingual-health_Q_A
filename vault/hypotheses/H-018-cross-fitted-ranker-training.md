@@ -2,7 +2,7 @@
 type: hypothesis
 id: H-018
 created: 2026-10-10
-status: testing
+status: rejected
 links: ["[[H-011-closed-pool-vs-generative-router]]", "[[H-017-translate-then-retrieve-luganda]]", "[[00_INDEX]]"]
 ---
 # H-018 Train the final ranker on cross-fitted lists for the training questions
@@ -23,3 +23,8 @@ links: ["[[H-011-closed-pool-vs-generative-router]]", "[[H-017-translate-then-re
 - [[H-011-closed-pool-vs-generative-router]]
 - [[H-017-translate-then-retrieve-luganda]]
 - [[00_INDEX]]
+
+## Result (2026-10-10)
+- EXP-097: the fold-averaged selectors match EXP-055 (Val Eng_Ken 0.605 vs 0.589, others within ±0.004), so cross-fitting costs nothing.
+- Ranker trained with the ~17.7k cross-fitted training questions (`ltr.py --oof`), 2x2 grid (HGB / LambdaRank, with / without the EXP-038 generator feature) vs the same without them: no consistent gain; the plain LambdaRank over EXP-097's lists is as good or better. Rejected.
+- Side result: EXP-106 (LambdaRank pooled over the 4 closed subsets, EXP-097 lists, no generator) wins Eng_Ken: held-out 0.6284 / Val 0.6258 (best 0.6270 / 0.6152). Trained on Eng_Ken alone it loses (EXP-105).

@@ -1,0 +1,33 @@
+{
+  "exp": "EXP-105",
+  "hypothesis": "H-018",
+  "description": "Eng_Ken ranker (LambdaRank) over EXP-097's fold-averaged selector lists (ret_ids + cand_ids + cand1_ids), no generator; the cross-fitted training lists themselves did not help",
+  "parent": "exp097_ret_bgem3_rrb_sub5_nhall-tall-vall_36387c",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "ltr",
+      "pickers": "EXP-097,EXP-097:cand1_ids",
+      "gen": null,
+      "top": 20,
+      "model": "LGBMRanker(lambdarank)",
+      "feats": "v1",
+      "per_subset": false
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Eng_Ken"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T11:17:59+00:00",
+  "created": "2026-10-10T11:17:59+00:00",
+  "git_sha": "8d111337c5b2dd22584c3a5e16869758e95e4376",
+  "run_id": "exp105_combine_ltr_sub1_1cb7a1"
+}

@@ -6,7 +6,7 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.5077**, **val 0.5004** (8/8 subsets covered)
+composite test-mix: **held-out 0.5078**, **val 0.5011** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
@@ -15,7 +15,7 @@ composite test-mix: **held-out 0.5077**, **val 0.5004** (8/8 subsets covered)
 | Eng_Gha | 18.8% | EXP-104 `exp104_combine_twin_sub3_4ae110` | 0.3876 | 0.3895 |
 | Lug_Uga | 14.3% | EXP-091 `exp091_combine_ltr_sub1_489d9a` | 0.5205 | 0.5118 |
 | Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
-| Eng_Ken | 6.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6270 | 0.6152 |
+| Eng_Ken | 6.4% | EXP-106 `exp106_combine_ltr_sub4_1cb7a1` | 0.6284 | 0.6258 |
 | Amh_Eth | 2.3% | EXP-104 `exp104_combine_twin_sub3_4ae110` | 0.2685 | 0.2656 |
 | Eng_Eth | 2.3% | EXP-038 `exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e` | 0.5409 | 0.4777 |
 
@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5077**, **val 0.5004** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-106 | `exp106_combine_ltr_sub4_1cb7a1` | 2026-10-10 11:22 | combine | held_out=all, val=all | 0.5958 | 0.5909 | Eng_Ken | ok | Closed-subset ranker (LambdaRank, pooled over 4 subsets) over EXP-097's fold-averaged selector lists, no generator; the cross-fitted training lists themselves did not help |
+| EXP-105 | `exp105_combine_ltr_sub1_1cb7a1` | 2026-10-10 11:17 | combine | held_out=all, val=all | 0.6138 | 0.6114 | — | ok | Eng_Ken ranker (LambdaRank) over EXP-097's fold-averaged selector lists (ret_ids + cand_ids + cand1_ids), no generator; the cross-fitted training lists themselves did not help |
 | EXP-104 | `exp104_combine_twin_sub3_4ae110` | 2026-10-10 11:01 | combine | held_out=all, val=all | 0.3678 | 0.3623 | Aka_Gha, Amh_Eth, Eng_Gha | ok | Twin router on EXP-102 (twin answers translated by NLLB fine-tuned on the pool's twin pairs; source + min twin_sim tuned per subset on held-out), else EXP-077/EXP-061 |
 | EXP-102 | `exp102_twin_gemma431bi_sub3_nhall-tall-vall_238948` | 2026-10-10 10:56 | twin_train | held_out=all, val=all, test=all | 0.3519 | 0.3496 | — | ok | EXP-098 twins translated by NLLB-3.3B fine-tuned on the pool's own twin pairs (mutual matches, cosine >= 0.9; aligned sentences, both directions; Akan<->English, Amharic<->English), trained once in setup on the most honest pool; held-out + Val + test in one run |
 | EXP-103 | `exp103_combine_pool_sub2_644b32` | 2026-10-10 10:15 | combine | held_out=all, val=all | 0.3063 | 0.3028 | — | ok | MBR over the EXP-100 twin-router answer (weighted w, tuned per subset on held-out) + EXP-077's 13 Gemma candidates: a fluent in-style generation that agrees with the twin's content |
@@ -143,6 +145,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-106 | held_out | 0.6258 |  |  | 0.4910 | 0.6456 | 0.6284 |  |  |
+| EXP-106 | val | 0.6250 |  |  | 0.4873 | 0.6239 | 0.6258 |  |  |
+| EXP-105 | held_out |  |  |  |  |  | 0.6138 |  |  |
+| EXP-105 | val |  |  |  |  |  | 0.6114 |  |  |
 | EXP-104 | held_out |  | 0.3603 | 0.3876 |  |  |  | 0.2685 |  |
 | EXP-104 | val |  | 0.3472 | 0.3895 |  |  |  | 0.2656 |  |
 | EXP-102 | held_out |  | 0.3612 | 0.3537 |  |  |  | 0.2628 |  |

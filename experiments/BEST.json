@@ -36,13 +36,13 @@
     "since": "2026-10-10T11:01:04+00:00"
   },
   "Eng_Ken": {
-    "run_id": "exp062_combine_ltr_sub4_5f85f5",
-    "exp": "EXP-062",
+    "run_id": "exp106_combine_ltr_sub4_1cb7a1",
+    "exp": "EXP-106",
     "scores": {
-      "held_out": 0.627,
-      "val": 0.6152
+      "held_out": 0.6284,
+      "val": 0.6258
     },
-    "since": "2026-10-08T04:32:27+00:00"
+    "since": "2026-10-10T11:22:45+00:00"
   },
   "Eng_Uga": {
     "run_id": "exp062_combine_ltr_sub4_5f85f5",
