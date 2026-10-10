@@ -7,6 +7,8 @@
 
     python scripts/combine.py pool --gen EXP-079 --subsets Eng_Uga,Lug_Uga [--test-gen EXP-080] --desc "..."
 
+    python scripts/combine.py twin --twin EXP-098 --subsets Aka_Gha,Eng_Gha,Amh_Eth [--test-twin EXP-099] --desc "..."
+
 agree: keep the selector's answer, except when the generator's answer is one of the stored answers of
 the selector's top-k candidates (both methods point at the same canned answer). k is tuned per subset
 on held-out; Val is the check.
@@ -160,9 +162,9 @@ def pool_pick(m: list[list[float]], w: float) -> int:
     return max(range(len(m)), key=lambda i: (sum(wt[j] * m[i][j] for j in range(len(m)) if j != i), -i))
 
 
-def best_preds(subset: str, set_name: str) -> pd.DataFrame:
-    """The current best run's predictions for one subset (test: the run itself, else its test children)."""
-    b = X.load_best()[subset]["run_id"]
+def best_preds(subset: str, set_name: str, run_id: str | None = None) -> pd.DataFrame:
+    """The current best run's (or run_id's) predictions for one subset (test: the run itself, else its test children)."""
+    b = run_id or X.load_best()[subset]["run_id"]
     rids = [b]
     if set_name == "test":
         rids += [r["run_id"] for r in reversed(X.load_records())
@@ -224,6 +226,65 @@ def cmd_pool(a) -> None:
     cfg = {"combine": {"rule": "pool", "gen": gd.name, "base": {sub: X.load_best()[sub]["run_id"] for sub in subsets},
                        "w": {k: (None if v == float("inf") else v) for k, v in w_by.items()}}}
     record_virtual(cfg, "pool", subsets, preds, test, gd.name, a.hyp, a.desc)
+
+
+# ── twin ─────────────────────────────────────────────────────────────────────
+
+TWIN_SOURCES = {"nllb": "pred", "llm": "llm_answer"}
+TWIN_THRESHOLDS = [round(0.6 + 0.01 * i, 2) for i in range(40)] + [None]  # None = never route
+
+
+def twin_apply(base: pd.DataFrame, twin: pd.DataFrame, rule_by_subset: dict) -> pd.DataFrame:
+    """Each row: its twin's translated answer (source per subset) when twin_sim >= the subset's threshold and that
+    translation exists, else the base answer. rule_by_subset = {subset: (source, threshold or None)}."""
+    t = twin[["ID", "twin_sim", *TWIN_SOURCES.values()]].rename(columns={"pred": "twin_pred"})
+    m = base.merge(t, on="ID", how="left")
+    out = m[["ID", "subset"]].copy()
+    preds, src = [], []
+    for _, r in m.iterrows():
+        source, thr = rule_by_subset.get(r["subset"], ("nllb", None))
+        col = "twin_pred" if source == "nllb" else TWIN_SOURCES[source]
+        alt = r[col] if isinstance(r[col], str) and r[col].strip() else ""
+        use = thr is not None and alt and float(r["twin_sim"] or 0) >= thr
+        preds.append(alt if use else r["pred"])
+        src.append(f"twin_{source}" if use else "base")
+    out["pred"], out["source"] = preds, src
+    return out
+
+
+def cmd_twin(a) -> None:
+    subsets = a.subsets.split(",")
+    td = run_dir(a.twin)
+    twin = {s: pd.read_csv(td / f"{s}_preds.csv", dtype={"ID": str, "subset": str}) for s in SETS}
+    # base per subset: --base Aka_Gha=EXP-077,... (the twin run may itself be the best run by now), else the best run
+    base_rid = {k: run_dir(v).name for k, _, v in (x.partition("=") for x in (a.base or "").split(",") if x)}
+    base_rid = {sub: base_rid.get(sub) or X.load_best()[sub]["run_id"] for sub in subsets}
+    base = {s: pd.concat([best_preds(sub, s, base_rid[sub]) for sub in subsets]) for s in SETS}
+    refs = {s: pd.read_csv(X.REFS[s], dtype=str).fillna("")[["ID", "output"]] for s in SETS}
+
+    def score(s, sub, rule):
+        p = twin_apply(base[s][base[s]["subset"] == sub], twin[s], {sub: rule}).merge(refs[s], on="ID")
+        return X.prepare.score(p["pred"].tolist(), p["output"].tolist()).combined
+
+    rule_by, report = {}, []
+    for sub in subsets:
+        grid = [(src, t) for src in TWIN_SOURCES for t in TWIN_THRESHOLDS]
+        sc = {r: score("held_out", sub, r) for r in grid}
+        rule = max(grid, key=lambda r: (round(sc[r], 6), 2.0 if r[1] is None else r[1]))  # ties: route fewer rows
+        rule_by[sub] = rule
+        off = ("nllb", None)
+        report.append(f"{sub}: {rule[0]} sim>={rule[1]} held-out {sc[off]:.4f} -> {sc[rule]:.4f}, "
+                      f"val {score('val', sub, off):.4f} -> {score('val', sub, rule):.4f}")
+    print("tuned on held-out:\n  " + "\n  ".join(report))
+    preds = {s: twin_apply(base[s], twin[s], rule_by) for s in SETS}
+    test = None
+    if a.test_twin:
+        tt = pd.read_csv(run_dir(a.test_twin) / "test_preds.csv", dtype={"ID": str, "subset": str})
+        test = twin_apply(pd.concat([best_preds(sub, "test", base_rid[sub]) for sub in subsets]), tt, rule_by)
+        print("test rows routed to twin:", test.groupby("subset")["source"].apply(lambda x: f"{(x != 'base').mean():.0%}").to_dict())
+    cfg = {"combine": {"rule": "twin", "twin": td.name, "base": base_rid,
+                       "route": {k: {"source": v[0], "min_sim": v[1]} for k, v in rule_by.items()}}}
+    record_virtual(cfg, "twin", subsets, preds, test, td.name, a.hyp, a.desc)
 
 
 def rescore_set(base: pd.DataFrame, queries: pd.DataFrame, pool: pd.DataFrame, weights: dict, top: int = 20) -> pd.DataFrame:
@@ -319,8 +380,15 @@ def main() -> None:
     p.add_argument("--test-gen", help="EXP id with the generator's test predictions")
     p.add_argument("--hyp", default="H-014")
     p.add_argument("--desc", required=True)
+    t = sub.add_parser("twin", help="twin's translated answer when the twin match is confident, else the best run's")
+    t.add_argument("--twin", required=True, help="EXP id of a mode=twin run (held-out + Val)")
+    t.add_argument("--subsets", required=True)
+    t.add_argument("--base", help="per-subset base runs, e.g. Aka_Gha=EXP-077,Amh_Eth=EXP-061 (default: the best run)")
+    t.add_argument("--test-twin", help="EXP id with the twin run's test predictions")
+    t.add_argument("--hyp", default="H-019")
+    t.add_argument("--desc", required=True)
     a = ap.parse_args()
-    {"agree": cmd_agree, "rescore": cmd_rescore, "pool": cmd_pool}[a.cmd](a)
+    {"agree": cmd_agree, "rescore": cmd_rescore, "pool": cmd_pool, "twin": cmd_twin}[a.cmd](a)
 
 
 if __name__ == "__main__":

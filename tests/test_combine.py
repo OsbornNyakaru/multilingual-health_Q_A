@@ -56,3 +56,14 @@ def test_pool_apply_falls_back_to_greedy_without_cands():
     gen = pd.DataFrame({"ID": ["a"], "pred": ["x y z w"]})
     out = C.pool_apply(C.pool_rows(base, gen), {"Eng_Uga": 0.0})
     assert out["pred"].iloc[0] in ("x y z", "x y z w") and len(out) == 1
+
+
+def test_twin_apply_routes_confident_twins_per_subset_and_falls_back_without_a_translation():
+    base = pd.DataFrame({"ID": ["a", "b", "c", "d"], "subset": ["Aka_Gha", "Aka_Gha", "Amh_Eth", "Amh_Eth"],
+                         "pred": ["gen a", "gen b", "gen c", "gen d"]})
+    twin = pd.DataFrame({"ID": ["a", "b", "c", "d"], "twin_sim": [0.9, 0.8, 0.7, 0.9],
+                         "pred": ["nllb a", "nllb b", "nllb c", "nllb d"], "llm_answer": ["llm a", "llm b", "llm c", None]})
+    out = C.twin_apply(base, twin, {"Aka_Gha": ("nllb", 0.85), "Amh_Eth": ("llm", 0.6)})
+    assert out["pred"].tolist() == ["nllb a", "gen b", "llm c", "gen d"]
+    assert out["source"].tolist() == ["twin_nllb", "base", "twin_llm", "base"]
+    assert C.twin_apply(base, twin, {})["pred"].tolist() == base["pred"].tolist()  # no rule: never route
