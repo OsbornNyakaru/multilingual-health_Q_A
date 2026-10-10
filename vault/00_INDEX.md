@@ -48,7 +48,7 @@ TABLE id, status FROM "hypotheses" WHERE status = "open" OR status = "testing" S
 - [[H-016-fine-tuned-listwise-chooser]] — testing (EXP-087)
 - [[H-017-translate-then-retrieve-luganda]] — testing (EXP-088)
 - [[H-018-cross-fitted-ranker-training]] — rejected (EXP-097; side win: EXP-106 Eng_Ken)
-- [[H-019-translated-twin-answers]] — supported (EXP-100: +0.028 LB, #14 0.7245 / 0.7116)
+- [[H-019-translated-twin-answers]] — supported (EXP-104: #15 0.7605 / 0.7478; EXP-100: #14 0.7245 / 0.7116)
 
 Closed or superseded: [[H-001-zero-shot-aya-floor]], [[H-007-afrolm-reranker]], [[H-009-gemma-aya-adapter-ensemble]].
 

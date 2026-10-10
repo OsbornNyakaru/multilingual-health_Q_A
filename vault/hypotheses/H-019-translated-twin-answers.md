@@ -32,3 +32,5 @@ links: ["[[H-014-bigger-generator]]", "[[H-017-translate-then-retrieve-luganda]]
 - EXP-100 router (source + min twin_sim tuned on held-out): Val Aka 0.216 → 0.261, Eng_Gha 0.277 → 0.345, Amh 0.181 → 0.246. Test rows routed: Aka 71%, Eng_Gha 69%, Amh 93%.
 - Leaderboard #14: public 0.724483, private 0.711607 (+0.028 on both vs #12). ROUGE-1 0.7074 / ROUGE-L 0.6729 public; judge 0.8222 (down 0.011).
 - EXP-103 (MBR of the twin-router answer + EXP-077's 13 Gemma candidates, base weight w tuned on held-out): w = inf on both subsets, so any vote for a generation lowers the score. Translated gold content beats fluent generation; dead end.
+- EXP-102 (NLLB-3.3B fine-tuned in setup on the pool's mutual twin pairs, sentence-aligned, both directions) + EXP-104 router: Val Aka 0.261 → 0.347, Eng_Gha 0.345 → 0.390, Amh 0.246 → 0.266 vs EXP-100. Leaderboard #15: public 0.760497, private 0.747843 (+0.036 on both vs #14; 1st place was 0.7292 private). Judge 0.8352 (up from 0.8222).
+- Learned Akan spelling normalisation ("-ɔ/-ɛ" endings) on the fine-tuned output: ±0.0006, dead end.
