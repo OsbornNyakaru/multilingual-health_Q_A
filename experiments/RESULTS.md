@@ -6,13 +6,13 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.5121**, **val 0.5062** (8/8 subsets covered)
+composite test-mix: **held-out 0.513**, **val 0.5077** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
-| Aka_Gha | 18.8% | EXP-112 `exp112_twin_gemma431bi_sub3_nhall-vall_e257ce` | 0.3648 | 0.3531 |
-| Eng_Gha | 18.8% | EXP-117 `exp117_combine_twin_sub2_5dc5a1` | 0.4063 | 0.4109 |
+| Aka_Gha | 18.8% | EXP-124 `exp124_combine_twin_sub2_c60ff1` | 0.3672 | 0.3565 |
+| Eng_Gha | 18.8% | EXP-124 `exp124_combine_twin_sub2_c60ff1` | 0.4083 | 0.4155 |
 | Lug_Uga | 14.3% | EXP-091 `exp091_combine_ltr_sub1_489d9a` | 0.5205 | 0.5118 |
 | Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
 | Eng_Ken | 6.4% | EXP-106 `exp106_combine_ltr_sub4_1cb7a1` | 0.6284 | 0.6258 |
@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5121**, **val 0.5062** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-124 | `exp124_combine_twin_sub2_c60ff1` | 2026-10-10 20:02 | combine | held_out=all, val=all | 0.3877 | 0.3860 | Aka_Gha, Eng_Gha | ok | Rich twin router on EXP-119 (paired candidates skipped, one-to-one twins) |
+| EXP-119 | `exp119_twin_gemma431bi_sub2_nhall-vall_5a2c15` | 2026-10-10 19:58 | twin_one_to_one, twin_skip_paired | held_out=all, val=all | 0.3611 | 0.3603 | — | ok | Skip paired twin candidates and assign twins one-to-one (highest total cosine) |
 | EXP-123 | `exp123_combine_twin_sub2_959d3f` | 2026-10-10 19:45 | combine | held_out=all, val=all | 0.3881 | 0.3808 | — | ok | Rich twin router on EXP-118 (paired twin candidates skipped) |
 | EXP-118 | `exp118_twin_gemma431bi_sub2_nhall-vall_ac4677` | 2026-10-10 19:43 | twin_skip_paired | held_out=all, val=all | 0.3608 | 0.3580 | — | ok | Twin candidates that already have their twin inside the pool are skipped (they cannot be the new row's twin) |
 | EXP-116 | `exp116_twin_gemma431bi_sub2_nhall-vall_e94fc8` | 2026-10-10 19:27 | twin_train_epochs | held_out=all, val=all | 0.3585 | 0.3578 | — | ok | Twin translator fine-tuned 3 epochs instead of 2 (4 beams); Akan and Ghana English |
@@ -161,6 +163,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-124 | held_out |  | 0.3672 | 0.4083 |  |  |  |  |  |
+| EXP-124 | val |  | 0.3565 | 0.4155 |  |  |  |  |  |
+| EXP-119 | held_out |  | 0.3597 | 0.3625 |  |  |  |  |  |
+| EXP-119 | val |  | 0.3504 | 0.3703 |  |  |  |  |  |
 | EXP-123 | held_out |  | 0.3675 | 0.4088 |  |  |  |  |  |
 | EXP-123 | val |  | 0.3528 | 0.4088 |  |  |  |  |  |
 | EXP-118 | held_out |  | 0.3591 | 0.3625 |  |  |  |  |  |

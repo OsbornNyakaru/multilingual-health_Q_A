@@ -287,6 +287,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-123-combine-twin-sub2]] — Rich twin router on EXP-118 (paired twin candidates skipped) (ok; won: none)
 
+- [[EXP-119-twin-gemma431bi-sub2-nhall-vall]] — Skip paired twin candidates and assign twins one-to-one (highest total cosine) (ok; won: none)
+
+- [[EXP-124-combine-twin-sub2]] — Rich twin router on EXP-119 (paired candidates skipped, one-to-one twins) (ok; won: Aka_Gha, Eng_Gha)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
