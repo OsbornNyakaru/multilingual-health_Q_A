@@ -269,6 +269,12 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-110-combine-twin-sub4]] — Twin router for the closed subsets: EXP-108's translated twin answer (Lug<->Eng_Uga, Swa<->Eng_Ken) when the twin match is confident, else the best ranker (EXP-091/062/106) (ok; won: none)
 
+- [[EXP-111-twin-gemma431bi-sub3-nhall-vall]] — EXP-102's fine-tuned twin translator decoding with 4 beams instead of 2 (NLLB answers only; the router picks NLLB on all three subsets) (ok; won: none)
+
+- [[EXP-112-twin-gemma431bi-sub3-nhall-vall]] — Twin translator fine-tuned 2 epochs instead of 1, 4 beams (NLLB answers only) (ok; won: Aka_Gha)
+
+- [[EXP-113-combine-twin-sub2]] — Twin router on EXP-112 (translator fine-tuned 2 epochs, 4 beams), else EXP-077 (ok; won: Eng_Gha)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
