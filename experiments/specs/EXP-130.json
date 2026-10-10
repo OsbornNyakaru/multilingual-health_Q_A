@@ -1,0 +1,41 @@
+{
+  "exp": "EXP-130",
+  "hypothesis": "H-019",
+  "description": "Twin router --rich on EXP-122 (Amharic, English answer prefix dropped)",
+  "parent": "exp122_twin_gemma431bi_sub1_nhall-vall_7b3ccb",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "twin",
+      "twin": "exp122_twin_gemma431bi_sub1_nhall-vall_7b3ccb",
+      "test_twin": null,
+      "base": {
+        "Amh_Eth": "exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1"
+      },
+      "route": {
+        "Amh_Eth": {
+          "source": "nllb",
+          "min_sim": 0.66,
+          "margin_w": 0.0,
+          "agree_w": 0.0,
+          "drop_losers": false
+        }
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Amh_Eth"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T20:50:24+00:00",
+  "created": "2026-10-10T20:50:24+00:00",
+  "git_sha": "6a32ae3405fd7415b90c286408ebcd8bbaa23d2a",
+  "run_id": "exp130_combine_twin_sub1_de56ef"
+}

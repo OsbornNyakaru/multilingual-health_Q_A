@@ -297,6 +297,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-122-twin-gemma431bi-sub1-nhall-vall]] — Amharic: drop the 'This is a question about, X.' opening of Ethiopia English twin answers before translating and in the training pairs (Amharic answers never have it) (ok; won: Amh_Eth)
 
+- [[EXP-129-combine-twin-sub1]] — Twin router (similarity only) on EXP-122 (Amharic, English answer prefix dropped) (ok; won: none)
+
+- [[EXP-130-combine-twin-sub1]] — Twin router --rich on EXP-122 (Amharic, English answer prefix dropped) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

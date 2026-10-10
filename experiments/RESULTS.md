@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5131**, **val 0.5079** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-130 | `exp130_combine_twin_sub1_de56ef` | 2026-10-10 20:50 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | Twin router --rich on EXP-122 (Amharic, English answer prefix dropped) |
+| EXP-129 | `exp129_combine_twin_sub1_de56ef` | 2026-10-10 20:50 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | Twin router (similarity only) on EXP-122 (Amharic, English answer prefix dropped) |
 | EXP-122 | `exp122_twin_gemma431bi_sub1_nhall-vall_7b3ccb` | 2026-10-10 20:40 | twin_drop_prefix | held_out=all, val=all | 0.2744 | 0.2711 | Amh_Eth | ok | Amharic: drop the 'This is a question about, X.' opening of Ethiopia English twin answers before translating and in the training pairs (Amharic answers never have it) |
 | EXP-121 | `exp121_twin_gemma431bi_sub2_nhall-vall_19751a` | 2026-10-10 20:38 | twin_train_questions | held_out=all, val=all | 0.3592 | 0.3605 | — | ok | Twin translator also trained on the twins' question pairs |
 | EXP-120 | `exp120_twin_gemma431bi_sub2_nhall-vall_aabacc` | 2026-10-10 20:20 | twin_train_min_sim | held_out=all, val=all | 0.3636 | 0.3637 | — | ok | Twin translator trained on mutual twin pairs with cosine >= 0.8 instead of 0.9 (more pairs) |
@@ -166,6 +168,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-130 | held_out |  |  |  |  |  |  | 0.2794 |  |
+| EXP-130 | val |  |  |  |  |  |  | 0.2733 |  |
+| EXP-129 | held_out |  |  |  |  |  |  | 0.2794 |  |
+| EXP-129 | val |  |  |  |  |  |  | 0.2733 |  |
 | EXP-122 | held_out |  |  |  |  |  |  | 0.2744 |  |
 | EXP-122 | val |  |  |  |  |  |  | 0.2711 |  |
 | EXP-121 | held_out |  | 0.3613 | 0.3570 |  |  |  |  |  |
