@@ -261,6 +261,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-106-combine-ltr-sub4]] — Closed-subset ranker (LambdaRank, pooled over 4 subsets) over EXP-097's fold-averaged selector lists, no generator; the cross-fitted training lists themselves did not help (ok; won: Eng_Ken)
 
+- [[EXP-107-twin-gemma431bi-sub3-ntall]] — Test predictions for EXP-102 with the twin translator trained on the test pool (Train + Val, ~35% more twin pairs than work_train); routed with EXP-104's thresholds (ok; won: none)
+
+- [[EXP-109-combine-twin-sub3]] — EXP-104 twin router (thresholds tuned on EXP-102 held-out) with test twins translated by the translator retrained on Train + Val (EXP-107) (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

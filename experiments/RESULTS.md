@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5078**, **val 0.5011** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-109 | `exp109_combine_twin_sub3_47d7b6` | 2026-10-10 12:44 | combine | held_out=all, val=all | 0.3678 | 0.3623 | — | ok | EXP-104 twin router (thresholds tuned on EXP-102 held-out) with test twins translated by the translator retrained on Train + Val (EXP-107) |
+| EXP-107 | `exp107_twin_gemma431bi_sub3_ntall_5a9d91` | 2026-10-10 12:22 | twin_llm | test=all |  |  | — | ok | Test predictions for EXP-102 with the twin translator trained on the test pool (Train + Val, ~35% more twin pairs than work_train); routed with EXP-104's thresholds |
 | EXP-106 | `exp106_combine_ltr_sub4_1cb7a1` | 2026-10-10 11:22 | combine | held_out=all, val=all | 0.5958 | 0.5909 | Eng_Ken | ok | Closed-subset ranker (LambdaRank, pooled over 4 subsets) over EXP-097's fold-averaged selector lists, no generator; the cross-fitted training lists themselves did not help |
 | EXP-105 | `exp105_combine_ltr_sub1_1cb7a1` | 2026-10-10 11:17 | combine | held_out=all, val=all | 0.6138 | 0.6114 | — | ok | Eng_Ken ranker (LambdaRank) over EXP-097's fold-averaged selector lists (ret_ids + cand_ids + cand1_ids), no generator; the cross-fitted training lists themselves did not help |
 | EXP-104 | `exp104_combine_twin_sub3_4ae110` | 2026-10-10 11:01 | combine | held_out=all, val=all | 0.3678 | 0.3623 | Aka_Gha, Amh_Eth, Eng_Gha | ok | Twin router on EXP-102 (twin answers translated by NLLB fine-tuned on the pool's twin pairs; source + min twin_sim tuned per subset on held-out), else EXP-077/EXP-061 |
@@ -125,6 +127,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-10 | `composite_20261010_1401.csv` | 0.7605 | 0.7478 | 0.7485 | 0.7200 | 0.8352 |  | #15: EXP-104 twin router with the fine-tuned twin translator (EXP-102); Aka_Gha 100%, Eng_Gha 80%, Amh_Eth 93% twin rows; +0.0360 public / +0.0362 private vs #14; above 1st place's 0.7292 private |
 | 2026-10-10 | `composite_20261010_1250.csv` | 0.7245 | 0.7116 | 0.7074 | 0.6729 | 0.8222 |  | #14: EXP-100 twin router on Aka_Gha/Eng_Gha/Amh_Eth (twin's translated gold answer when the twin match is confident); +0.0284 public / +0.0287 private vs #12; ROUGE up ~0.036/0.048, judge down 0.011 |
 | 2026-10-10 | `composite_20261010_0011.csv` | 0.6959 | 0.6819 | 0.6705 | 0.6239 | 0.8346 |  | #13: EXP-095 (Swa_Ken ranker + translated view), 10 rows changed vs #12; ROUGE down on public and private, judge up; Swa_Ken vetoed |
 | 2026-10-09 | `composite_20261009_2334.csv` | 0.6961 | 0.6830 | 0.6712 | 0.6249 | 0.8327 |  | #12: EXP-091 (ranker + NLLB-translated view) on Lug_Uga, 39 rows changed vs #10; public +0.0025, private flat, judge 0.8365 -> 0.8327 |
@@ -145,6 +148,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-109 | held_out |  | 0.3603 | 0.3876 |  |  |  | 0.2685 |  |
+| EXP-109 | val |  | 0.3472 | 0.3895 |  |  |  | 0.2656 |  |
 | EXP-106 | held_out | 0.6258 |  |  | 0.4910 | 0.6456 | 0.6284 |  |  |
 | EXP-106 | val | 0.6250 |  |  | 0.4873 | 0.6239 | 0.6258 |  |  |
 | EXP-105 | held_out |  |  |  |  |  | 0.6138 |  |  |

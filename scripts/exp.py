@@ -525,8 +525,13 @@ def cmd_submission(a) -> None:
         if r["status"] == "ok" and "test" in (r.get("eval") or {}) and r.get("parent"):
             children.setdefault(r["parent"], []).append(r["run_id"])
     parts, missing = [], []
+    use = {}  # --use EXP-109:Aka_Gha,Eng_Gha;EXP-106:Eng_Ken overrides the best run per subset (e.g. a tie the rule won't adopt)
+    for part in filter(None, (getattr(a, "use", None) or "").split(";")):
+        e, _, subs = part.partition(":")
+        rid = next((r["run_id"] for r in load_records() if r["exp"] == e), None) or sys.exit(f"--use: {e} not recorded")
+        use.update({sub: {"run_id": rid} for sub in subs.split(",")})
     for s in sorted(test["subset"].unique()):
-        b = best.get(s)
+        b = use.get(s) or best.get(s)
         cands = ([b["run_id"]] if b else []) + (children.get(b["run_id"], []) if b else [])
         pf = None
         for rid in cands:  # the run itself (e.g. an offline combination), then its test children
@@ -582,7 +587,8 @@ def main() -> None:
     p.add_argument("--wait", action="store_true", help="poll every 60 s until all submitted runs finish")
     p.add_argument("--timeout", type=float, default=240, help="minutes to wait with --wait")
     sub.add_parser("status")
-    sub.add_parser("submission")
+    sm = sub.add_parser("submission")
+    sm.add_argument("--use", help="override the best run per subset: 'EXP-109:Aka_Gha,Eng_Gha;EXP-106:Eng_Ken'")
     sub.add_parser("rebuild", help="re-apply the adoption rule to every recorded run")
     lb = sub.add_parser("lb", help="record a Zindi leaderboard result")
     lb.add_argument("--file", required=True)

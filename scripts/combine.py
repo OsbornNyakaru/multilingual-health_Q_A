@@ -237,7 +237,8 @@ TWIN_THRESHOLDS = [round(0.6 + 0.01 * i, 2) for i in range(40)] + [None]  # None
 def twin_apply(base: pd.DataFrame, twin: pd.DataFrame, rule_by_subset: dict) -> pd.DataFrame:
     """Each row: its twin's translated answer (source per subset) when twin_sim >= the subset's threshold and that
     translation exists, else the base answer. rule_by_subset = {subset: (source, threshold or None)}."""
-    t = twin[["ID", "twin_sim", *TWIN_SOURCES.values()]].rename(columns={"pred": "twin_pred"})
+    t = twin.reindex(columns=["ID", "twin_sim", *TWIN_SOURCES.values()]).rename(columns={"pred": "twin_pred"})  # a run
+    # without twin_llm has no llm_answer: those rows keep the base answer
     m = base.merge(t, on="ID", how="left")
     out = m[["ID", "subset"]].copy()
     preds, src = [], []
@@ -282,7 +283,8 @@ def cmd_twin(a) -> None:
         tt = pd.read_csv(run_dir(a.test_twin) / "test_preds.csv", dtype={"ID": str, "subset": str})
         test = twin_apply(pd.concat([best_preds(sub, "test", base_rid[sub]) for sub in subsets]), tt, rule_by)
         print("test rows routed to twin:", test.groupby("subset")["source"].apply(lambda x: f"{(x != 'base').mean():.0%}").to_dict())
-    cfg = {"combine": {"rule": "twin", "twin": td.name, "base": base_rid,
+    cfg = {"combine": {"rule": "twin", "twin": td.name, "test_twin": run_dir(a.test_twin).name if a.test_twin else None,
+                       "base": base_rid,
                        "route": {k: {"source": v[0], "min_sim": v[1]} for k, v in rule_by.items()}}}
     record_virtual(cfg, "twin", subsets, preds, test, td.name, a.hyp, a.desc)
 
