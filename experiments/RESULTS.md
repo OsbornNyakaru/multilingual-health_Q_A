@@ -145,6 +145,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-11 | `composite_20261010_2213.csv` | 0.7701 | 0.7586 | 0.7568 | 0.7297 | 0.8467 |  | #18: #17 + richer twin router (EXP-117: margin, agreement with Gemma, shared-twin losers) for Aka_Gha/Eng_Gha. Scored from the user's second account (forge), not the main one |
 | 2026-10-10 | `composite_20261010_2138.csv` | 0.7683 | 0.7565 | 0.7548 | 0.7277 | 0.8451 |  | #17: 2-epoch twin translator with 4 beams for Aka_Gha/Eng_Gha (EXP-115 router, EXP-114 test twins); rest as #16 |
 | 2026-10-10 | `composite_20261010_1545.csv` | 0.7629 | 0.7512 | 0.7519 | 0.7244 | 0.8333 |  | #16: #15 + test twins from the translator retrained on Train + Val (EXP-107 via EXP-109, --use) + Eng_Ken ranker EXP-106; +0.0024 public / +0.0034 private vs #15; ROUGE up, judge down 0.002 |
 | 2026-10-10 | `composite_20261010_1401.csv` | 0.7605 | 0.7478 | 0.7485 | 0.7200 | 0.8352 |  | #15: EXP-104 twin router with the fine-tuned twin translator (EXP-102); Aka_Gha 100%, Eng_Gha 80%, Amh_Eth 93% twin rows; +0.0360 public / +0.0362 private vs #14; above 1st place's 0.7292 private |
