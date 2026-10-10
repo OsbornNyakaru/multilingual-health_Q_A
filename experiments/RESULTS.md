@@ -6,13 +6,13 @@ a run is adopted per subset if it wins by ≥ 0.003 on val and loses no more tha
 
 ## current best (per subset)
 
-composite test-mix: **held-out 0.5078**, **val 0.5011** (8/8 subsets covered)
+composite test-mix: **held-out 0.5098**, **val 0.5031** (8/8 subsets covered)
 
 | subset | test share | best run | held-out | val |
 |---|--:|---|--:|--:|
 | Eng_Uga | 28.4% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6299 | 0.6268 |
-| Aka_Gha | 18.8% | EXP-104 `exp104_combine_twin_sub3_4ae110` | 0.3603 | 0.3472 |
-| Eng_Gha | 18.8% | EXP-104 `exp104_combine_twin_sub3_4ae110` | 0.3876 | 0.3895 |
+| Aka_Gha | 18.8% | EXP-112 `exp112_twin_gemma431bi_sub3_nhall-vall_e257ce` | 0.3648 | 0.3531 |
+| Eng_Gha | 18.8% | EXP-113 `exp113_combine_twin_sub2_5ee429` | 0.3938 | 0.3941 |
 | Lug_Uga | 14.3% | EXP-091 `exp091_combine_ltr_sub1_489d9a` | 0.5205 | 0.5118 |
 | Swa_Ken | 8.7% | EXP-062 `exp062_combine_ltr_sub4_5f85f5` | 0.6320 | 0.6232 |
 | Eng_Ken | 6.4% | EXP-106 `exp106_combine_ltr_sub4_1cb7a1` | 0.6284 | 0.6258 |
@@ -23,6 +23,9 @@ composite test-mix: **held-out 0.5078**, **val 0.5011** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-113 | `exp113_combine_twin_sub2_5ee429` | 2026-10-10 17:54 | combine | held_out=all, val=all | 0.3788 | 0.3734 | Eng_Gha | ok | Twin router on EXP-112 (translator fine-tuned 2 epochs, 4 beams), else EXP-077 |
+| EXP-112 | `exp112_twin_gemma431bi_sub3_nhall-vall_e257ce` | 2026-10-10 17:15 | translate_beams, twin_llm, twin_train_epochs | held_out=all, val=all | 0.3566 | 0.3541 | Aka_Gha | ok | Twin translator fine-tuned 2 epochs instead of 1, 4 beams (NLLB answers only) |
+| EXP-111 | `exp111_twin_gemma431bi_sub3_nhall-vall_b23aab` | 2026-10-10 16:57 | translate_beams, twin_llm | held_out=all, val=all | 0.3542 | 0.3520 | — | ok | EXP-102's fine-tuned twin translator decoding with 4 beams instead of 2 (NLLB answers only; the router picks NLLB on all three subsets) |
 | EXP-110 | `exp110_combine_twin_sub4_968b27` | 2026-10-10 13:07 | combine | held_out=all, val=all | 0.6046 | 0.5970 | — | ok | Twin router for the closed subsets: EXP-108's translated twin answer (Lug<->Eng_Uga, Swa<->Eng_Ken) when the twin match is confident, else the best ranker (EXP-091/062/106) |
 | EXP-108 | `exp108_twin_gemma431bi_sub4_nhall-tall-vall_30b0c4` | 2026-10-10 12:33 | twin_llm | held_out=all, val=all, test=all | 0.3269 | 0.3346 | — | ok | Twins for the closed subsets: Luganda<->Uganda English and Swahili<->Kenya English rows answered by the twin's gold answer, translated by NLLB fine-tuned on the pool's own twin pairs (as EXP-102); a router decides per subset against the rankers |
 | EXP-109 | `exp109_combine_twin_sub3_47d7b6` | 2026-10-10 12:44 | combine | held_out=all, val=all | 0.3678 | 0.3623 | — | ok | EXP-104 twin router (thresholds tuned on EXP-102 held-out) with test twins translated by the translator retrained on Train + Val (EXP-107) |
@@ -151,6 +154,12 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-113 | held_out |  | 0.3639 | 0.3938 |  |  |  |  |  |
+| EXP-113 | val |  | 0.3528 | 0.3941 |  |  |  |  |  |
+| EXP-112 | held_out |  | 0.3648 | 0.3613 |  |  |  | 0.2524 |  |
+| EXP-112 | val |  | 0.3531 | 0.3682 |  |  |  | 0.2486 |  |
+| EXP-111 | held_out |  | 0.3621 | 0.3568 |  |  |  | 0.2694 |  |
+| EXP-111 | val |  | 0.3492 | 0.3667 |  |  |  | 0.2556 |  |
 | EXP-110 | held_out | 0.6312 |  |  | 0.5205 | 0.6320 | 0.6370 |  |  |
 | EXP-110 | val | 0.6262 |  |  | 0.5118 | 0.6232 | 0.6215 |  |  |
 | EXP-108 | held_out | 0.2453 |  |  | 0.2693 | 0.5283 | 0.5430 |  |  |

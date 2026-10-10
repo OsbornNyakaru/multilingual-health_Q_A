@@ -1,12 +1,12 @@
 {
   "Aka_Gha": {
-    "run_id": "exp104_combine_twin_sub3_4ae110",
-    "exp": "EXP-104",
+    "run_id": "exp112_twin_gemma431bi_sub3_nhall-vall_e257ce",
+    "exp": "EXP-112",
     "scores": {
-      "held_out": 0.3603,
-      "val": 0.3472
+      "held_out": 0.3648,
+      "val": 0.3531
     },
-    "since": "2026-10-10T11:01:04+00:00"
+    "since": "2026-10-10T17:15:42+00:00"
   },
   "Amh_Eth": {
     "run_id": "exp104_combine_twin_sub3_4ae110",
@@ -27,13 +27,13 @@
     "since": "2026-10-07T04:48:38+00:00"
   },
   "Eng_Gha": {
-    "run_id": "exp104_combine_twin_sub3_4ae110",
-    "exp": "EXP-104",
+    "run_id": "exp113_combine_twin_sub2_5ee429",
+    "exp": "EXP-113",
     "scores": {
-      "held_out": 0.3876,
-      "val": 0.3895
+      "held_out": 0.3938,
+      "val": 0.3941
     },
-    "since": "2026-10-10T11:01:04+00:00"
+    "since": "2026-10-10T17:54:26+00:00"
   },
   "Eng_Ken": {
     "run_id": "exp106_combine_ltr_sub4_1cb7a1",
