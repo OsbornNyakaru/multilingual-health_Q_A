@@ -104,7 +104,7 @@
     ],
     "lora_bits": 4,
     "lora_optim": "adamw_torch",
-    "lora_save_steps": 250
+    "lora_save_steps": 1000
   },
   "eval": {
     "held_out": 0,
