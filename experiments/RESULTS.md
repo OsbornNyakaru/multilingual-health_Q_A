@@ -23,6 +23,11 @@ composite test-mix: **held-out 0.5131**, **val 0.5079** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-135 | `exp135_combine_twin_sub1_2aaada` | 2026-10-10 22:05 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | EXP-129 Amharic router (English answer prefix dropped) with test twins from EXP-128 |
+| EXP-134 | `exp134_combine_twin_sub2_6167cf` | 2026-10-10 22:04 | combine | held_out=all, val=all | 0.3877 | 0.3860 | — | ok | EXP-124 router (one-to-one twins, paired candidates skipped) with test twins from EXP-127 |
+| EXP-128 | `exp128_twin_gemma431bi_sub1_ntall_c1297c` | 2026-10-10 22:02 | — | test=all |  |  | — | ok | Test predictions for EXP-122 (Amharic, English answer prefix dropped): translator trained on the test pool (Train + Val) |
+| EXP-127 | `exp127_twin_gemma431bi_sub2_ntall_618359` | 2026-10-10 22:00 | — | test=all |  |  | — | ok | Test predictions for EXP-119 (paired candidates skipped, one-to-one twins): translator trained on the test pool (Train + Val) |
+| EXP-126 | `exp126_twin_gemma431bi_sub2_ntall_ac99f2` | 2026-10-10 21:39 | twin_train_min_sim | test=all |  |  | — | ok | Test predictions for EXP-125: translator trained on the test pool (Train + Val) |
 | EXP-131 | `exp131_combine_twin_sub2_d8b243` | 2026-10-10 21:14 | combine | held_out=all, val=all | 0.3805 | 0.3731 | — | ok | Rich twin router on EXP-125 (paired candidates skipped at cosine >= 0.8, one-to-one, pairs at 0.8) |
 | EXP-125 | `exp125_twin_gemma431bi_sub2_nhall-vall_3d2b66` | 2026-10-10 21:12 | twin_train_min_sim | held_out=all, val=all | 0.3506 | 0.3442 | — | ok | EXP-119 (paired candidates skipped, one-to-one twins) with the translator trained on pairs at cosine >= 0.8 (EXP-120) |
 | EXP-130 | `exp130_combine_twin_sub1_de56ef` | 2026-10-10 20:50 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | Twin router --rich on EXP-122 (Amharic, English answer prefix dropped) |
@@ -171,6 +176,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-135 | held_out |  |  |  |  |  |  | 0.2794 |  |
+| EXP-135 | val |  |  |  |  |  |  | 0.2733 |  |
+| EXP-134 | held_out |  | 0.3672 | 0.4083 |  |  |  |  |  |
+| EXP-134 | val |  | 0.3565 | 0.4155 |  |  |  |  |  |
 | EXP-131 | held_out |  | 0.3608 | 0.4003 |  |  |  |  |  |
 | EXP-131 | val |  | 0.3446 | 0.4017 |  |  |  |  |  |
 | EXP-125 | held_out |  | 0.3547 | 0.3464 |  |  |  |  |  |

@@ -305,6 +305,16 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-131-combine-twin-sub2]] — Rich twin router on EXP-125 (paired candidates skipped at cosine >= 0.8, one-to-one, pairs at 0.8) (ok; won: none)
 
+- [[EXP-126-twin-gemma431bi-sub2-ntall]] — Test predictions for EXP-125: translator trained on the test pool (Train + Val) (ok; won: none)
+
+- [[EXP-127-twin-gemma431bi-sub2-ntall]] — Test predictions for EXP-119 (paired candidates skipped, one-to-one twins): translator trained on the test pool (Train + Val) (ok; won: none)
+
+- [[EXP-128-twin-gemma431bi-sub1-ntall]] — Test predictions for EXP-122 (Amharic, English answer prefix dropped): translator trained on the test pool (Train + Val) (ok; won: none)
+
+- [[EXP-134-combine-twin-sub2]] — EXP-124 router (one-to-one twins, paired candidates skipped) with test twins from EXP-127 (ok; won: none)
+
+- [[EXP-135-combine-twin-sub1]] — EXP-129 Amharic router (English answer prefix dropped) with test twins from EXP-128 (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage
