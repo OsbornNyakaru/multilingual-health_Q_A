@@ -113,5 +113,8 @@
     "Eng_Eth"
   ],
   "max_minutes": 150.0,
-  "drafted": "2026-10-10T09:26:42+00:00"
+  "drafted": "2026-10-10T09:26:42+00:00",
+  "git_sha": "4e5faf929c122510a2b76b7f0aee1a4672ad1975",
+  "created": "2026-10-09T21:14:11.7+00:00",
+  "run_id": "exp099_twin_gemma431bi_sub4_ntall_1cc0df"
 }
