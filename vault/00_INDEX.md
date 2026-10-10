@@ -253,6 +253,10 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-103-combine-pool-sub2]] — MBR over the EXP-100 twin-router answer (weighted w, tuned per subset on held-out) + EXP-077's 13 Gemma candidates: a fluent in-style generation that agrees with the twin's content (ok; won: none)
 
+- [[EXP-102-twin-gemma431bi-sub3-nhall-tall-vall]] — EXP-098 twins translated by NLLB-3.3B fine-tuned on the pool's own twin pairs (mutual matches, cosine >= 0.9; aligned sentences, both directions; Akan<->English, Amharic<->English), trained once in setup on the most honest pool; held-out + Val + test in one run (ok; won: none)
+
+- [[EXP-104-combine-twin-sub3]] — Twin router on EXP-102 (twin answers translated by NLLB fine-tuned on the pool's twin pairs; source + min twin_sim tuned per subset on held-out), else EXP-077/EXP-061 (ok; won: Aka_Gha, Amh_Eth, Eng_Gha)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

@@ -1,0 +1,49 @@
+{
+  "exp": "EXP-104",
+  "hypothesis": "H-019",
+  "description": "Twin router on EXP-102 (twin answers translated by NLLB fine-tuned on the pool's twin pairs; source + min twin_sim tuned per subset on held-out), else EXP-077/EXP-061",
+  "parent": "exp102_twin_gemma431bi_sub3_nhall-tall-vall_238948",
+  "changed": [
+    "combine"
+  ],
+  "config": {
+    "combine": {
+      "rule": "twin",
+      "twin": "exp102_twin_gemma431bi_sub3_nhall-tall-vall_238948",
+      "base": {
+        "Aka_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01",
+        "Eng_Gha": "exp077_rag_bgem3_gemma431bi_k3_sub3_nhall-vall_40dd01",
+        "Amh_Eth": "exp061_lora_rag_gemma431bi_sub3_nhall-vall_fb5ca1"
+      },
+      "route": {
+        "Aka_Gha": {
+          "source": "nllb",
+          "min_sim": 0.63
+        },
+        "Eng_Gha": {
+          "source": "nllb",
+          "min_sim": 0.83
+        },
+        "Amh_Eth": {
+          "source": "nllb",
+          "min_sim": 0.67
+        }
+      }
+    }
+  },
+  "eval": {
+    "held_out": 0,
+    "val": 0
+  },
+  "subsets": [
+    "Aka_Gha",
+    "Eng_Gha",
+    "Amh_Eth"
+  ],
+  "max_minutes": 0,
+  "virtual": true,
+  "drafted": "2026-10-10T11:01:04+00:00",
+  "created": "2026-10-10T11:01:04+00:00",
+  "git_sha": "1e1f2be4c9a2bbccf6bc3d0946b8fe0de4892aa5",
+  "run_id": "exp104_combine_twin_sub3_4ae110"
+}
