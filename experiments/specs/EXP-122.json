@@ -123,5 +123,8 @@
     "Amh_Eth"
   ],
   "max_minutes": 90.0,
-  "drafted": "2026-10-10T19:13:14+00:00"
+  "drafted": "2026-10-10T19:13:14+00:00",
+  "git_sha": "7a2b4a551aab062e5bef9f60e4f6326a9bdfc51e",
+  "created": "2026-10-10T19:13:24+00:00",
+  "run_id": "exp122_twin_gemma431bi_sub1_nhall-vall_7b3ccb"
 }
