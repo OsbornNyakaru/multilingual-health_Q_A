@@ -291,6 +291,12 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-124-combine-twin-sub2]] — Rich twin router on EXP-119 (paired candidates skipped, one-to-one twins) (ok; won: Aka_Gha, Eng_Gha)
 
+- [[EXP-120-twin-gemma431bi-sub2-nhall-vall]] — Twin translator trained on mutual twin pairs with cosine >= 0.8 instead of 0.9 (more pairs) (ok; won: none)
+
+- [[EXP-121-twin-gemma431bi-sub2-nhall-vall]] — Twin translator also trained on the twins' question pairs (ok; won: none)
+
+- [[EXP-122-twin-gemma431bi-sub1-nhall-vall]] — Amharic: drop the 'This is a question about, X.' opening of Ethiopia English twin answers before translating and in the training pairs (Amharic answers never have it) (ok; won: Amh_Eth)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

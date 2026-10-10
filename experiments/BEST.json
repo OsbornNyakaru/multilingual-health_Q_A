@@ -9,13 +9,13 @@
     "since": "2026-10-10T20:02:38+00:00"
   },
   "Amh_Eth": {
-    "run_id": "exp104_combine_twin_sub3_4ae110",
-    "exp": "EXP-104",
+    "run_id": "exp122_twin_gemma431bi_sub1_nhall-vall_7b3ccb",
+    "exp": "EXP-122",
     "scores": {
-      "held_out": 0.2685,
-      "val": 0.2656
+      "held_out": 0.2744,
+      "val": 0.2711
     },
-    "since": "2026-10-10T11:01:04+00:00"
+    "since": "2026-10-10T20:40:35+00:00"
   },
   "Eng_Eth": {
     "run_id": "exp038_rag_bgem3_qwen257bin_k3_sub5_nhall-vall_11871e",
