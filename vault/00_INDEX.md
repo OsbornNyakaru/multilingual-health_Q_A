@@ -251,6 +251,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-101-combine-twin-sub3]] — EXP-100 twin router with test predictions (EXP-099 twins; test pool Train + Val) (ok; won: none)
 
+- [[EXP-103-combine-pool-sub2]] — MBR over the EXP-100 twin-router answer (weighted w, tuned per subset on held-out) + EXP-077's 13 Gemma candidates: a fluent in-style generation that agrees with the twin's content (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

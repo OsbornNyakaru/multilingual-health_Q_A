@@ -23,6 +23,9 @@ composite test-mix: **held-out 0.4819**, **val 0.4754** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-103 | `exp103_combine_pool_sub2_644b32` | 2026-10-10 10:15 | combine | held_out=all, val=all | 0.3063 | 0.3028 | — | ok | MBR over the EXP-100 twin-router answer (weighted w, tuned per subset on held-out) + EXP-077's 13 Gemma candidates: a fluent in-style generation that agrees with the twin's content |
+| EXP-101 | `exp101_combine_twin_sub3_5777e0` | 2026-10-10 09:49 | combine | held_out=all, val=all | 0.3030 | 0.2995 | — | ok | EXP-100 twin router with test predictions (EXP-099 twins; test pool Train + Val) |
+| EXP-099 | `exp099_twin_gemma431bi_sub4_ntall_1cc0df` | 2026-10-10 09:45 | — | test=all |  |  | — | ok | Test predictions for EXP-098 (twin answers: NLLB, plus Gemma translations in meta); test pool Train + Val holds ~92% of twins |
 | EXP-100 | `exp100_combine_twin_sub3_5777e0` | 2026-10-10 09:45 | combine | held_out=all, val=all | 0.3030 | 0.2995 | Aka_Gha, Amh_Eth, Eng_Gha | ok | Twin router: the twin's translated gold answer (NLLB, or Gemma for Amharic; source and min twin_sim tuned per subset on held-out) when the twin match is confident, else EXP-077/EXP-061 |
 | EXP-098 | `exp098_twin_gemma431bi_sub4_nhall-vall_fb1199` | 2026-10-10 09:35 | gen_engine, mode, model_id, precision, twin_llm | held_out=all, val=all | 0.2744 | 0.2753 | Aka_Gha, Amh_Eth, Eng_Gha | ok | Twin probe: answer each Akan/Ghana-English/Amharic/Ethiopia-English row with the gold answer of its twin row in the paired subset (best English-question match in the pool), translated by NLLB-200-3.3B sentence by sentence; base Gemma-4-31B translations kept in meta (llm_answer) to compare translators |
 | EXP-097 | `exp097_ret_bgem3_rrb_sub5_nhall-tall-vall_36387c` | 2026-10-10 09:05 | diag_k, oof_folds, translate_model | held_out=all, val=all, test=all | 0.5920 | 0.5839 | — | ok | 5-fold cross-fitted EXP-055 pipeline (fine-tuned BGE-M3 + 3 answer-aware selectors per fold): leave-self-out top-30 lists for ~17.7k work_train questions to train the final ranker, and held-out/Val/test lists from the same fold models averaged (1st place's consistency lesson) |
@@ -118,6 +121,7 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-10 | `composite_20261010_1250.csv` | 0.7245 | 0.7116 | 0.7074 | 0.6729 | 0.8222 |  | #14: EXP-100 twin router on Aka_Gha/Eng_Gha/Amh_Eth (twin's translated gold answer when the twin match is confident); +0.0284 public / +0.0287 private vs #12; ROUGE up ~0.036/0.048, judge down 0.011 |
 | 2026-10-10 | `composite_20261010_0011.csv` | 0.6959 | 0.6819 | 0.6705 | 0.6239 | 0.8346 |  | #13: EXP-095 (Swa_Ken ranker + translated view), 10 rows changed vs #12; ROUGE down on public and private, judge up; Swa_Ken vetoed |
 | 2026-10-09 | `composite_20261009_2334.csv` | 0.6961 | 0.6830 | 0.6712 | 0.6249 | 0.8327 |  | #12: EXP-091 (ranker + NLLB-translated view) on Lug_Uga, 39 rows changed vs #10; public +0.0025, private flat, judge 0.8365 -> 0.8327 |
 | 2026-10-09 | `composite_20261009_1010.csv` | 0.6890 | 0.6785 | 0.6636 | 0.6171 | 0.8276 |  | #11: EXP-086 (ltr v2 features) on Eng_Uga+Swa_Ken, 61 rows changed vs #10; worse on all three parts; vetoed |
@@ -137,6 +141,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-103 | held_out |  | 0.2682 | 0.3445 |  |  |  |  |  |
+| EXP-103 | val |  | 0.2610 | 0.3447 |  |  |  |  |  |
+| EXP-101 | held_out |  | 0.2682 | 0.3445 |  |  |  | 0.2492 |  |
+| EXP-101 | val |  | 0.2610 | 0.3447 |  |  |  | 0.2455 |  |
 | EXP-100 | held_out |  | 0.2682 | 0.3445 |  |  |  | 0.2492 |  |
 | EXP-100 | val |  | 0.2610 | 0.3447 |  |  |  | 0.2455 |  |
 | EXP-098 | held_out |  | 0.2608 | 0.3002 |  |  |  | 0.2070 | 0.2433 |
