@@ -124,5 +124,8 @@
     "Eng_Gha"
   ],
   "max_minutes": 90.0,
-  "drafted": "2026-10-10T20:49:29+00:00"
+  "drafted": "2026-10-10T20:49:29+00:00",
+  "git_sha": "4775d8ffe6bda045055c467fbd27f19a7ada76ae",
+  "created": "2026-10-10T20:49:45+00:00",
+  "run_id": "exp125_twin_gemma431bi_sub2_nhall-vall_3d2b66"
 }
