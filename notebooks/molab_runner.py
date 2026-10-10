@@ -91,7 +91,7 @@ def _(data_repo_input, hf_token_input, mo, os, runs_repo_input):
     # Frozen harness: autoresearch_nlp/prepare.py must hash to this, or the runner refuses to run.
     PREPARE_SHA256 = "532b2c174894b7107129c3d7056613c62c4066e530761193b1518487e784f5dd"
     HELD_OUT_FINGERPRINT = "a8026f24ea3d"
-    RUNNER_VERSION = "2026-10-09-claim"  # reported in every ping so the Mac side can see which runner is live
+    RUNNER_VERSION = "2026-10-10-purge"  # reported in every ping so the Mac side can see which runner is live
 
     from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
 
@@ -253,10 +253,31 @@ def _(
     def hf_json(path_in_repo: str) -> dict:
         return json.loads(open(hf_download(path_in_repo), encoding="utf-8").read())
 
+    def _lfs_oids(path_in_repo: str | None = None) -> set[str]:
+        try:
+            tree = api.list_repo_tree(RUNS_REPO, path_in_repo=path_in_repo, repo_type="dataset", recursive=True)
+            return {i.lfs.sha256 for i in tree if getattr(i, "lfs", None)}
+        except Exception:  # folder not there yet
+            return set()
+
     def hf_put_folder(local_dir, path_in_repo: str, message: str):
-        """Replace runs-repo folder `path_in_repo` with the contents of local_dir."""
+        """Replace runs-repo folder `path_in_repo` with the contents of local_dir, then permanently delete the
+        replaced version's blobs. HF keeps every committed version: each 6 GB training checkpoint left an orphan
+        behind and filled the private storage quota (EXP-093). Only blobs that were in this folder and that no
+        file in the repo references any more are deleted."""
+        before = _lfs_oids(path_in_repo)
         api.upload_folder(folder_path=str(local_dir), path_in_repo=path_in_repo, repo_id=RUNS_REPO,
                           repo_type="dataset", commit_message=message, delete_patterns="*")
+        if not before:
+            return
+        try:
+            gone = before - _lfs_oids()
+            old = [f for f in api.list_lfs_files(RUNS_REPO, repo_type="dataset") if f.file_oid in gone]
+            if old:
+                api.permanently_delete_lfs_files(RUNS_REPO, old, repo_type="dataset")
+                print(f"[runner] freed {sum(f.size for f in old) / 1e9:.1f} GB: replaced version of {path_in_repo}")
+        except Exception as e:  # never fail a run over cleanup
+            print(f"[runner] could not purge the replaced version of {path_in_repo}: {e}")
 
     def hf_get_folder(path_in_repo: str, local_dir) -> bool:
         """Download runs-repo folder `path_in_repo` into local_dir; False if it doesn't exist."""
@@ -384,6 +405,12 @@ def _(
         except Exception:
             return True
 
+    def _quiet(fn, *a):
+        try:
+            fn(*a)
+        except Exception:
+            pass
+
     def keep_claim(rid: str):
         """Refresh the claim in a background thread until the returned event is set."""
         import threading
@@ -392,10 +419,11 @@ def _(
 
         def _beat():
             while not stop.wait(CLAIM_EVERY):
-                try:
-                    _write_claim(rid)
-                except Exception:
-                    pass
+                # each write in its own thread, waited on for at most 60 s: a hung HF request (no client timeout
+                # on commits) stalled the heartbeat for 20 min on 2026-10-10 and the run looked dead
+                w = threading.Thread(target=lambda: _quiet(_write_claim, rid), daemon=True)
+                w.start()
+                w.join(60)
 
         threading.Thread(target=_beat, daemon=True).start()
         return stop
