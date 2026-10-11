@@ -86,3 +86,5 @@ def test_twin_features_drop_translations_stuck_in_a_loop():
     twin = pd.DataFrame({"ID": ["a", "b"], "twin_id": ["t1", "t2"], "twin_sim": [0.9, 0.9], "twin_margin": [0.1, 0.1],
                          "pred": ["fata " + "own " * 12, "nllb x x x"]})
     assert C.twin_route(C.twin_features(base, twin), {"Aka_Gha": ("nllb", 0.5)})["pred"].tolist() == ["gen a", "nllb x x x"]
+    base["pred"] = ["gen a", "ɛ a " + "own " * 12]  # a stuck base answer takes the twin's even below the threshold
+    assert C.twin_route(C.twin_features(base, twin), {"Aka_Gha": ("nllb", 0.95)})["pred"].tolist() == ["gen a", "nllb x x x"]

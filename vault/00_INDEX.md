@@ -319,6 +319,8 @@ As of 2026-10-07: composite **held-out 0.4404 / Val 0.432** test-mix (ROUGE-only
 
 - [[EXP-137-combine-twin-sub1]] — EXP-135 again, translations stuck in a loop fall back to the base answer (ok; won: none)
 
+- [[EXP-138-combine-twin-sub2]] — EXP-134 router; stuck translations fall back to the base answer, stuck base answers take the twin's (ok; won: none)
+
 ## Decisions
 - [[D-001-metric-weights-and-tokenizer]] — optimise the real weights; whitespace ROUGE; AfroLM weight 0
 - [[D-002-reject-aya-expanse]] — licence + language coverage

@@ -262,6 +262,7 @@ def twin_features(base: pd.DataFrame, twin: pd.DataFrame) -> pd.DataFrame:
         col = "twin_pred" if source == "nllb" else col
         m[col] = [x.strip() if isinstance(x, str) and not TWIN_LOOP.search(x) else "" for x in m[col]]
         m[f"agree_{source}"] = _rouge_rows(m[col].tolist(), m["pred"].astype(str).tolist())
+    m["base_loop"] = [bool(TWIN_LOOP.search(str(x))) for x in m["pred"]]  # a stuck base answer: any twin answer is better
     has = m["twin_id"].notna()
     rank = m[has].groupby(["subset", "twin_id"])["twin_sim"].rank(ascending=False, method="first")
     m["loser"] = (rank.reindex(m.index) > 1).fillna(False)
@@ -271,14 +272,15 @@ def twin_features(base: pd.DataFrame, twin: pd.DataFrame) -> pd.DataFrame:
 def twin_route(m: pd.DataFrame, rule_by_subset: dict) -> pd.DataFrame:
     """Each row of twin_features: its twin's translated answer when the translation exists and
     twin_sim + margin_w * twin_margin + agree_w * agree >= threshold (and, with drop_losers, the row is not a loser),
-    else the base answer. rule_by_subset = {subset: (source, threshold or None[, margin_w, agree_w, drop_losers])}."""
+    or when the base answer is stuck in a loop; else the base answer. rule_by_subset = {subset: (source, threshold or None[, margin_w, agree_w, drop_losers])}."""
     out = m[["ID", "subset"]].copy()
     preds, src = [], []
     for r in m.to_dict("records"):
         source, thr, mw, aw, drop = (*rule_by_subset.get(r["subset"], ("nllb", None)), 0.0, 0.0, False)[:5]
         alt = r["twin_pred" if source == "nllb" else TWIN_SOURCES[source]]
-        use = (thr is not None and bool(alt) and not (drop and r["loser"])
-               and r["twin_sim"] + mw * r["twin_margin"] + aw * r[f"agree_{source}"] >= thr)
+        use = bool(alt) and (r["base_loop"] or (
+            thr is not None and not (drop and r["loser"])
+            and r["twin_sim"] + mw * r["twin_margin"] + aw * r[f"agree_{source}"] >= thr))
         preds.append(alt if use else r["pred"])
         src.append(f"twin_{source}" if use else "base")
     out["pred"], out["source"] = preds, src
@@ -311,10 +313,9 @@ def cmd_twin(a) -> None:
     def score(s, sub, rule):
         f = feats[s][feats[s]["subset"] == sub]
         source, thr, mw, aw, drop = rule
-        if thr is None:
-            return float(f["s_base"].mean()) * 0.74
         alt = f["twin_pred" if source == "nllb" else TWIN_SOURCES[source]] != ""
-        use = alt & ~(drop & f["loser"]) & (f["twin_sim"] + mw * f["twin_margin"] + aw * f[f"agree_{source}"] >= thr)
+        on = ~(drop & f["loser"]) & (f["twin_sim"] + mw * f["twin_margin"] + aw * f[f"agree_{source}"] >= (9 if thr is None else thr))
+        use = alt & (f["base_loop"] | on)
         return float(np.where(use, f[f"s_{source}"], f["s_base"]).mean()) * 0.74  # 0.37 * (R1 + RL)
 
     weights = TWIN_WEIGHTS if a.rich else [(0.0, 0.0, False)]
