@@ -23,6 +23,8 @@ composite test-mix: **held-out 0.5131**, **val 0.5079** (8/8 subsets covered)
 
 | exp | run | finished | change | eval | held-out test-mix | val test-mix | won subsets | status | note |
 |---|---|---|---|---|--:|--:|---|---|---|
+| EXP-137 | `exp137_combine_twin_sub1_2aaada` | 2026-10-11 06:14 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | EXP-135 again, translations stuck in a loop fall back to the base answer |
+| EXP-136 | `exp136_combine_twin_sub2_6167cf` | 2026-10-11 06:13 | combine | held_out=all, val=all | 0.3877 | 0.3858 | — | ok | EXP-134 again, translations stuck in a loop fall back to the base answer |
 | EXP-135 | `exp135_combine_twin_sub1_2aaada` | 2026-10-10 22:05 | combine | held_out=all, val=all | 0.2794 | 0.2733 | — | ok | EXP-129 Amharic router (English answer prefix dropped) with test twins from EXP-128 |
 | EXP-134 | `exp134_combine_twin_sub2_6167cf` | 2026-10-10 22:04 | combine | held_out=all, val=all | 0.3877 | 0.3860 | — | ok | EXP-124 router (one-to-one twins, paired candidates skipped) with test twins from EXP-127 |
 | EXP-128 | `exp128_twin_gemma431bi_sub1_ntall_c1297c` | 2026-10-10 22:02 | — | test=all |  |  | — | ok | Test predictions for EXP-122 (Amharic, English answer prefix dropped): translator trained on the test pool (Train + Val) |
@@ -176,6 +178,10 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | exp | set | Eng_Uga | Aka_Gha | Eng_Gha | Lug_Uga | Swa_Ken | Eng_Ken | Amh_Eth | Eng_Eth |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| EXP-137 | held_out |  |  |  |  |  |  | 0.2794 |  |
+| EXP-137 | val |  |  |  |  |  |  | 0.2733 |  |
+| EXP-136 | held_out |  | 0.3672 | 0.4083 |  |  |  |  |  |
+| EXP-136 | val |  | 0.3562 | 0.4155 |  |  |  |  |  |
 | EXP-135 | held_out |  |  |  |  |  |  | 0.2794 |  |
 | EXP-135 | val |  |  |  |  |  |  | 0.2733 |  |
 | EXP-134 | held_out |  | 0.3672 | 0.4083 |  |  |  |  |  |

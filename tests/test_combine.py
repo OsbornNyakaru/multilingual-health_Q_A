@@ -79,3 +79,10 @@ def test_twin_route_margin_agreement_and_shared_twins():
     assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.75, 0.0, 0.0, True)})["source"].tolist() == ["base", "twin_nllb", "base"]
     assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.85, 1.0, 0.0, False)})["source"].tolist() == ["twin_nllb", "twin_nllb", "base"]
     assert C.twin_route(f, {"Eng_Gha": ("nllb", 0.95, 0.0, 0.4, False)})["source"].tolist() == ["twin_nllb", "base", "base"]
+
+
+def test_twin_features_drop_translations_stuck_in_a_loop():
+    base = pd.DataFrame({"ID": ["a", "b"], "subset": ["Aka_Gha"] * 2, "pred": ["gen a", "gen b"]})
+    twin = pd.DataFrame({"ID": ["a", "b"], "twin_id": ["t1", "t2"], "twin_sim": [0.9, 0.9], "twin_margin": [0.1, 0.1],
+                         "pred": ["fata " + "own " * 12, "nllb x x x"]})
+    assert C.twin_route(C.twin_features(base, twin), {"Aka_Gha": ("nllb", 0.5)})["pred"].tolist() == ["gen a", "nllb x x x"]

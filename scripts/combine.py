@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -235,6 +236,9 @@ TWIN_THRESHOLDS = [round(0.5 + 0.01 * i, 2) for i in range(75)] + [None]  # None
 TWIN_WEIGHTS = [(m, g, d) for m in (0.0, 1.0, 2.0) for g in (0.0, 0.2, 0.4) for d in (False, True)]
 
 
+TWIN_LOOP = re.compile(r"(\S+)(?:\s+\1){9,}")  # one word 10+ times in a row: the translator got stuck, no twin answer
+
+
 def _rouge_rows(preds: list[str], refs: list[str]) -> list[float]:
     """Per-row mean of ROUGE-1 and ROUGE-L F1 with the harness's scorer."""
     sc = X.prepare._rouge_scorer()
@@ -256,7 +260,7 @@ def twin_features(base: pd.DataFrame, twin: pd.DataFrame) -> pd.DataFrame:
     m["twin_margin"] = pd.to_numeric(m["twin_margin"], errors="coerce").fillna(0.0)
     for source, col in TWIN_SOURCES.items():
         col = "twin_pred" if source == "nllb" else col
-        m[col] = [x.strip() if isinstance(x, str) else "" for x in m[col]]
+        m[col] = [x.strip() if isinstance(x, str) and not TWIN_LOOP.search(x) else "" for x in m[col]]
         m[f"agree_{source}"] = _rouge_rows(m[col].tolist(), m["pred"].astype(str).tolist())
     has = m["twin_id"].notna()
     rank = m[has].groupby(["subset", "twin_id"])["twin_sim"].rank(ascending=False, method="first")
