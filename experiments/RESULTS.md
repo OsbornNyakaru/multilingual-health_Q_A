@@ -155,6 +155,8 @@ total = 0.37·rouge-1 + 0.37·rouge-l + 0.26·judge, scored by zindi on Test.
 
 | date | file | public | private | rouge-1 | rouge-l | judge | local val test-mix | note |
 |---|---|--:|--:|--:|--:|--:|--:|---|
+| 2026-10-11 | `composite_20261011_0916.csv` | 0.7717 | 0.7612 | 0.7605 | 0.7320 | 0.8442 |  | #20: #19 with 3 stuck answers replaced (EXP-138, EXP-137): ROUGE +0.0002/+0.0003, judge -0.0029, so the judge moves about 0.003 between near-identical files. Second account (forge) |
+| 2026-10-11 | `composite_20261011_0105.csv` | 0.7723 | 0.7617 | 0.7602 | 0.7318 | 0.8471 |  | #19: one-to-one twins + rich router for Aka_Gha/Eng_Gha (EXP-134), Amharic prefix fix (EXP-135). Scored from the second account (forge). First upload failed on Zindi's side, the retry scored |
 | 2026-10-11 | `composite_20261010_2213.csv` | 0.7701 | 0.7586 | 0.7568 | 0.7297 | 0.8467 |  | #18: #17 + richer twin router (EXP-117: margin, agreement with Gemma, shared-twin losers) for Aka_Gha/Eng_Gha. Scored from the user's second account (forge), not the main one |
 | 2026-10-10 | `composite_20261010_2138.csv` | 0.7683 | 0.7565 | 0.7548 | 0.7277 | 0.8451 |  | #17: 2-epoch twin translator with 4 beams for Aka_Gha/Eng_Gha (EXP-115 router, EXP-114 test twins); rest as #16 |
 | 2026-10-10 | `composite_20261010_1545.csv` | 0.7629 | 0.7512 | 0.7519 | 0.7244 | 0.8333 |  | #16: #15 + test twins from the translator retrained on Train + Val (EXP-107 via EXP-109, --use) + Eng_Ken ranker EXP-106; +0.0024 public / +0.0034 private vs #15; ROUGE up, judge down 0.002 |
